@@ -37,7 +37,7 @@ export default function Canvas() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetch("/api/processes");
+        const res = await fetch(`/api/processes?t=${Date.now()}`);
         if (!res.ok) throw new Error("Failed to load");
         const data = await res.json();
 
