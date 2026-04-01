@@ -44,7 +44,6 @@ export default function Canvas() {
           type: "process",
           position: { x: p.position_x, y: p.position_y },
           data: { label: p.name, category: p.category },
-          draggable: false,
         }));
 
         const flowEdges: Edge[] = data.connections.map((c: ProcessConnection) => ({
@@ -101,12 +100,12 @@ export default function Canvas() {
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
-        nodesDraggable={false}
         nodesConnectable={false}
-        elementsSelectable={false}
+        panOnScroll
+        zoomOnScroll={false}
       >
         <Background variant={BackgroundVariant.Dots} color="#374151" gap={20} />
-        <Controls showInteractive={false} />
+        <Controls />
         <MiniMap
           nodeColor={nodeColor}
           style={{ background: "#1f2937" }}

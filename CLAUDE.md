@@ -52,7 +52,6 @@ Four core objects with these relationships:
 ## V1 Canvas Behavior
 - Nodes colored by category (not by MIT yet)
 - Clicking a node opens a side panel showing associated MITs and CTs
-- No drag-and-drop editing in V1 — canvas is read-only
 - Mock data seeded via /scripts/seed.mjs
 
 ## Key Business Rules
