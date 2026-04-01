@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     const [processes, connections] = await Promise.all([
-      sql`SELECT id, name, category, description, position_x, position_y FROM business_processes`,
+      sql`SELECT id, name, category, description, position_x, position_y, metadata FROM business_processes`,
       sql`SELECT id, source_id, target_id, label FROM process_connections`,
     ]);
 

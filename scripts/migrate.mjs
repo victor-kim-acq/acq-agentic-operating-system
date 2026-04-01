@@ -27,6 +27,11 @@ async function migrate() {
   `;
   console.log("  Created process_connections table");
 
+  await sql`
+    ALTER TABLE business_processes ADD COLUMN IF NOT EXISTS metadata JSONB DEFAULT '{}'
+  `;
+  console.log("  Added metadata column to business_processes");
+
   console.log("Migrations complete.");
 }
 

@@ -5,6 +5,11 @@ export interface BusinessProcess {
   description: string | null;
   position_x: number;
   position_y: number;
+  metadata?: {
+    icon?: string;
+    color?: string;
+    stats?: Array<{ icon: string; label: string; value: string }>;
+  };
 }
 
 export interface ProcessConnection {

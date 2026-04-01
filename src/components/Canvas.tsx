@@ -15,6 +15,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ProcessNode from "./ProcessNode";
+import EditNodeModal from "./EditNodeModal";
 import type { BusinessProcess, ProcessConnection } from "@/types/canvas";
 
 const categoryMinimapColors: Record<string, string> = {
@@ -29,6 +30,7 @@ export default function Canvas() {
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingNode, setEditingNode] = useState<Node | null>(null);
 
   const nodeTypes: NodeTypes = useMemo(() => ({ process: ProcessNode }), []);
 
@@ -43,7 +45,7 @@ export default function Canvas() {
           id: p.id,
           type: "process",
           position: { x: p.position_x, y: p.position_y },
-          data: { label: p.name, category: p.category },
+          data: { label: p.name, category: p.category, metadata: p.metadata || {} },
         }));
 
         const flowEdges: Edge[] = data.connections.map((c: ProcessConnection) => ({
@@ -52,9 +54,9 @@ export default function Canvas() {
           target: c.target_id,
           label: c.label ?? undefined,
           animated: false,
-          style: { stroke: "#6b7280", strokeWidth: 2 },
-          labelStyle: { fill: "#d1d5db", fontSize: 11 },
-          labelBgStyle: { fill: "#111827", fillOpacity: 0.8 },
+          style: { stroke: "#94a3b8", strokeWidth: 2 },
+          labelStyle: { fill: "#64748b", fontSize: 11 },
+          labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.9 },
         }));
 
         setNodes(flowNodes);
@@ -81,6 +83,32 @@ export default function Canvas() {
       }).catch((err) => console.error("Failed to save node position:", err));
     },
     []
+  );
+
+  const onNodeDoubleClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      setEditingNode(node);
+    },
+    []
+  );
+
+  const handleEditSave = useCallback(
+    (id: string, updates: { name: string; metadata: { icon: string; color: string; stats: Array<{ icon: string; label: string; value: string }> } }) => {
+      fetch(`/api/processes/nodes/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      }).catch((err) => console.error("Failed to save node edits:", err));
+
+      setNodes((nds) =>
+        nds.map((n) =>
+          n.id === id
+            ? { ...n, data: { ...n.data, label: updates.name, metadata: updates.metadata } }
+            : n
+        )
+      );
+    },
+    [setNodes]
   );
 
   const nodeColor = useCallback(
@@ -112,21 +140,28 @@ export default function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
+        onNodeDoubleClick={onNodeDoubleClick}
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
         nodesConnectable={false}
         panOnScroll
         zoomOnScroll={false}
+        deleteKeyCode={["Delete", "Backspace"]}
       >
-        <Background variant={BackgroundVariant.Dots} color="#374151" gap={20} />
+        <Background variant={BackgroundVariant.Dots} color="#cbd5e1" gap={20} />
         <Controls />
         <MiniMap
           nodeColor={nodeColor}
-          style={{ background: "#1f2937" }}
-          maskColor="rgba(0,0,0,0.6)"
+          style={{ background: "#f1f5f9" }}
+          maskColor="rgba(0,0,0,0.1)"
         />
       </ReactFlow>
+      <EditNodeModal
+        node={editingNode}
+        onClose={() => setEditingNode(null)}
+        onSave={handleEditSave}
+      />
     </div>
   );
 }

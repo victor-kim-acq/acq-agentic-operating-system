@@ -25,6 +25,11 @@ export async function PUT(
       }
     }
 
+    if (body.metadata !== undefined) {
+      fields.push("metadata");
+      values.push(JSON.stringify(body.metadata));
+    }
+
     if (fields.length === 0) {
       return NextResponse.json(
         { error: "No fields to update" },
@@ -32,8 +37,13 @@ export async function PUT(
       );
     }
 
-    const setClauses = fields.map((f, i) => `${f} = $${i + 2}`).join(", ");
-    const query = `UPDATE business_processes SET ${setClauses} WHERE id = $1 RETURNING id, name, category, description, position_x, position_y`;
+    const setClauses = fields
+      .map((f, i) => {
+        if (f === "metadata") return `${f} = $${i + 2}::jsonb`;
+        return `${f} = $${i + 2}`;
+      })
+      .join(", ");
+    const query = `UPDATE business_processes SET ${setClauses} WHERE id = $1 RETURNING id, name, category, description, position_x, position_y, metadata`;
 
     const result = await sql.query(query, [id, ...values]);
 

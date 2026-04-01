@@ -3,12 +3,52 @@
 @tailwind utilities;
 
 :root {
-  --background: #111827;
-  --foreground: #e5e7eb;
+  --background: #f8fafc;
+  --foreground: #1e293b;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ---- Node card styles ---- */
+.flow-node {
+  background: white;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  min-width: 180px;
+  cursor: grab;
+  transition: box-shadow 0.15s, border-color 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.flow-node:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+.flow-node.selected {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.2);
+}
+.flow-node-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f5f9;
+  font-weight: 600;
+  font-size: 13px;
+  color: #1e293b;
+}
+.flow-node-body {
+  padding: 8px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flow-node-stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
 }

@@ -3,41 +3,74 @@
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
-const categoryColors: Record<string, { bg: string; border: string; text: string }> = {
-  Acquisition: { bg: "#064e3b", border: "#10b981", text: "#6ee7b7" },
-  Onboarding: { bg: "#1e3a5f", border: "#3b82f6", text: "#93c5fd" },
-  Retention: { bg: "#3b1f6e", border: "#7c3aed", text: "#c4b5fd" },
-  "Features/Logistics": { bg: "#4a1942", border: "#ec4899", text: "#f9a8d4" },
-};
-
-function ProcessNode({ data }: NodeProps) {
-  const colors = categoryColors[data.category as string] ?? {
-    bg: "#1f2937",
-    border: "#6b7280",
-    text: "#d1d5db",
+interface ProcessNodeData {
+  label?: string;
+  category?: string;
+  metadata?: {
+    icon?: string;
+    color?: string;
+    stats?: Array<{ icon: string; label: string; value: string }>;
   };
+  [key: string]: unknown;
+}
+
+function StatRow({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="flow-node-stat">
+      <span style={{ fontSize: 13 }}>{icon}</span>
+      <span style={{ color: "#64748b" }}>{label}</span>
+      <span
+        style={{
+          marginLeft: "auto",
+          fontWeight: 500,
+          color: "#1e293b",
+          fontFamily: "DM Mono, monospace",
+          fontSize: 11,
+        }}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function ProcessNode({ data, selected }: NodeProps) {
+  const d = data as ProcessNodeData;
+  const meta = d.metadata || {};
+  const color = meta.color || "#6b7280";
+  const icon = meta.icon || "📦";
+  const label = d.label || "Untitled";
+  const stats = meta.stats || [];
 
   return (
     <div
-      style={{
-        background: colors.bg,
-        border: `2px solid ${colors.border}`,
-        color: colors.text,
-        borderRadius: 12,
-        padding: "12px 20px",
-        fontSize: 13,
-        fontWeight: 600,
-        minWidth: 140,
-        textAlign: "center",
-        boxShadow: `0 0 12px ${colors.border}40`,
-      }}
+      className={`flow-node ${selected ? "selected" : ""}`}
+      style={{ borderTopColor: color, borderTopWidth: 3 }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: colors.border }} />
-      <div>{data.label as string}</div>
-      <div style={{ fontSize: 10, opacity: 0.7, marginTop: 4 }}>
-        {data.category as string}
+      <Handle
+        type="target"
+        position={Position.Left}
+        style={{ background: color, borderColor: "white" }}
+      />
+
+      <div className="flow-node-header">
+        <span style={{ fontSize: 16 }}>{icon}</span>
+        <span>{label}</span>
       </div>
-      <Handle type="source" position={Position.Right} style={{ background: colors.border }} />
+
+      {stats.length > 0 && (
+        <div className="flow-node-body">
+          {stats.map((s, i) => (
+            <StatRow key={i} icon={s.icon} label={s.label} value={s.value} />
+          ))}
+        </div>
+      )}
+
+      <Handle
+        type="source"
+        position={Position.Right}
+        style={{ background: color, borderColor: "white" }}
+      />
     </div>
   );
 }
