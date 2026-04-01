@@ -1,6 +1,8 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
+export const fetchCache = "force-no-store";
+
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
