@@ -9,47 +9,30 @@ export async function PUT(
     const { id } = params;
     const body = await req.json();
 
-    const fields: string[] = [];
-    const values: unknown[] = [];
-
-    for (const key of [
-      "name",
-      "category",
-      "description",
-      "position_x",
-      "position_y",
-    ] as const) {
-      if (body[key] !== undefined) {
-        fields.push(key);
-        values.push(body[key]);
-      }
-    }
-
-    if (body.metadata !== undefined) {
-      fields.push("metadata");
-      values.push(JSON.stringify(body.metadata));
-    }
-
-    if (fields.length === 0) {
-      return NextResponse.json(
-        { error: "No fields to update" },
-        { status: 400 }
-      );
-    }
-
-    const setClauses = fields
-      .map((f, i) => {
-        if (f === "metadata") return `${f} = $${i + 2}::jsonb`;
-        return `${f} = $${i + 2}`;
-      })
-      .join(", ");
-    const query = `UPDATE business_processes SET ${setClauses} WHERE id = $1 RETURNING id, name, category, description, position_x, position_y, metadata`;
-
-    const result = await sql.query(query, [id, ...values]);
-
-    if (result.rows.length === 0) {
+    const current = await sql`SELECT * FROM business_processes WHERE id = ${id}`;
+    if (current.rows.length === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
+
+    const row = current.rows[0];
+    const name = body.name ?? row.name;
+    const category = body.category ?? row.category;
+    const description = body.description ?? row.description;
+    const position_x = body.position_x ?? row.position_x;
+    const position_y = body.position_y ?? row.position_y;
+    const metadata = body.metadata ?? row.metadata ?? {};
+
+    const result = await sql`
+      UPDATE business_processes
+      SET name = ${name},
+          category = ${category},
+          description = ${description},
+          position_x = ${position_x},
+          position_y = ${position_y},
+          metadata = ${JSON.stringify(metadata)}::jsonb
+      WHERE id = ${id}
+      RETURNING *
+    `;
 
     return NextResponse.json(result.rows[0]);
   } catch (error) {
