@@ -1,6 +1,8 @@
 import { sql } from "@/lib/db";
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const [processes, connections] = await Promise.all([
@@ -8,10 +10,10 @@ export async function GET() {
       sql`SELECT id, source_id, target_id, label FROM process_connections`,
     ]);
 
-    return NextResponse.json({
-      processes: processes.rows,
-      connections: connections.rows,
-    });
+    return NextResponse.json(
+      { processes: processes.rows, connections: connections.rows },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   } catch (error) {
     console.error("Failed to fetch processes:", error);
     return NextResponse.json(
