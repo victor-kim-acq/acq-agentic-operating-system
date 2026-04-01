@@ -69,6 +69,20 @@ export default function Canvas() {
     load();
   }, [setNodes, setEdges]);
 
+  const onNodeDragStop = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      fetch(`/api/processes/nodes/${node.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          position_x: node.position.x,
+          position_y: node.position.y,
+        }),
+      }).catch((err) => console.error("Failed to save node position:", err));
+    },
+    []
+  );
+
   const nodeColor = useCallback(
     (node: Node) => categoryMinimapColors[node.data?.category as string] ?? "#6b7280",
     []
@@ -97,6 +111,7 @@ export default function Canvas() {
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
+        onNodeDragStop={onNodeDragStop}
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
