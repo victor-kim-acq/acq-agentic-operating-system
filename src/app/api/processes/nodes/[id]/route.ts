@@ -9,35 +9,49 @@ export async function PUT(
     const { id } = params;
     const body = await req.json();
 
-    const current = await sql`SELECT * FROM business_processes WHERE id = ${id}`;
-    if (current.rows.length === 0) {
+    const hasPosition = body.position_x !== undefined && body.position_y !== undefined;
+    const hasNameAndMeta = body.name !== undefined && body.metadata !== undefined;
+    const hasMeta = body.metadata !== undefined;
+    const hasName = body.name !== undefined;
+
+    let result;
+
+    if (hasPosition && hasMeta) {
+      result = await sql`
+        UPDATE business_processes
+        SET position_x = ${body.position_x},
+            position_y = ${body.position_y},
+            name = ${body.name},
+            metadata = CAST(${JSON.stringify(body.metadata)} AS jsonb)
+        WHERE id = ${id} RETURNING *`;
+    } else if (hasPosition) {
+      result = await sql`
+        UPDATE business_processes
+        SET position_x = ${body.position_x}, position_y = ${body.position_y}
+        WHERE id = ${id} RETURNING *`;
+    } else if (hasNameAndMeta) {
+      result = await sql`
+        UPDATE business_processes
+        SET name = ${body.name}, metadata = CAST(${JSON.stringify(body.metadata)} AS jsonb)
+        WHERE id = ${id} RETURNING *`;
+    } else if (hasMeta) {
+      result = await sql`
+        UPDATE business_processes
+        SET metadata = CAST(${JSON.stringify(body.metadata)} AS jsonb)
+        WHERE id = ${id} RETURNING *`;
+    } else if (hasName) {
+      result = await sql`
+        UPDATE business_processes SET name = ${body.name}
+        WHERE id = ${id} RETURNING *`;
+    } else {
+      return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+    }
+
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const row = current.rows[0];
-    const name = body.name ?? row.name;
-    const category = body.category ?? row.category;
-    const description = body.description ?? row.description;
-    const position_x = body.position_x ?? row.position_x;
-    const position_y = body.position_y ?? row.position_y;
-    const metadata = body.metadata ?? row.metadata ?? {};
-
-    const result = await sql`
-      UPDATE business_processes
-      SET name = ${name},
-          category = ${category},
-          description = ${description},
-          position_x = ${position_x},
-          position_y = ${position_y},
-          metadata = CAST(${JSON.stringify(metadata)} AS jsonb)
-      WHERE id = ${id}
-      RETURNING *
-    `;
-
-    const verify = await sql`SELECT metadata FROM business_processes WHERE id = ${id}`;
-    console.log('VERIFY after update:', JSON.stringify(verify.rows[0]?.metadata));
-
-    return NextResponse.json({ ...result.rows[0], _verify: verify.rows[0]?.metadata });
+    return NextResponse.json(result.rows[0]);
   } catch (error) {
     console.error("Failed to update process:", error);
     return NextResponse.json(
