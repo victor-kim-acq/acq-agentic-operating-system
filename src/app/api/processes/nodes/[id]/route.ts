@@ -29,12 +29,15 @@ export async function PUT(
           description = ${description},
           position_x = ${position_x},
           position_y = ${position_y},
-          metadata = ${JSON.stringify(metadata)}::jsonb
+          metadata = CAST(${JSON.stringify(metadata)} AS jsonb)
       WHERE id = ${id}
       RETURNING *
     `;
 
-    return NextResponse.json(result.rows[0]);
+    const verify = await sql`SELECT metadata FROM business_processes WHERE id = ${id}`;
+    console.log('VERIFY after update:', JSON.stringify(verify.rows[0]?.metadata));
+
+    return NextResponse.json({ ...result.rows[0], _verify: verify.rows[0]?.metadata });
   } catch (error) {
     console.error("Failed to update process:", error);
     return NextResponse.json(
