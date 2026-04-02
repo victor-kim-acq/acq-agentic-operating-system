@@ -47,6 +47,16 @@ export async function PUT(
     const { title, owner_id, quarter, year, status, problem_statement, hypothesis, sort_order } =
       await req.json();
 
+    if (title !== undefined) {
+      const current = await sql`SELECT title FROM mits WHERE id = ${id}`;
+      if (current.rows.length > 0 && current.rows[0].title === "Daily Operations" && title !== "Daily Operations") {
+        return NextResponse.json(
+          { error: "Cannot rename Daily Operations MIT" },
+          { status: 403 }
+        );
+      }
+    }
+
     const result = await sql`
       UPDATE mits
       SET title = COALESCE(${title ?? null}, title),
@@ -80,6 +90,14 @@ export async function DELETE(
 ) {
   try {
     const { id } = params;
+
+    const mit = await sql`SELECT title FROM mits WHERE id = ${id}`;
+    if (mit.rows.length > 0 && mit.rows[0].title === "Daily Operations") {
+      return NextResponse.json(
+        { error: "Cannot delete Daily Operations MIT" },
+        { status: 403 }
+      );
+    }
 
     // Cascade: delete node assignments, then CTs, then the MIT
     await sql`DELETE FROM mit_node_assignments WHERE mit_id = ${id}`;
