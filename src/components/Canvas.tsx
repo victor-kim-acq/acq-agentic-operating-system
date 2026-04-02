@@ -23,6 +23,7 @@ import ProcessNode from "./ProcessNode";
 import DeletableEdge from "./DeletableEdge";
 import EditNodeModal from "./EditNodeModal";
 import type { BusinessProcess, ProcessConnection } from "@/types/canvas";
+import { getLayoutedNodes } from "@/lib/autoLayout";
 
 const categoryMinimapColors: Record<string, string> = {
   Acquisition: "#10b981",
@@ -39,7 +40,7 @@ function CanvasInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, fitView } = useReactFlow();
 
   const clipboardRef = useRef<Array<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } }> | null>(null);
 
@@ -196,6 +197,26 @@ function CanvasInner() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      // Auto-layout: Option+Shift+T (Mac) / Alt+Shift+T (Windows)
+      if (e.altKey && e.shiftKey && (e.key === "t" || e.key === "T")) {
+        if (editingNode) return;
+        e.preventDefault();
+        const layouted = getLayoutedNodes(nodes, edges);
+        setNodes(layouted);
+        for (const node of layouted) {
+          fetch(`/api/processes/nodes/${node.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              position_x: node.position.x,
+              position_y: node.position.y,
+            }),
+          }).catch((err) => console.error("Failed to persist layout position:", err));
+        }
+        window.requestAnimationFrame(() => fitView({ duration: 300 }));
+        return;
+      }
+
       if (!(e.metaKey || e.ctrlKey)) return;
 
       if (e.key === "c") {
@@ -253,7 +274,7 @@ function CanvasInner() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [nodes, setNodes, editingNode]);
+  }, [nodes, edges, setNodes, editingNode, fitView]);
 
   const nodeColor = useCallback(
     (node: Node) => categoryMinimapColors[node.data?.category as string] ?? "#6b7280",
