@@ -23,6 +23,7 @@ import ProcessNode from "./ProcessNode";
 import DeletableEdge from "./DeletableEdge";
 import EditNodeModal from "./EditNodeModal";
 import type { BusinessProcess, ProcessConnection } from "@/types/canvas";
+import FunnelManager from "./FunnelManager";
 import { getLayoutedNodes } from "@/lib/autoLayout";
 
 const categoryMinimapColors: Record<string, string> = {
@@ -40,6 +41,7 @@ function CanvasInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const [funnelPanelOpen, setFunnelPanelOpen] = useState(false);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   const clipboardRef = useRef<Array<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } }> | null>(null);
@@ -364,6 +366,32 @@ function CanvasInner() {
       >
         Tidy Up
       </button>
+      <button
+        onClick={() => setFunnelPanelOpen((v) => !v)}
+        style={{
+          position: "fixed",
+          bottom: 24,
+          left: 244,
+          padding: "8px 16px",
+          background: funnelPanelOpen ? "#7c3aed" : "#2563eb",
+          color: "white",
+          border: "none",
+          borderRadius: 8,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          zIndex: 10,
+        }}
+      >
+        Funnels
+      </button>
+      <FunnelManager
+        nodes={nodes}
+        setNodes={setNodes}
+        open={funnelPanelOpen}
+        onClose={() => setFunnelPanelOpen(false)}
+      />
       <EditNodeModal
         node={editingNode}
         onClose={() => setEditingNode(null)}
