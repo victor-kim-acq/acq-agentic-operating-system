@@ -8,6 +8,8 @@ interface FunnelManagerProps {
   setNodes: React.Dispatch<React.SetStateAction<Node[]>>;
   open: boolean;
   onClose: () => void;
+  activeFunnel: string | null;
+  setActiveFunnel: (color: string | null) => void;
 }
 
 interface FunnelGroup {
@@ -21,7 +23,7 @@ function getMetadata(node: Node): Record<string, unknown> {
   return (node.data?.metadata as Record<string, unknown>) || {};
 }
 
-export default function FunnelManager({ nodes, setNodes, open, onClose }: FunnelManagerProps) {
+export default function FunnelManager({ nodes, setNodes, open, onClose, activeFunnel, setActiveFunnel }: FunnelManagerProps) {
   const [editingColor, setEditingColor] = useState<string | null>(null);
   const [colorInput, setColorInput] = useState("");
 
@@ -150,21 +152,44 @@ export default function FunnelManager({ nodes, setNodes, open, onClose }: Funnel
       </div>
 
       <div style={{ flex: 1, overflow: "auto", padding: "12px 20px" }}>
+        {activeFunnel && (
+          <button
+            onClick={() => setActiveFunnel(null)}
+            style={{
+              width: "100%",
+              marginBottom: 12,
+              padding: "6px 12px",
+              background: "#f1f5f9",
+              border: "1px solid #cbd5e1",
+              borderRadius: 6,
+              fontSize: 12,
+              color: "#64748b",
+              cursor: "pointer",
+            }}
+          >
+            Clear filter
+          </button>
+        )}
         {groups.length === 0 && (
           <p style={{ color: "#94a3b8", fontSize: 13 }}>No nodes on canvas.</p>
         )}
-        {groups.map((group) => (
+        {groups.map((group) => {
+          const isActive = activeFunnel === group.color;
+          return (
           <div
             key={group.color}
+            onClick={() => setActiveFunnel(isActive ? null : group.color)}
             style={{
               marginBottom: 16,
               padding: 12,
               borderRadius: 8,
-              border: "1px solid #e2e8f0",
-              background: "#f8fafc",
+              border: isActive ? `2px solid ${group.color}` : "1px solid #e2e8f0",
+              background: isActive ? "#f0f9ff" : "#f8fafc",
+              cursor: "pointer",
+              transition: "border-color 0.15s, background 0.15s",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
               {editingColor === group.color ? (
                 <input
                   type="text"
@@ -242,13 +267,16 @@ export default function FunnelManager({ nodes, setNodes, open, onClose }: Funnel
                 {group.count} node{group.count !== 1 ? "s" : ""}
               </span>
             </div>
-            <FunnelNameInput
-              color={group.color}
-              initialValue={group.funnel}
-              onSave={updateFunnelName}
-            />
+            <div onClick={(e) => e.stopPropagation()}>
+              <FunnelNameInput
+                color={group.color}
+                initialValue={group.funnel}
+                onSave={updateFunnelName}
+              />
+            </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

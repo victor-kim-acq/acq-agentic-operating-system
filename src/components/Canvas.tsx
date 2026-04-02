@@ -42,6 +42,7 @@ function CanvasInner() {
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [funnelPanelOpen, setFunnelPanelOpen] = useState(false);
+  const [activeFunnel, setActiveFunnel] = useState<string | null>(null);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   const clipboardRef = useRef<Array<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } }> | null>(null);
@@ -274,6 +275,51 @@ function CanvasInner() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [nodes, setNodes, editingNode]);
 
+  // Build a set of node IDs matching the active funnel color
+  const activeNodeIds = useMemo(() => {
+    if (!activeFunnel) return null;
+    const ids = new Set<string>();
+    for (const n of nodes) {
+      const meta = (n.data?.metadata as Record<string, unknown>) || {};
+      if ((meta.color as string || "#6b7280") === activeFunnel) ids.add(n.id);
+    }
+    return ids;
+  }, [nodes, activeFunnel]);
+
+  const displayNodes = useMemo(() => {
+    if (!activeNodeIds) return nodes;
+    return nodes.map((n) =>
+      activeNodeIds.has(n.id)
+        ? n
+        : { ...n, style: { ...n.style, opacity: 0.15, filter: "blur(1px)" }, selectable: false, draggable: false }
+    );
+  }, [nodes, activeNodeIds]);
+
+  const displayEdges = useMemo(() => {
+    if (!activeNodeIds) return edges;
+    return edges.map((e) => {
+      const bothMatch = activeNodeIds.has(e.source) && activeNodeIds.has(e.target);
+      if (bothMatch) {
+        return {
+          ...e,
+          animated: true,
+          style: { stroke: activeFunnel!, strokeWidth: 2.5 },
+        };
+      }
+      return { ...e, style: { ...e.style, opacity: 0.08 } };
+    });
+  }, [edges, activeNodeIds, activeFunnel]);
+
+  // Escape clears the funnel filter
+  useEffect(() => {
+    if (!activeFunnel) return;
+    function handleEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") setActiveFunnel(null);
+    }
+    document.addEventListener("keydown", handleEsc);
+    return () => document.removeEventListener("keydown", handleEsc);
+  }, [activeFunnel]);
+
   const nodeColor = useCallback(
     (node: Node) => categoryMinimapColors[node.data?.category as string] ?? "#6b7280",
     []
@@ -298,8 +344,8 @@ function CanvasInner() {
   return (
     <div style={{ width: "100vw", height: "100vh" }}>
       <ReactFlow
-        nodes={nodes}
-        edges={edges}
+        nodes={displayNodes}
+        edges={displayEdges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
@@ -391,6 +437,8 @@ function CanvasInner() {
         setNodes={setNodes}
         open={funnelPanelOpen}
         onClose={() => setFunnelPanelOpen(false)}
+        activeFunnel={activeFunnel}
+        setActiveFunnel={setActiveFunnel}
       />
       <EditNodeModal
         node={editingNode}
