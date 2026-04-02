@@ -19,6 +19,7 @@ import {
   type EdgeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import Link from "next/link";
 import ProcessNode from "./ProcessNode";
 import DeletableEdge from "./DeletableEdge";
 import EditNodeModal from "./EditNodeModal";
@@ -446,6 +447,26 @@ function CanvasInner() {
       >
         Funnels
       </button>
+      <Link
+        href="/mits"
+        style={{
+          position: "fixed",
+          top: 16,
+          right: 16,
+          padding: "6px 14px",
+          background: "#7c3aed",
+          color: "white",
+          border: "none",
+          borderRadius: 8,
+          fontSize: 13,
+          fontWeight: 600,
+          textDecoration: "none",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          zIndex: 10,
+        }}
+      >
+        MITs →
+      </Link>
       <FunnelManager
         nodes={nodes}
         setNodes={setNodes}
