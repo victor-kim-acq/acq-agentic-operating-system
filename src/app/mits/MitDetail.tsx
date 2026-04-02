@@ -32,12 +32,6 @@ const STATUS_CONFIG: Record<
   },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  on_track: "On Track",
-  at_risk: "At Risk",
-  off_track: "Off Track",
-};
-
 interface MitDetailProps {
   mitId: string;
   users: User[];
