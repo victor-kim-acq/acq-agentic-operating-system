@@ -15,9 +15,11 @@ import {
   type Connection,
   BackgroundVariant,
   type NodeTypes,
+  type EdgeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import ProcessNode from "./ProcessNode";
+import DeletableEdge from "./DeletableEdge";
 import EditNodeModal from "./EditNodeModal";
 import type { BusinessProcess, ProcessConnection } from "@/types/canvas";
 
@@ -39,6 +41,7 @@ function CanvasInner() {
   const { screenToFlowPosition } = useReactFlow();
 
   const nodeTypes: NodeTypes = useMemo(() => ({ process: ProcessNode }), []);
+  const edgeTypes: EdgeTypes = useMemo(() => ({ default: DeletableEdge }), []);
 
   useEffect(() => {
     async function load() {
@@ -222,6 +225,7 @@ function CanvasInner() {
         onEdgesDelete={onEdgesDelete}
         onNodesDelete={onNodesDelete}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
         panOnScroll
