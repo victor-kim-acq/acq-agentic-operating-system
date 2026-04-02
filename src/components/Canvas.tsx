@@ -275,7 +275,8 @@ function CanvasInner() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [nodes, setNodes, editingNode]);
 
-  // Build sets: direct matches + intersection nodes (connected to a direct match)
+  // Build sets: direct matches + pass-through intersection nodes
+  // Pass-through: has incoming edge from a funnel node AND outgoing edge to a funnel node
   const { visibleNodeIds, directNodeIds } = useMemo(() => {
     if (!activeFunnel) return { visibleNodeIds: null, directNodeIds: null };
     const direct = new Set<string>();
@@ -283,12 +284,17 @@ function CanvasInner() {
       const meta = (n.data?.metadata as Record<string, unknown>) || {};
       if ((meta.color as string || "#6b7280") === activeFunnel) direct.add(n.id);
     }
-    // Intersection nodes: connected to at least one direct-match node via an edge
-    const visible = new Set(direct);
+    // For non-direct nodes, check pass-through: incoming from direct AND outgoing to direct
+    const hasIncomingFromDirect = new Set<string>();
+    const hasOutgoingToDirect = new Set<string>();
     for (const e of edges) {
-      if (direct.has(e.source) && !visible.has(e.target)) visible.add(e.target);
-      if (direct.has(e.target) && !visible.has(e.source)) visible.add(e.source);
+      if (direct.has(e.source)) hasIncomingFromDirect.add(e.target);
+      if (direct.has(e.target)) hasOutgoingToDirect.add(e.source);
     }
+    const visible = new Set(direct);
+    hasIncomingFromDirect.forEach((id) => {
+      if (!direct.has(id) && hasOutgoingToDirect.has(id)) visible.add(id);
+    });
     return { visibleNodeIds: visible, directNodeIds: direct };
   }, [nodes, edges, activeFunnel]);
 
@@ -304,12 +310,10 @@ function CanvasInner() {
   const displayEdges = useMemo(() => {
     if (!visibleNodeIds || !directNodeIds) return edges;
     return edges.map((e) => {
-      // Highlight if at least one end is a direct match and the other is visible
-      const srcDirect = directNodeIds.has(e.source);
-      const tgtDirect = directNodeIds.has(e.target);
       const srcVisible = visibleNodeIds.has(e.source);
       const tgtVisible = visibleNodeIds.has(e.target);
-      if ((srcDirect || tgtDirect) && srcVisible && tgtVisible) {
+      // Highlight if both endpoints are visible (direct or pass-through)
+      if (srcVisible && tgtVisible) {
         return {
           ...e,
           animated: true,
