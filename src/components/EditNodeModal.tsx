@@ -130,16 +130,49 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
 
         {/* Color */}
         <div style={{ marginBottom: 16 }}>
-          <label style={labelStyle}>Color (hex)</label>
+          <label style={labelStyle}>Color</label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+            {[
+              "#16a34a", "#2563eb", "#7c3aed", "#ec4899",
+              "#ea580c", "#ca8a04", "#0891b2", "#dc2626",
+              "#4f46e5", "#059669", "#d97706", "#6366f1",
+              "#84cc16", "#f43f5e", "#06b6d4", "#8b5cf6",
+            ].map((c) => (
+              <button
+                key={c}
+                onClick={() => setColor(c)}
+                style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  background: c,
+                  border: color === c ? "2px solid #1e293b" : "2px solid transparent",
+                  boxShadow: color === c ? `0 0 0 2px ${c}40` : "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                }}
+              >
+                {color === c && (
+                  <span style={{ color: "white", fontSize: 14, fontWeight: 700, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
+                    ✓
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 28, height: 28, borderRadius: 6, background: color, border: "1px solid #e2e8f0", flexShrink: 0 }} />
             <input
               type="text"
               value={color}
               onChange={(e) => setColor(e.target.value)}
-              style={{ ...inputStyle, fontFamily: "DM Mono, monospace" }}
+              style={{ ...inputStyle, fontFamily: "DM Mono, monospace", fontSize: 12 }}
               onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
               onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+              placeholder="#hex"
             />
           </div>
         </div>
