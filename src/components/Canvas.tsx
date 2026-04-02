@@ -275,31 +275,41 @@ function CanvasInner() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [nodes, setNodes, editingNode]);
 
-  // Build a set of node IDs matching the active funnel color
-  const activeNodeIds = useMemo(() => {
-    if (!activeFunnel) return null;
-    const ids = new Set<string>();
+  // Build sets: direct matches + intersection nodes (connected to a direct match)
+  const { visibleNodeIds, directNodeIds } = useMemo(() => {
+    if (!activeFunnel) return { visibleNodeIds: null, directNodeIds: null };
+    const direct = new Set<string>();
     for (const n of nodes) {
       const meta = (n.data?.metadata as Record<string, unknown>) || {};
-      if ((meta.color as string || "#6b7280") === activeFunnel) ids.add(n.id);
+      if ((meta.color as string || "#6b7280") === activeFunnel) direct.add(n.id);
     }
-    return ids;
-  }, [nodes, activeFunnel]);
+    // Intersection nodes: connected to at least one direct-match node via an edge
+    const visible = new Set(direct);
+    for (const e of edges) {
+      if (direct.has(e.source) && !visible.has(e.target)) visible.add(e.target);
+      if (direct.has(e.target) && !visible.has(e.source)) visible.add(e.source);
+    }
+    return { visibleNodeIds: visible, directNodeIds: direct };
+  }, [nodes, edges, activeFunnel]);
 
   const displayNodes = useMemo(() => {
-    if (!activeNodeIds) return nodes;
+    if (!visibleNodeIds) return nodes;
     return nodes.map((n) =>
-      activeNodeIds.has(n.id)
+      visibleNodeIds.has(n.id)
         ? n
         : { ...n, style: { ...n.style, opacity: 0.15, filter: "blur(1px)" }, selectable: false, draggable: false }
     );
-  }, [nodes, activeNodeIds]);
+  }, [nodes, visibleNodeIds]);
 
   const displayEdges = useMemo(() => {
-    if (!activeNodeIds) return edges;
+    if (!visibleNodeIds || !directNodeIds) return edges;
     return edges.map((e) => {
-      const bothMatch = activeNodeIds.has(e.source) && activeNodeIds.has(e.target);
-      if (bothMatch) {
+      // Highlight if at least one end is a direct match and the other is visible
+      const srcDirect = directNodeIds.has(e.source);
+      const tgtDirect = directNodeIds.has(e.target);
+      const srcVisible = visibleNodeIds.has(e.source);
+      const tgtVisible = visibleNodeIds.has(e.target);
+      if ((srcDirect || tgtDirect) && srcVisible && tgtVisible) {
         return {
           ...e,
           animated: true,
@@ -308,7 +318,7 @@ function CanvasInner() {
       }
       return { ...e, style: { ...e.style, opacity: 0.08 } };
     });
-  }, [edges, activeNodeIds, activeFunnel]);
+  }, [edges, visibleNodeIds, directNodeIds, activeFunnel]);
 
   // Escape clears the funnel filter
   useEffect(() => {
