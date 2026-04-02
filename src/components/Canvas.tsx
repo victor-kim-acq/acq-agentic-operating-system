@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -39,6 +39,8 @@ function CanvasInner() {
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const { screenToFlowPosition } = useReactFlow();
+
+  const clipboardRef = useRef<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } } | null>(null);
 
   const nodeTypes: NodeTypes = useMemo(() => ({ process: ProcessNode }), []);
   const edgeTypes: EdgeTypes = useMemo(() => ({ default: DeletableEdge }), []);
@@ -190,6 +192,60 @@ function CanvasInner() {
       }),
     }).catch((err) => console.error("Failed to create node:", err));
   }, [setNodes, screenToFlowPosition]);
+
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!(e.metaKey || e.ctrlKey)) return;
+
+      if (e.key === "c") {
+        const selected = nodes.find((n) => n.selected);
+        if (!selected) return;
+        clipboardRef.current = {
+          label: selected.data.label as string,
+          category: selected.data.category as string,
+          metadata: (selected.data.metadata as Record<string, unknown>) || {},
+          position: { x: selected.position.x, y: selected.position.y },
+        };
+      }
+
+      if (e.key === "v") {
+        if (editingNode) return;
+        const clip = clipboardRef.current;
+        if (!clip) return;
+        e.preventDefault();
+
+        const id = crypto.randomUUID();
+        const position = { x: clip.position.x + 50, y: clip.position.y + 50 };
+        const metadata = { ...clip.metadata };
+        const newNode: Node = {
+          id,
+          type: "process",
+          position,
+          data: { label: clip.label, category: clip.category, metadata },
+        };
+
+        setNodes((nds) => [...nds, newNode]);
+        clipboardRef.current = { ...clip, position };
+
+        fetch("/api/processes/nodes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id,
+            name: clip.label,
+            category: clip.category,
+            description: null,
+            position_x: position.x,
+            position_y: position.y,
+            metadata,
+          }),
+        }).catch((err) => console.error("Failed to create pasted node:", err));
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [nodes, setNodes, editingNode]);
 
   const nodeColor = useCallback(
     (node: Node) => categoryMinimapColors[node.data?.category as string] ?? "#6b7280",
