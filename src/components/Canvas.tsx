@@ -14,6 +14,7 @@ import {
   type Edge,
   type Connection,
   BackgroundVariant,
+  SelectionMode,
   type NodeTypes,
   type EdgeTypes,
 } from "@xyflow/react";
@@ -40,7 +41,7 @@ function CanvasInner() {
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
-  const clipboardRef = useRef<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } } | null>(null);
+  const clipboardRef = useRef<Array<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } }> | null>(null);
 
   const nodeTypes: NodeTypes = useMemo(() => ({ process: ProcessNode }), []);
   const edgeTypes: EdgeTypes = useMemo(() => ({ default: DeletableEdge }), []);
@@ -198,48 +199,55 @@ function CanvasInner() {
       if (!(e.metaKey || e.ctrlKey)) return;
 
       if (e.key === "c") {
-        const selected = nodes.find((n) => n.selected);
-        if (!selected) return;
-        clipboardRef.current = {
-          label: selected.data.label as string,
-          category: selected.data.category as string,
-          metadata: (selected.data.metadata as Record<string, unknown>) || {},
-          position: { x: selected.position.x, y: selected.position.y },
-        };
+        const selected = nodes.filter((n) => n.selected);
+        if (selected.length === 0) return;
+        clipboardRef.current = selected.map((n) => ({
+          label: n.data.label as string,
+          category: n.data.category as string,
+          metadata: (n.data.metadata as Record<string, unknown>) || {},
+          position: { x: n.position.x, y: n.position.y },
+        }));
       }
 
       if (e.key === "v") {
         if (editingNode) return;
         const clip = clipboardRef.current;
-        if (!clip) return;
+        if (!clip || clip.length === 0) return;
         e.preventDefault();
 
-        const id = crypto.randomUUID();
-        const position = { x: clip.position.x + 50, y: clip.position.y + 50 };
-        const metadata = { ...clip.metadata };
-        const newNode: Node = {
-          id,
-          type: "process",
-          position,
-          data: { label: clip.label, category: clip.category, metadata },
-        };
-
-        setNodes((nds) => [...nds, newNode]);
-        clipboardRef.current = { ...clip, position };
-
-        fetch("/api/processes/nodes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const newNodes: Node[] = clip.map((item) => {
+          const id = crypto.randomUUID();
+          return {
             id,
-            name: clip.label,
-            category: clip.category,
-            description: null,
-            position_x: position.x,
-            position_y: position.y,
-            metadata,
-          }),
-        }).catch((err) => console.error("Failed to create pasted node:", err));
+            type: "process" as const,
+            position: { x: item.position.x + 50, y: item.position.y + 50 },
+            data: { label: item.label, category: item.category, metadata: { ...item.metadata } },
+          };
+        });
+
+        setNodes((nds) => [...nds, ...newNodes]);
+
+        // Shift clipboard positions for cascading pastes
+        clipboardRef.current = clip.map((item) => ({
+          ...item,
+          position: { x: item.position.x + 50, y: item.position.y + 50 },
+        }));
+
+        for (const node of newNodes) {
+          fetch("/api/processes/nodes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: node.id,
+              name: node.data.label,
+              category: node.data.category,
+              description: null,
+              position_x: node.position.x,
+              position_y: node.position.y,
+              metadata: node.data.metadata,
+            }),
+          }).catch((err) => console.error("Failed to create pasted node:", err));
+        }
       }
     }
 
@@ -286,6 +294,9 @@ function CanvasInner() {
         proOptions={{ hideAttribution: true }}
         panOnScroll
         zoomOnScroll={false}
+        selectionOnDrag
+        selectionMode={SelectionMode.Partial}
+        panOnDrag={[1, 2]}
         deleteKeyCode={["Delete", "Backspace"]}
       >
         <Background variant={BackgroundVariant.Dots} color="#cbd5e1" gap={20} />
