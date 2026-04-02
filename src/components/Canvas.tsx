@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Node,
   type Edge,
+  type Connection,
   BackgroundVariant,
   type NodeTypes,
 } from "@xyflow/react";
@@ -25,12 +28,15 @@ const categoryMinimapColors: Record<string, string> = {
   "Features/Logistics": "#ec4899",
 };
 
-export default function Canvas() {
+const edgeStyle = { stroke: "#94a3b8", strokeWidth: 2, strokeDasharray: "5 5" };
+
+function CanvasInner() {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const { screenToFlowPosition } = useReactFlow();
 
   const nodeTypes: NodeTypes = useMemo(() => ({ process: ProcessNode }), []);
 
@@ -54,7 +60,7 @@ export default function Canvas() {
           target: c.target_id,
           label: c.label ?? undefined,
           animated: false,
-          style: { stroke: "#94a3b8", strokeWidth: 2 },
+          style: edgeStyle,
           labelStyle: { fill: "#64748b", fontSize: 11 },
           labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.9 },
         }));
@@ -111,6 +117,77 @@ export default function Canvas() {
     [setNodes]
   );
 
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      const id = crypto.randomUUID();
+      const newEdge: Edge = {
+        id,
+        source: connection.source,
+        target: connection.target,
+        animated: false,
+        style: edgeStyle,
+        labelStyle: { fill: "#64748b", fontSize: 11 },
+        labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.9 },
+      };
+      setEdges((eds) => [...eds, newEdge]);
+      fetch("/api/processes/edges", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          source_id: connection.source,
+          target_id: connection.target,
+          label: null,
+        }),
+      }).catch((err) => console.error("Failed to create edge:", err));
+    },
+    [setEdges]
+  );
+
+  const onEdgesDelete = useCallback((deleted: Edge[]) => {
+    for (const edge of deleted) {
+      fetch(`/api/processes/edges/${edge.id}`, { method: "DELETE" }).catch(
+        (err) => console.error("Failed to delete edge:", err)
+      );
+    }
+  }, []);
+
+  const onNodesDelete = useCallback((deleted: Node[]) => {
+    for (const node of deleted) {
+      fetch(`/api/processes/nodes/${node.id}`, { method: "DELETE" }).catch(
+        (err) => console.error("Failed to delete node:", err)
+      );
+    }
+  }, []);
+
+  const addNode = useCallback(() => {
+    const id = crypto.randomUUID();
+    const position = screenToFlowPosition({
+      x: window.innerWidth / 2,
+      y: window.innerHeight / 2,
+    });
+    const metadata = { icon: "📡", color: "#16a34a", stats: [] };
+    const newNode: Node = {
+      id,
+      type: "process",
+      position,
+      data: { label: "New Process", category: "Acquisition", metadata },
+    };
+    setNodes((nds) => [...nds, newNode]);
+    fetch("/api/processes/nodes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        name: "New Process",
+        category: "Acquisition",
+        description: null,
+        position_x: position.x,
+        position_y: position.y,
+      }),
+    }).catch((err) => console.error("Failed to create node:", err));
+  }, [setNodes, screenToFlowPosition]);
+
   const nodeColor = useCallback(
     (node: Node) => categoryMinimapColors[node.data?.category as string] ?? "#6b7280",
     []
@@ -141,10 +218,12 @@ export default function Canvas() {
         onEdgesChange={onEdgesChange}
         onNodeDragStop={onNodeDragStop}
         onNodeDoubleClick={onNodeDoubleClick}
+        onConnect={onConnect}
+        onEdgesDelete={onEdgesDelete}
+        onNodesDelete={onNodesDelete}
         nodeTypes={nodeTypes}
         fitView
         proOptions={{ hideAttribution: true }}
-        nodesConnectable={false}
         panOnScroll
         zoomOnScroll={false}
         deleteKeyCode={["Delete", "Backspace"]}
@@ -157,11 +236,39 @@ export default function Canvas() {
           maskColor="rgba(0,0,0,0.1)"
         />
       </ReactFlow>
+      <button
+        onClick={addNode}
+        style={{
+          position: "fixed",
+          bottom: 24,
+          left: 24,
+          padding: "8px 16px",
+          background: "#2563eb",
+          color: "white",
+          border: "none",
+          borderRadius: 8,
+          fontSize: 13,
+          fontWeight: 600,
+          cursor: "pointer",
+          boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+          zIndex: 10,
+        }}
+      >
+        + Add Node
+      </button>
       <EditNodeModal
         node={editingNode}
         onClose={() => setEditingNode(null)}
         onSave={handleEditSave}
       />
     </div>
+  );
+}
+
+export default function Canvas() {
+  return (
+    <ReactFlowProvider>
+      <CanvasInner />
+    </ReactFlowProvider>
   );
 }
