@@ -276,7 +276,7 @@ function CanvasInner() {
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [nodes, setNodes, editingNode]);
 
-  // Build sets: direct matches + one-hop neighbors
+  // Build sets: direct matches + non-redundant neighbors
   const { visibleNodeIds, directNodeIds } = useMemo(() => {
     if (!activeFunnel) return { visibleNodeIds: null, directNodeIds: null };
     const direct = new Set<string>();
@@ -284,11 +284,29 @@ function CanvasInner() {
       const meta = (n.data?.metadata as Record<string, unknown>) || {};
       if ((meta.color as string || "#6b7280") === activeFunnel) direct.add(n.id);
     }
-    // One-hop neighbors: any node connected to a direct-match node via an edge
+    // Pre-compute: for each funnel node F, does F have a funnel-colored incoming/outgoing neighbor?
+    const fHasFunnelIncoming = new Set<string>(); // F has incoming edge from another funnel node
+    const fHasFunnelOutgoing = new Set<string>(); // F has outgoing edge to another funnel node
+    for (const e of edges) {
+      if (direct.has(e.source) && direct.has(e.target)) {
+        fHasFunnelIncoming.add(e.target);
+        fHasFunnelOutgoing.add(e.source);
+      }
+    }
+    // A non-funnel node N is visible if it has at least one non-redundant edge to a funnel node
     const visible = new Set(direct);
     for (const e of edges) {
-      if (direct.has(e.source)) visible.add(e.target);
-      if (direct.has(e.target)) visible.add(e.source);
+      const srcDirect = direct.has(e.source);
+      const tgtDirect = direct.has(e.target);
+      if (srcDirect && tgtDirect) continue; // both funnel — skip
+      if (!srcDirect && !tgtDirect) continue; // neither funnel — skip
+      if (srcDirect && !tgtDirect) {
+        // F(source) → N(target): redundant if F already has a funnel-colored outgoing edge
+        if (!fHasFunnelOutgoing.has(e.source)) visible.add(e.target);
+      } else {
+        // N(source) → F(target): redundant if F already has a funnel-colored incoming edge
+        if (!fHasFunnelIncoming.has(e.target)) visible.add(e.source);
+      }
     }
     return { visibleNodeIds: visible, directNodeIds: direct };
   }, [nodes, edges, activeFunnel]);
