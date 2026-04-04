@@ -84,20 +84,18 @@ export default function MemberTimeline({
     ...membershipRecords.map((r) => {
       const tier = r.properties.vtg_membership_tier || null;
       const billingSource = r.properties.vtg_billing_source || null;
-      const mrr = r.properties.vtg_mrr
-        ? `$${parseFloat(r.properties.vtg_mrr).toLocaleString()}/mo`
+      const amount = r.properties.vtg_mrr
+        ? `$${parseFloat(r.properties.vtg_mrr).toLocaleString()}`
         : null;
-      const detailParts = [tier, billingSource, mrr].filter(
+      const detailParts = [tier, billingSource, amount].filter(
         (v): v is string => v != null && v !== ""
       );
+      const status = r.properties.vtg_status || "Membership";
       return {
         date: r.properties.vtg_billing_date || r.properties.hs_createdate || "",
         type: "membership" as const,
-        label: r.properties.membership_name || "Membership",
-        sub:
-          [r.properties.vtg_status]
-            .filter(Boolean)
-            .join("") || "",
+        label: status.charAt(0).toUpperCase() + status.slice(1),
+        sub: "",
         detail: detailParts.join(" \u00b7 "),
         id: r.id,
       };

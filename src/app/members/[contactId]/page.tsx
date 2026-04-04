@@ -316,16 +316,24 @@ export default function MemberDetailPage() {
                         href={`https://app.hubspot.com/contacts/21368823/record/2-57143627/${r.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors capitalize"
                       >
-                        {r.properties.membership_name || "—"}
+                        {(r.properties.vtg_status || "—").replace(/_/g, " ")}
                       </a>
-                      <p className="text-xs text-slate-500 capitalize mt-0.5">
-                        {(r.properties.vtg_status || "").replace(
-                          /_/g,
-                          " "
-                        )}
-                      </p>
+                      {(() => {
+                        const parts = [
+                          r.properties.vtg_membership_tier,
+                          r.properties.vtg_billing_source,
+                          r.properties.vtg_mrr
+                            ? `$${parseFloat(r.properties.vtg_mrr).toLocaleString()}`
+                            : null,
+                        ].filter((v): v is string => v != null && v !== "");
+                        return parts.length > 0 ? (
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {parts.join(" \u00b7 ")}
+                          </p>
+                        ) : null;
+                      })()}
                       {r.properties.vtg_billing_date && (
                         <p className="text-xs text-slate-400 mt-0.5">
                           {formatDate(r.properties.vtg_billing_date)}
