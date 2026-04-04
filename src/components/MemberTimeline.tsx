@@ -23,6 +23,14 @@ interface MemberTimelineProps {
   deals: Deal[];
 }
 
+function formatDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function MemberTimeline({
   membershipRecords,
   deals,
@@ -32,9 +40,10 @@ export default function MemberTimeline({
       date: r.properties.start_date || r.properties.hs_createdate || "",
       type: "membership" as const,
       label: r.properties.membership_name || "Membership",
-      sub: [r.properties.membership_status, r.properties.billing_source]
-        .filter(Boolean)
-        .join(" · ") || "",
+      sub:
+        [r.properties.membership_status, r.properties.billing_source]
+          .filter(Boolean)
+          .join(" \u00b7 ") || "",
       id: r.id,
     })),
     ...deals.map((d) => ({
@@ -56,47 +65,48 @@ export default function MemberTimeline({
 
   return (
     <div className="relative">
-      <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-200" />
+      <div className="absolute left-3 top-0 bottom-0 w-px bg-slate-150" style={{ backgroundColor: "#e8ecf1" }} />
       <div className="space-y-4">
-        {events.map((event) => (
-          <div key={`${event.type}-${event.id}`} className="flex gap-4 relative">
+        {events.map((event) => {
+          const href =
+            event.type === "membership"
+              ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
+              : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
+          return (
             <div
-              className={`mt-1 w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs z-10 ${
-                event.type === "membership"
-                  ? "bg-blue-100 text-blue-600"
-                  : "bg-emerald-100 text-emerald-600"
-              }`}
+              key={`${event.type}-${event.id}`}
+              className="flex gap-4 relative"
             >
-              {event.type === "membership" ? "M" : "D"}
-            </div>
-            <div className="flex-1 pb-1">
-              <a
-                href={
+              <div
+                className={`mt-0.5 w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 ${
                   event.type === "membership"
-                    ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
-                    : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`
-                }
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm font-medium text-blue-500 hover:underline"
+                    ? "bg-blue-50 text-blue-600 ring-1 ring-blue-200"
+                    : "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200"
+                }`}
               >
-                {event.label}
-              </a>
-              {event.sub && (
-                <p className="text-xs text-slate-500 capitalize">
-                  {event.sub.replace(/_/g, " ")}
+                {event.type === "membership" ? "M" : "D"}
+              </div>
+              <div className="flex-1 pb-1">
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                >
+                  {event.label}
+                </a>
+                {event.sub && (
+                  <p className="text-xs text-slate-500 capitalize mt-0.5">
+                    {event.sub.replace(/_/g, " ")}
+                  </p>
+                )}
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {formatDate(event.date)}
                 </p>
-              )}
-              <p className="text-xs text-slate-400 mt-0.5">
-                {new Date(event.date).toLocaleDateString("en-US", {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
