@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { SessionData, sessionOptions } from "@/lib/session";
+import { sql } from "@/lib/db";
 
 export const fetchCache = 'force-no-store';
 
@@ -32,6 +33,7 @@ export async function GET(
     "vtg_billing_source",
     "vtg_recharge_subscription_id",
     "vtg_stripe_subscription_id",
+    "hs_additional_emails",
   ].join(",");
 
   const [contactRes, membershipAssocRes, dealAssocRes] = await Promise.all([
@@ -135,6 +137,44 @@ export async function GET(
     })
   );
 
+  // --- Skool community data ---
+  const primaryEmail = (props.email ?? "").toLowerCase().trim();
+  const additionalEmails = (props.hs_additional_emails ?? "")
+    .split(";")
+    .map((e: string) => e.toLowerCase().trim())
+    .filter(Boolean);
+  const allEmails = [...new Set([primaryEmail, ...additionalEmails])].filter(Boolean);
+
+  let skoolProfile = null;
+  let skoolPosts: Array<Record<string, unknown>> = [];
+
+  if (allEmails.length > 0) {
+    try {
+      const emailArrayLiteral = `{${allEmails.join(",")}}`;
+      const memberResult = await sql`
+        SELECT user_id, email, full_name, tier, bio, points, level, ltv, join_date, onboarding_answers
+        FROM skool_members
+        WHERE LOWER(email) = ANY(${emailArrayLiteral}::text[])
+        LIMIT 1
+      `;
+
+      if (memberResult.rows.length > 0) {
+        skoolProfile = memberResult.rows[0];
+
+        const postsResult = await sql`
+          SELECT post_id, title, content, category, upvotes, comments_count, created_at
+          FROM skool_posts
+          WHERE author_id = ${skoolProfile.user_id}
+          ORDER BY created_at DESC
+        `;
+        skoolPosts = postsResult.rows;
+      }
+    } catch (e) {
+      console.error("Skool query failed:", e);
+      // Non-fatal — return HubSpot data without Skool
+    }
+  }
+
   return NextResponse.json({
     contactId,
     firstname: props.firstname ?? "",
@@ -147,5 +187,7 @@ export async function GET(
     vtg_stripe_subscription_id: props.vtg_stripe_subscription_id ?? null,
     membershipRecords,
     deals,
+    skoolProfile,
+    skoolPosts,
   });
 }

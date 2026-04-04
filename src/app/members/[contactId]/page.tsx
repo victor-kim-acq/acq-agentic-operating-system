@@ -17,6 +17,29 @@ interface Deal {
   properties: Record<string, string | null>;
 }
 
+interface SkoolProfile {
+  user_id: string;
+  email: string;
+  full_name: string;
+  tier: string | null;
+  bio: string | null;
+  points: number;
+  level: number;
+  ltv: number;
+  join_date: string | null;
+  onboarding_answers: Record<string, unknown> | null;
+}
+
+interface SkoolPost {
+  post_id: string;
+  title: string;
+  content: string;
+  category: string;
+  upvotes: number;
+  comments_count: number;
+  created_at: string;
+}
+
 interface MemberProfile {
   contactId: string;
   firstname: string;
@@ -29,6 +52,8 @@ interface MemberProfile {
   vtg_stripe_subscription_id: string | null;
   membershipRecords: MembershipRecord[];
   deals: Deal[];
+  skoolProfile: SkoolProfile | null;
+  skoolPosts: SkoolPost[];
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -138,6 +163,146 @@ function BillingButton({ member }: { member: MemberProfile }) {
       View Current Subscription in {displayName}
       <ExternalLinkIcon />
     </span>
+  );
+}
+
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/[#*_~`>\[\]()!|-]/g, "")
+    .replace(/\n{2,}/g, " ")
+    .replace(/\n/g, " ")
+    .trim();
+}
+
+function SkoolProfileCard({ profile }: { profile: SkoolProfile }) {
+  const [bioExpanded, setBioExpanded] = useState(false);
+  const ltvDollars = (profile.ltv / 100).toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+  });
+
+  const answers = profile.onboarding_answers as Record<string, string> | null;
+  const hasAnswers = answers && Object.keys(answers).length > 0;
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200/80 p-5 mt-6">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
+        Community Profile
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+        {profile.tier && (
+          <div>
+            <p className="text-[11px] text-slate-400 uppercase tracking-wide">Tier</p>
+            <p className="font-medium text-slate-800 capitalize">{profile.tier}</p>
+          </div>
+        )}
+        <div>
+          <p className="text-[11px] text-slate-400 uppercase tracking-wide">Level</p>
+          <p className="font-medium text-slate-800">{profile.level}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-slate-400 uppercase tracking-wide">Points</p>
+          <p className="font-medium text-slate-800">{profile.points.toLocaleString()}</p>
+        </div>
+        <div>
+          <p className="text-[11px] text-slate-400 uppercase tracking-wide">LTV</p>
+          <p className="font-medium text-emerald-700">{ltvDollars}</p>
+        </div>
+        {profile.join_date && (
+          <div>
+            <p className="text-[11px] text-slate-400 uppercase tracking-wide">Joined</p>
+            <p className="font-medium text-slate-800">{formatDate(profile.join_date)}</p>
+          </div>
+        )}
+      </div>
+
+      {hasAnswers && (
+        <div className="mt-4 pt-3 border-t border-slate-100">
+          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm">
+            {answers.revenue_bracket && (
+              <p className="text-slate-600">
+                <span className="text-slate-400">Revenue:</span>{" "}
+                {String(answers.revenue_bracket)}
+              </p>
+            )}
+            {answers.website && (
+              <p className="text-slate-600">
+                <span className="text-slate-400">Website:</span>{" "}
+                {String(answers.website)}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {profile.bio && (
+        <div className="mt-3 pt-3 border-t border-slate-100">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            {bioExpanded || profile.bio.length <= 200
+              ? profile.bio
+              : `${profile.bio.slice(0, 200)}...`}
+          </p>
+          {profile.bio.length > 200 && (
+            <button
+              onClick={() => setBioExpanded(!bioExpanded)}
+              className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+            >
+              {bioExpanded ? "Show less" : "Show more"}
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SkoolPostsSection({ posts }: { posts: SkoolPost[] }) {
+  const [showAll, setShowAll] = useState(false);
+  const visible = showAll ? posts : posts.slice(0, 5);
+
+  return (
+    <div className="bg-white rounded-xl border border-slate-200/80 p-5 mt-6">
+      <div className="flex items-center gap-2 mb-3">
+        <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          Community Posts
+        </h2>
+        <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+          {posts.length}
+        </span>
+      </div>
+      <div className="space-y-3">
+        {visible.map((post) => (
+          <div
+            key={post.post_id}
+            className="border-l-2 border-indigo-200 pl-3 pb-3 border-b border-b-slate-100 last:border-b-0 last:pb-0"
+          >
+            <p className="text-sm font-medium text-slate-800">
+              {post.title || "Untitled"}
+            </p>
+            {post.content && (
+              <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                {stripMarkdown(post.content).slice(0, 150)}
+                {post.content.length > 150 ? "..." : ""}
+              </p>
+            )}
+            <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+              {post.upvotes > 0 && <span>{post.upvotes} upvote{post.upvotes !== 1 ? "s" : ""}</span>}
+              {post.comments_count > 0 && <span>{post.comments_count} comment{post.comments_count !== 1 ? "s" : ""}</span>}
+              {post.created_at && <span>{formatDate(post.created_at)}</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+      {posts.length > 5 && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="text-xs text-blue-600 hover:text-blue-800 mt-3"
+        >
+          {showAll ? "Show less" : `Show all ${posts.length} posts`}
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -409,6 +574,16 @@ export default function MemberDetailPage() {
             )}
           </div>
         </div>
+
+        {/* Skool Community Profile */}
+        {member.skoolProfile && (
+          <SkoolProfileCard profile={member.skoolProfile} />
+        )}
+
+        {/* Skool Community Posts */}
+        {member.skoolPosts && member.skoolPosts.length > 0 && (
+          <SkoolPostsSection posts={member.skoolPosts} />
+        )}
 
         {/* Timeline */}
         <div className="bg-white rounded-xl border border-slate-200/80 p-5 mt-6">
