@@ -119,6 +119,69 @@ A head of growth's MIT can span acquisition nodes across multiple funnels.
 Node assignment works from both directions: from the canvas (click node → assign
 to MIT) and from the MIT detail page (select nodes from a list).
 
+### Skool Community Data Tables
+
+These tables are populated by n8n workflows using the Postgres node with upsert
+(`INSERT ... ON CONFLICT DO UPDATE`). No API routes needed for the write path.
+
+**Join chain:** `skool_posts`/`skool_comments`.`author_id` → `skool_members`.`user_id`
+→ `skool_members`.`email` → HubSpot contact.
+
+**`skool_members`** — bridge table between Skool and HubSpot
+| Column | Type | Notes |
+|--------|------|-------|
+| user_id | TEXT PK | Skool User ID (e.g. `2f680ba6...`) |
+| email | TEXT NOT NULL | Primary join key to HubSpot |
+| full_name | TEXT | |
+| tier | TEXT | Standard / VIP / Premium |
+| bio | TEXT | |
+| points | INTEGER DEFAULT 0 | Skool engagement points |
+| level | INTEGER DEFAULT 0 | Skool level |
+| ltv | DOUBLE PRECISION DEFAULT 0 | Lifetime value from Skool |
+| join_date | TIMESTAMPTZ | When they joined the Skool community |
+| onboarding_answers | JSONB DEFAULT '{}' | Structured onboarding questionnaire responses |
+| created_at | TIMESTAMPTZ | Row insert time |
+| updated_at | TIMESTAMPTZ | Last upsert time |
+
+Index on `email` (for HubSpot joins).
+
+**`skool_posts`**
+| Column | Type | Notes |
+|--------|------|-------|
+| post_id | TEXT PK | Skool post ID |
+| title | TEXT | |
+| content | TEXT | Full post body |
+| category | TEXT | Skool category (Wins, Intros, Q&A, etc.) |
+| upvotes | INTEGER DEFAULT 0 | Mutable — upsert updates this |
+| comments_count | INTEGER DEFAULT 0 | Mutable |
+| author_id | TEXT FK → skool_members | |
+| created_at | TIMESTAMPTZ | Post creation time from Skool |
+| semantic_topic | TEXT | Classification output — NULL until classified |
+| semantic_role | TEXT | Classification output — NULL until classified |
+| classified_at | TIMESTAMPTZ | When classification ran — NULL until classified |
+
+Indexes on `author_id`, `semantic_topic`. Partial index on `semantic_topic IS NULL`
+(for the classification batch job to find unclassified rows efficiently).
+
+**`skool_comments`**
+| Column | Type | Notes |
+|--------|------|-------|
+| comment_id | TEXT PK | Skool comment ID |
+| post_id | TEXT FK → skool_posts | Parent post |
+| parent_comment_id | TEXT FK → skool_comments | Self-ref for thread replies, nullable |
+| content | TEXT | |
+| upvotes | INTEGER DEFAULT 0 | Mutable |
+| author_id | TEXT FK → skool_members | |
+| created_at | TIMESTAMPTZ | |
+| semantic_topic | TEXT | NULL until classified |
+| semantic_role | TEXT | NULL until classified |
+| classified_at | TIMESTAMPTZ | NULL until classified |
+
+Indexes on `post_id`, `author_id`. Partial index on `semantic_topic IS NULL`.
+
+`semantic_topic` and `semantic_role` columns are populated by a separate
+classification batch pipeline (not by the n8n ingest workflows).
+
 ## API Routes
 
 All routes use `sql` tagged templates from `@vercel/postgres` via `src/lib/db.ts`.
@@ -201,6 +264,7 @@ Dagre positions from center — the function adjusts to React Flow's top-left or
 - `scripts/migrate.mjs` — Creates tables + metadata column. Run: `node scripts/migrate.mjs`
 - `scripts/seed.mjs` — Legacy seed data (replaced by real process data).
 - `scripts/backfill-metadata.mjs` — One-time metadata backfill.
+- `scripts/migrate-skool.mjs` — Creates Skool community tables. Run: `node scripts/migrate-skool.mjs`
 
 ## Key Quirk: Next.js 14 Fetch Caching
 Next.js 14 patches global `fetch` and caches by default. `@vercel/postgres`
@@ -254,8 +318,11 @@ CRUD for MITs and CTs. Assign owners. Independent from canvas.
 5. **MIT/CT data model + API** ← Next
 6. MIT management page
 7. Node assignment + canvas MIT overlay
-8. UI polish pass (toolbar redesign, background, filter UX)
-9. Executive summary / grouped view
+8. ~~Skool community data schema~~ ✅
+9. Skool semantic classification batch pipeline
+10. Natural language query interface over Skool + HubSpot data
+11. UI polish pass (toolbar redesign, background, filter UX)
+12. Executive summary / grouped view
 
 ## What's Out of Scope (For Now)
 - Authentication
