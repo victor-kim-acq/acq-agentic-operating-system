@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import MemberTimeline from "@/components/MemberTimeline";
+import MemberSearch from "@/components/MemberSearch";
 
 interface MembershipRecord {
   id: string;
@@ -251,6 +252,8 @@ export default function MemberDetailPage() {
   return (
     <div className="min-h-[calc(100vh-44px)] bg-slate-50">
       <div className="max-w-3xl mx-auto px-6 py-8">
+        <MemberSearch mode="compact" />
+
         {/* Back */}
         <Link
           href="/members"
