@@ -82,8 +82,8 @@ export default function MemberTimeline({
 }: MemberTimelineProps) {
   const events: TimelineEvent[] = [
     ...membershipRecords.map((r) => {
-      const tier = r.properties.membership_tier || null;
-      const billingSource = r.properties.billing_source || null;
+      const tier = r.properties.vtg_membership_tier || null;
+      const billingSource = r.properties.vtg_billing_source || null;
       const mrr = r.properties.vtg_mrr
         ? `$${parseFloat(r.properties.vtg_mrr).toLocaleString()}/mo`
         : null;
@@ -91,11 +91,11 @@ export default function MemberTimeline({
         (v): v is string => v != null && v !== ""
       );
       return {
-        date: r.properties.start_date || r.properties.hs_createdate || "",
+        date: r.properties.vtg_billing_date || r.properties.hs_createdate || "",
         type: "membership" as const,
         label: r.properties.membership_name || "Membership",
         sub:
-          [r.properties.membership_status]
+          [r.properties.vtg_status]
             .filter(Boolean)
             .join("") || "",
         detail: detailParts.join(" \u00b7 "),

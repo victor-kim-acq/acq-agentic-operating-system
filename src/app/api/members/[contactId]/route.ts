@@ -69,15 +69,13 @@ export async function GET(
 
   const membershipProps = [
     "hs_createdate",
-    "membership_tier",
-    "membership_status",
-    "start_date",
-    "end_date",
-    "billing_source",
+    "vtg_membership_tier",
+    "vtg_status",
+    "vtg_billing_date",
+    "vtg_billing_source",
     "membership_name",
     "vtg_mrr",
-    "recharge_subscription_id",
-    "stripe_subscription_id",
+    "vtg_subscription_id",
   ];
 
   const dealProps = ["dealname", "dealstage", "amount", "closedate", "createdate"];

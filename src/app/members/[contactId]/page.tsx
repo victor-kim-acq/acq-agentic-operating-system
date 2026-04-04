@@ -306,8 +306,7 @@ export default function MemberDetailPage() {
             ) : (
               <div className="space-y-3">
                 {member.membershipRecords.map((r) => {
-                  const rechargeSub = r.properties.recharge_subscription_id;
-                  const stripeSub = r.properties.stripe_subscription_id;
+                  const subId = r.properties.vtg_subscription_id;
                   return (
                     <div
                       key={r.id}
@@ -322,41 +321,33 @@ export default function MemberDetailPage() {
                         {r.properties.membership_name || "—"}
                       </a>
                       <p className="text-xs text-slate-500 capitalize mt-0.5">
-                        {(r.properties.membership_status || "").replace(
+                        {(r.properties.vtg_status || "").replace(
                           /_/g,
                           " "
                         )}
                       </p>
-                      {r.properties.start_date && (
+                      {r.properties.vtg_billing_date && (
                         <p className="text-xs text-slate-400 mt-0.5">
-                          {formatDate(r.properties.start_date)}
-                          {r.properties.end_date
-                            ? ` \u2192 ${formatDate(r.properties.end_date)}`
-                            : ""}
+                          {formatDate(r.properties.vtg_billing_date)}
                         </p>
                       )}
-                      {(rechargeSub || stripeSub) && (
+                      {subId && (
                         <div className="flex gap-3 mt-1.5">
-                          {rechargeSub && (
-                            <a
-                              href={`https://app.rechargeapps.com/merchant/subscriptions/${rechargeSub}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
-                            >
-                              Recharge ↗
-                            </a>
-                          )}
-                          {stripeSub && (
-                            <a
-                              href={`https://dashboard.stripe.com/subscriptions/${stripeSub}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
-                            >
-                              Stripe ↗
-                            </a>
-                          )}
+                          <a
+                            href={
+                              r.properties.vtg_billing_source?.toLowerCase() === "recharge"
+                                ? `https://app.rechargeapps.com/merchant/subscriptions/${subId}`
+                                : `https://dashboard.stripe.com/subscriptions/${subId}`
+                            }
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
+                          >
+                            {r.properties.vtg_billing_source?.toLowerCase() === "recharge"
+                              ? "Recharge"
+                              : "Stripe"}{" "}
+                            ↗
+                          </a>
                         </div>
                       )}
                     </div>
