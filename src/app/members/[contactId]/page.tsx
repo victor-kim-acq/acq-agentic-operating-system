@@ -23,6 +23,8 @@ interface MemberProfile {
   vtg_current_membership_tier: string | null;
   vtg_current_membership_status: string | null;
   vtg_billing_source: string | null;
+  vtg_recharge_subscription_id: string | null;
+  vtg_stripe_subscription_id: string | null;
   membershipRecords: MembershipRecord[];
   deals: Deal[];
 }
@@ -141,18 +143,11 @@ export default function MemberDetailPage() {
 
           {member.vtg_billing_source && (() => {
             const src = member.vtg_billing_source.toLowerCase();
-            const rec = member.membershipRecords.find((r) =>
-              src === "recharge"
-                ? r.properties.recharge_subscription_id
-                : (src === "stripe" || src === "ace")
-                  ? r.properties.stripe_subscription_id
-                  : false
-            );
             const subId =
               src === "recharge"
-                ? rec?.properties.recharge_subscription_id
+                ? member.vtg_recharge_subscription_id
                 : (src === "stripe" || src === "ace")
-                  ? rec?.properties.stripe_subscription_id
+                  ? member.vtg_stripe_subscription_id
                   : null;
             const subUrl =
               src === "recharge" && subId

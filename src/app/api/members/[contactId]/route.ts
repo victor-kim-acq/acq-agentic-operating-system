@@ -28,6 +28,8 @@ export async function GET(
     "vtg_current_membership_tier",
     "vtg_current_membership_status",
     "vtg_billing_source",
+    "vtg_recharge_subscription_id",
+    "vtg_stripe_subscription_id",
   ].join(",");
 
   const [contactRes, membershipAssocRes, dealAssocRes] = await Promise.all([
@@ -112,6 +114,8 @@ export async function GET(
     vtg_current_membership_tier: props.vtg_current_membership_tier ?? null,
     vtg_current_membership_status: props.vtg_current_membership_status ?? null,
     vtg_billing_source: props.vtg_billing_source ?? null,
+    vtg_recharge_subscription_id: props.vtg_recharge_subscription_id ?? null,
+    vtg_stripe_subscription_id: props.vtg_stripe_subscription_id ?? null,
     membershipRecords,
     deals,
   });
