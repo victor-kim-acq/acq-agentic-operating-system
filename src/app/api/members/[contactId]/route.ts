@@ -70,6 +70,7 @@ export async function GET(
     "start_date",
     "end_date",
     "billing_source",
+    "membership_name",
     "recharge_subscription_id",
     "stripe_subscription_id",
   ];

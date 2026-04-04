@@ -31,8 +31,10 @@ export default function MemberTimeline({
     ...membershipRecords.map((r) => ({
       date: r.properties.start_date || r.properties.hs_createdate || "",
       type: "membership" as const,
-      label: r.properties.membership_tier || "Membership",
-      sub: r.properties.membership_status || "",
+      label: r.properties.membership_name || "Membership",
+      sub: [r.properties.membership_status, r.properties.billing_source]
+        .filter(Boolean)
+        .join(" · ") || "",
       id: r.id,
     })),
     ...deals.map((d) => ({
@@ -68,7 +70,18 @@ export default function MemberTimeline({
               {event.type === "membership" ? "M" : "D"}
             </div>
             <div className="flex-1 pb-1">
-              <p className="text-sm font-medium text-slate-800">{event.label}</p>
+              <a
+                href={
+                  event.type === "membership"
+                    ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
+                    : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`
+                }
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-blue-500 hover:underline"
+              >
+                {event.label}
+              </a>
               {event.sub && (
                 <p className="text-xs text-slate-500 capitalize">
                   {event.sub.replace(/_/g, " ")}

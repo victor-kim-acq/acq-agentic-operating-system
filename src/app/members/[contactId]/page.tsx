@@ -167,9 +167,14 @@ export default function MemberDetailPage() {
                       key={r.id}
                       className="border-b border-slate-100 pb-3 last:border-0 last:pb-0"
                     >
-                      <p className="text-sm font-medium text-slate-800">
-                        {r.properties.membership_tier || "—"}
-                      </p>
+                      <a
+                        href={`https://app.hubspot.com/contacts/21368823/record/2-57143627/${r.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-blue-500 hover:underline"
+                      >
+                        {r.properties.membership_name || "—"}
+                      </a>
                       <p className="text-xs text-slate-500 capitalize">
                         {(r.properties.membership_status || "").replace(/_/g, " ")}
                       </p>
@@ -224,9 +229,14 @@ export default function MemberDetailPage() {
                     key={d.id}
                     className="border-b border-slate-100 pb-3 last:border-0 last:pb-0"
                   >
-                    <p className="text-sm font-medium text-slate-800">
+                    <a
+                      href={`https://app.hubspot.com/contacts/21368823/record/0-3/${d.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm font-medium text-blue-500 hover:underline"
+                    >
                       {d.properties.dealname || "Untitled deal"}
-                    </p>
+                    </a>
                     <p className="text-xs text-slate-500 capitalize">
                       {(d.properties.dealstage || "").replace(/_/g, " ")}
                     </p>
