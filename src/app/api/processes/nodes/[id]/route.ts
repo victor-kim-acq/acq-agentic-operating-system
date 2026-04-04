@@ -1,14 +1,12 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const fetchCache = "force-no-store";
-
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await req.json();
 
     const hasPosition = body.position_x !== undefined && body.position_y !== undefined;
@@ -65,10 +63,10 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     await sql`DELETE FROM process_connections WHERE source_id = ${id} OR target_id = ${id}`;
     await sql`DELETE FROM business_processes WHERE id = ${id}`;

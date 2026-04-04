@@ -1,15 +1,12 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const result = await sql`
       SELECT id, name, role, reports_to, created_at FROM users WHERE id = ${id}
     `;
@@ -30,10 +27,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { name, role, reports_to } = await req.json();
 
     const result = await sql`
@@ -60,10 +57,10 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     await sql`DELETE FROM users WHERE id = ${id}`;
     return NextResponse.json({ success: true });
   } catch (error) {

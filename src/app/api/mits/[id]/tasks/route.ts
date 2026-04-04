@@ -1,15 +1,12 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const result = await sql`
       SELECT id, title, mit_id, owner_id, due_date, status, sort_order, created_at
       FROM critical_tasks
@@ -30,10 +27,10 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const mitId = params.id;
+    const { id: mitId } = await params;
     const { id, title, owner_id, due_date, status, sort_order } = await req.json();
 
     const result = await sql`

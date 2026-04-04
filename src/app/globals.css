@@ -1,6 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-background: #111827;
+  --color-foreground: #e5e7eb;
+  --color-brand-primary: #7c3aed;
+  --color-brand-accent: #6f00ff;
+  --color-brand-light: #f3e8ff;
+}
 
 :root {
   --background: #f8fafc;
