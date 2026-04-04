@@ -3,6 +3,7 @@
 interface MembershipRecord {
   id: string;
   properties: Record<string, string | null>;
+  associatedDealId?: string;
 }
 
 interface Deal {
@@ -17,12 +18,46 @@ interface TimelineEvent {
   sub: string;
   detail: string;
   id: string;
+  dealId: string | null;
 }
 
 interface MemberTimelineProps {
   membershipRecords: MembershipRecord[];
   deals: Deal[];
 }
+
+const DEAL_COLORS = [
+  {
+    circle: "text-blue-600 ring-2 ring-blue-400",
+    cardDeal: "bg-blue-50 border-blue-200",
+    cardMembership: "bg-blue-50/50 border-blue-200/60",
+  },
+  {
+    circle: "text-amber-600 ring-2 ring-amber-400",
+    cardDeal: "bg-amber-50 border-amber-200",
+    cardMembership: "bg-amber-50/50 border-amber-200/60",
+  },
+  {
+    circle: "text-violet-600 ring-2 ring-violet-400",
+    cardDeal: "bg-violet-50 border-violet-200",
+    cardMembership: "bg-violet-50/50 border-violet-200/60",
+  },
+  {
+    circle: "text-teal-600 ring-2 ring-teal-400",
+    cardDeal: "bg-teal-50 border-teal-200",
+    cardMembership: "bg-teal-50/50 border-teal-200/60",
+  },
+  {
+    circle: "text-rose-600 ring-2 ring-rose-400",
+    cardDeal: "bg-rose-50 border-rose-200",
+    cardMembership: "bg-rose-50/50 border-rose-200/60",
+  },
+];
+
+const DEFAULT_STYLES = {
+  circle: "text-slate-500 ring-2 ring-slate-300",
+  card: "bg-white border-slate-200/80",
+};
 
 function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -35,12 +70,14 @@ function formatDate(dateStr: string): string {
 function EventCard({
   event,
   href,
+  cardClass,
 }: {
   event: TimelineEvent;
   href: string;
+  cardClass: string;
 }) {
   return (
-    <div className="bg-white rounded-lg border border-slate-200/80 p-3 shadow-sm">
+    <div className={`rounded-lg border p-3 shadow-sm ${cardClass}`}>
       <a
         href={href}
         target="_blank"
@@ -62,14 +99,16 @@ function EventCard({
   );
 }
 
-function CircleMarker({ type }: { type: "membership" | "deal" }) {
+function CircleMarker({
+  type,
+  circleClass,
+}: {
+  type: "membership" | "deal";
+  circleClass: string;
+}) {
   return (
     <div
-      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 bg-white ${
-        type === "membership"
-          ? "text-blue-600 ring-2 ring-blue-300"
-          : "text-emerald-600 ring-2 ring-emerald-300"
-      }`}
+      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 bg-white ${circleClass}`}
     >
       {type === "membership" ? "M" : "D"}
     </div>
@@ -80,6 +119,17 @@ export default function MemberTimeline({
   membershipRecords,
   deals,
 }: MemberTimelineProps) {
+  // Build color map: assign colors to deals in chronological order
+  const dealColorMap = new Map<string, (typeof DEAL_COLORS)[number]>();
+  const sortedDeals = [...deals].sort((a, b) => {
+    const dateA = a.properties.createdate || a.properties.closedate || "";
+    const dateB = b.properties.createdate || b.properties.closedate || "";
+    return new Date(dateA).getTime() - new Date(dateB).getTime();
+  });
+  sortedDeals.forEach((d, i) => {
+    dealColorMap.set(d.id, DEAL_COLORS[i % DEAL_COLORS.length]);
+  });
+
   const events: TimelineEvent[] = [
     ...membershipRecords.map((r) => {
       const tier = r.properties.vtg_membership_tier || null;
@@ -98,6 +148,7 @@ export default function MemberTimeline({
         sub: "",
         detail: detailParts.join(" \u00b7 "),
         id: r.id,
+        dealId: r.associatedDealId ?? null,
       };
     }),
     ...deals.map((d) => ({
@@ -107,6 +158,7 @@ export default function MemberTimeline({
       sub: d.properties.dealstage || "",
       detail: "",
       id: d.id,
+      dealId: d.id,
     })),
   ]
     .filter((e) => e.date)
@@ -116,6 +168,25 @@ export default function MemberTimeline({
     return (
       <p className="text-sm text-slate-400 py-4">No timeline events found.</p>
     );
+  }
+
+  function getStyles(event: TimelineEvent) {
+    const colorGroup = event.dealId
+      ? dealColorMap.get(event.dealId)
+      : null;
+    if (!colorGroup) {
+      return {
+        circleClass: DEFAULT_STYLES.circle,
+        cardClass: DEFAULT_STYLES.card,
+      };
+    }
+    return {
+      circleClass: colorGroup.circle,
+      cardClass:
+        event.type === "deal"
+          ? colorGroup.cardDeal
+          : colorGroup.cardMembership,
+    };
   }
 
   return (
@@ -132,14 +203,15 @@ export default function MemberTimeline({
               event.type === "membership"
                 ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
                 : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
+            const { circleClass, cardClass } = getStyles(event);
             return (
               <div
                 key={`${event.type}-${event.id}`}
                 className="flex gap-3 relative items-start"
               >
-                <CircleMarker type={event.type} />
+                <CircleMarker type={event.type} circleClass={circleClass} />
                 <div className="flex-1 pt-0.5">
-                  <EventCard event={event} href={href} />
+                  <EventCard event={event} href={href} cardClass={cardClass} />
                 </div>
               </div>
             );
@@ -162,6 +234,7 @@ export default function MemberTimeline({
                 ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
                 : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
             const isLeft = i % 2 === 0;
+            const { circleClass, cardClass } = getStyles(event);
 
             return (
               <div
@@ -170,17 +243,21 @@ export default function MemberTimeline({
               >
                 {/* Left side content */}
                 <div className="w-[calc(50%-18px)] flex-shrink-0">
-                  {isLeft && <EventCard event={event} href={href} />}
+                  {isLeft && (
+                    <EventCard event={event} href={href} cardClass={cardClass} />
+                  )}
                 </div>
 
                 {/* Center circle */}
                 <div className="w-9 flex-shrink-0 flex justify-center z-10">
-                  <CircleMarker type={event.type} />
+                  <CircleMarker type={event.type} circleClass={circleClass} />
                 </div>
 
                 {/* Right side content */}
                 <div className="w-[calc(50%-18px)] flex-shrink-0">
-                  {!isLeft && <EventCard event={event} href={href} />}
+                  {!isLeft && (
+                    <EventCard event={event} href={href} cardClass={cardClass} />
+                  )}
                 </div>
               </div>
             );

@@ -9,6 +9,7 @@ import MemberSearch from "@/components/MemberSearch";
 interface MembershipRecord {
   id: string;
   properties: Record<string, string | null>;
+  associatedDealId?: string;
 }
 
 interface Deal {

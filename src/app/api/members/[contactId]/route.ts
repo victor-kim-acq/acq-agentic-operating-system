@@ -80,7 +80,7 @@ export async function GET(
 
   const dealProps = ["dealname", "dealstage", "amount", "closedate", "createdate"];
 
-  const [membershipRecords, deals] = await Promise.all([
+  const [membershipRecordsRaw, deals, membershipDealAssocData] = await Promise.all([
     membershipIds.length > 0
       ? fetch(`${HS_BASE}/crm/v3/objects/2-57143627/batch/read`, {
           method: "POST",
@@ -105,7 +105,35 @@ export async function GET(
           .then((r) => r.json())
           .then((d) => d.results ?? [])
       : Promise.resolve([]),
+    membershipIds.length > 0
+      ? fetch(`${HS_BASE}/crm/v4/associations/2-57143627/0-3/batch/read`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            inputs: membershipIds.map((id) => ({ id })),
+          }),
+        })
+          .then((r) => r.json())
+      : Promise.resolve({ results: [] }),
   ]);
+
+  // Build membership → deal map
+  const membershipDealMap: Record<string, string> = {};
+  for (const entry of membershipDealAssocData.results ?? []) {
+    const fromId = entry.from?.id;
+    const toId = entry.to?.[0]?.toObjectId;
+    if (fromId && toId) {
+      membershipDealMap[fromId] = toId;
+    }
+  }
+
+  // Attach associatedDealId to each membership record
+  const membershipRecords = membershipRecordsRaw.map(
+    (rec: { id: string; properties: Record<string, string | null> }) => ({
+      ...rec,
+      associatedDealId: membershipDealMap[rec.id] ?? null,
+    })
+  );
 
   return NextResponse.json({
     contactId,
