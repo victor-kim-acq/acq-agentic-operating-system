@@ -139,14 +139,47 @@ export default function MemberDetailPage() {
             </div>
           </div>
 
-          {member.vtg_billing_source && (
-            <p className="text-xs text-slate-400 mt-4">
-              Billing via{" "}
-              <span className="font-medium text-slate-600 capitalize">
-                {member.vtg_billing_source}
-              </span>
-            </p>
-          )}
+          {member.vtg_billing_source && (() => {
+            const src = member.vtg_billing_source.toLowerCase();
+            const rec = member.membershipRecords.find((r) =>
+              src === "recharge"
+                ? r.properties.recharge_subscription_id
+                : (src === "stripe" || src === "ace")
+                  ? r.properties.stripe_subscription_id
+                  : false
+            );
+            const subId =
+              src === "recharge"
+                ? rec?.properties.recharge_subscription_id
+                : (src === "stripe" || src === "ace")
+                  ? rec?.properties.stripe_subscription_id
+                  : null;
+            const subUrl =
+              src === "recharge" && subId
+                ? `https://acquisition-com-sp.admin.rechargeapps.com/merchant/subscriptions/${subId}/details`
+                : (src === "stripe" || src === "ace") && subId
+                  ? `https://dashboard.stripe.com/acct_1LVfphGF4X4zxB3F/subscriptions/${subId}`
+                  : null;
+            return (
+              <p className="text-xs text-slate-400 mt-4">
+                Billing via{" "}
+                {subUrl ? (
+                  <a
+                    href={subUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium capitalize text-blue-500 hover:underline"
+                  >
+                    {member.vtg_billing_source}
+                  </a>
+                ) : (
+                  <span className="font-medium text-slate-600 capitalize">
+                    {member.vtg_billing_source}
+                  </span>
+                )}
+              </p>
+            );
+          })()}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
