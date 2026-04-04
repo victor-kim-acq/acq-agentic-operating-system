@@ -172,7 +172,7 @@ export default function MemberTimeline({
 
   function getStyles(event: TimelineEvent) {
     const colorGroup = event.dealId
-      ? dealColorMap.get(event.dealId)
+      ? dealColorMap.get(String(event.dealId))
       : null;
     if (!colorGroup) {
       return {

@@ -123,7 +123,7 @@ export async function GET(
     const fromId = entry.from?.id;
     const toId = entry.to?.[0]?.toObjectId;
     if (fromId && toId) {
-      membershipDealMap[fromId] = toId;
+      membershipDealMap[fromId] = String(toId);
     }
   }
 
