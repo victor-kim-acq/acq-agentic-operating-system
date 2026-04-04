@@ -1,15 +1,12 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const result = await sql`
       SELECT id, mit_id, node_id, created_at
       FROM mit_node_assignments
@@ -29,10 +26,10 @@ export async function GET(
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const mitId = params.id;
+    const { id: mitId } = await params;
     const { id, node_id } = await req.json();
 
     const result = await sql`
@@ -53,10 +50,10 @@ export async function POST(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const mitId = params.id;
+    const { id: mitId } = await params;
     const { node_id } = await req.json();
 
     await sql`

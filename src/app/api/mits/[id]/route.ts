@@ -1,15 +1,12 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const [mitResult, tasksResult, nodesResult] = await Promise.all([
       sql`SELECT id, title, owner_id, quarter, year, status, problem_statement, hypothesis, sort_order, created_at FROM mits WHERE id = ${id}`,
@@ -40,10 +37,10 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { title, owner_id, quarter, year, status, problem_statement, hypothesis, sort_order } =
       await req.json();
 
@@ -86,10 +83,10 @@ export async function PUT(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
 
     const mit = await sql`SELECT title FROM mits WHERE id = ${id}`;
     if (mit.rows.length > 0 && mit.rows[0].title === "Daily Operations") {

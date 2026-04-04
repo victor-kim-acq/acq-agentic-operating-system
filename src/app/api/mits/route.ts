@@ -1,9 +1,6 @@
 import { sql } from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-export const fetchCache = "force-no-store";
-
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
