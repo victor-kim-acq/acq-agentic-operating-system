@@ -3,6 +3,8 @@ import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
 import { SessionData, sessionOptions } from "@/lib/session";
 
+export const fetchCache = 'force-no-store';
+
 const HS_BASE = "https://api.hubapi.com";
 
 export async function GET(
