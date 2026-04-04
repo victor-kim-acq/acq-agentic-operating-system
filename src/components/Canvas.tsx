@@ -354,7 +354,7 @@ function CanvasInner() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <div className="flex h-[calc(100vh-44px)] w-screen items-center justify-center bg-background">
         <p className="text-foreground text-lg">Loading canvas...</p>
       </div>
     );
@@ -362,14 +362,14 @@ function CanvasInner() {
 
   if (error) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <div className="flex h-[calc(100vh-44px)] w-screen items-center justify-center bg-background">
         <p className="text-red-400 text-lg">{error}</p>
       </div>
     );
   }
 
   return (
-    <div style={{ width: "100vw", height: "100vh" }}>
+    <div style={{ width: "100vw", height: "calc(100vh - 44px)" }}>
       <ReactFlow
         nodes={displayNodes}
         edges={displayEdges}
