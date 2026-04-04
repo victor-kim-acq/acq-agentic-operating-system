@@ -75,6 +75,7 @@ export async function GET(
     "end_date",
     "billing_source",
     "membership_name",
+    "vtg_mrr",
     "recharge_subscription_id",
     "stripe_subscription_id",
   ];

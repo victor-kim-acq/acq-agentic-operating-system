@@ -15,6 +15,7 @@ interface TimelineEvent {
   type: "membership" | "deal";
   label: string;
   sub: string;
+  detail: string;
   id: string;
 }
 
@@ -48,6 +49,9 @@ function EventCard({
       >
         {event.label}
       </a>
+      {event.detail && (
+        <p className="text-xs text-slate-500 mt-0.5">{event.detail}</p>
+      )}
       {event.sub && (
         <p className="text-xs text-slate-500 capitalize mt-0.5">
           {event.sub.replace(/_/g, " ")}
@@ -77,21 +81,33 @@ export default function MemberTimeline({
   deals,
 }: MemberTimelineProps) {
   const events: TimelineEvent[] = [
-    ...membershipRecords.map((r) => ({
-      date: r.properties.start_date || r.properties.hs_createdate || "",
-      type: "membership" as const,
-      label: r.properties.membership_name || "Membership",
-      sub:
-        [r.properties.membership_status, r.properties.billing_source]
-          .filter(Boolean)
-          .join(" \u00b7 ") || "",
-      id: r.id,
-    })),
+    ...membershipRecords.map((r) => {
+      const mrr = r.properties.vtg_mrr
+        ? `$${parseFloat(r.properties.vtg_mrr).toLocaleString()}/mo`
+        : null;
+      const detailParts = [
+        r.properties.membership_tier,
+        r.properties.billing_source,
+        mrr,
+      ].filter(Boolean);
+      return {
+        date: r.properties.start_date || r.properties.hs_createdate || "",
+        type: "membership" as const,
+        label: r.properties.membership_name || "Membership",
+        sub:
+          [r.properties.membership_status]
+            .filter(Boolean)
+            .join("") || "",
+        detail: detailParts.join(" \u00b7 "),
+        id: r.id,
+      };
+    }),
     ...deals.map((d) => ({
       date: d.properties.createdate || d.properties.closedate || "",
       type: "deal" as const,
       label: d.properties.dealname || "Deal",
       sub: d.properties.dealstage || "",
+      detail: "",
       id: d.id,
     })),
   ]
