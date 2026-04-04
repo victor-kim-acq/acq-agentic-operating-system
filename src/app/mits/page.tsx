@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 import MitCard from "./MitCard";
 import MitDetail from "./MitDetail";
 import AddMitModal from "./AddMitModal";
@@ -110,20 +109,6 @@ export default function MitsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Nav bar */}
-      <nav className="border-b border-slate-200 bg-white px-6 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-6">
-          <Link
-            href="/"
-            className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-          >
-            Canvas
-          </Link>
-          <span className="text-sm font-semibold text-slate-800">MITs</span>
-        </div>
-        <span className="text-xs text-slate-400">ACQ Agentic OS</span>
-      </nav>
-
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">
