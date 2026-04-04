@@ -143,6 +143,7 @@ export default function MemberDetailPage() {
 
           {member.vtg_billing_source && (() => {
             const src = member.vtg_billing_source.toLowerCase();
+            const displayName = src === "recharge" ? "Recharge" : "Stripe";
             const subId =
               src === "recharge"
                 ? member.vtg_recharge_subscription_id
@@ -155,24 +156,26 @@ export default function MemberDetailPage() {
                 : (src === "stripe" || src === "ace") && subId
                   ? `https://dashboard.stripe.com/acct_1LVfphGF4X4zxB3F/subscriptions/${subId}`
                   : null;
-            return (
-              <p className="text-xs text-slate-400 mt-4">
-                Billing via{" "}
-                {subUrl ? (
-                  <a
-                    href={subUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="font-medium capitalize text-blue-500 hover:underline"
-                  >
-                    {member.vtg_billing_source}
-                  </a>
-                ) : (
-                  <span className="font-medium text-slate-600 capitalize">
-                    {member.vtg_billing_source}
-                  </span>
-                )}
-              </p>
+            const icon = (
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="flex-shrink-0">
+                <path d="M3.5 2H10V8.5M10 2L2 10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            );
+            return subUrl ? (
+              <a
+                href={subUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-colors mt-4"
+              >
+                View Current Subscription in {displayName}
+                {icon}
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-200 text-slate-400 mt-4 cursor-default">
+                View Current Subscription in {displayName}
+                {icon}
+              </span>
             );
           })()}
         </div>
