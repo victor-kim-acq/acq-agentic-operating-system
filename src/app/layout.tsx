@@ -24,6 +24,12 @@ export default function RootLayout({
               Canvas
             </Link>
             <Link
+              href="/dashboard"
+              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
+            >
+              Dashboard
+            </Link>
+            <Link
               href="/mits"
               className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
             >

@@ -1,0 +1,66 @@
+import { NextResponse } from "next/server";
+import { sql } from "@/lib/db";
+
+export const fetchCache = "force-no-store";
+export const dynamic = "force-dynamic";
+
+export async function GET() {
+  try {
+    const result = await sql`
+      WITH base AS (
+        SELECT
+          m.billing_source,
+          CASE WHEN LOWER(m.currency) = 'usd' THEN m.mrr ELSE 0 END AS usd_mrr,
+          CASE
+            WHEN LOWER(m.currency) != 'usd' OR m.currency IS NULL THEN
+              CASE
+                WHEN m.tier = 'Standard' THEN 1000
+                WHEN m.tier = 'VIP' THEN 3000
+                WHEN m.tier = 'VIP (Yearly)' THEN 36000
+                WHEN m.tier = 'Premium' THEN 8000
+                ELSE 0
+              END
+            ELSE 0
+          END AS non_usd_normalized_mrr
+        FROM memberships m
+        WHERE m.status = 'Active'
+          AND m.membership_type = 'Paying Member'
+          AND (m.billing_date AT TIME ZONE 'America/Los_Angeles')::date
+              >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
+      ),
+      by_source AS (
+        SELECT billing_source,
+          COALESCE(SUM(usd_mrr), 0) AS usd_mrr,
+          COALESCE(SUM(non_usd_normalized_mrr), 0) AS non_usd_mrr
+        FROM base GROUP BY billing_source
+      ),
+      with_total AS (
+        SELECT billing_source, usd_mrr, non_usd_mrr, usd_mrr + non_usd_mrr AS total_mrr FROM by_source
+        UNION ALL
+        SELECT 'Total', COALESCE(SUM(usd_mrr),0), COALESCE(SUM(non_usd_mrr),0),
+          COALESCE(SUM(usd_mrr),0) + COALESCE(SUM(non_usd_mrr),0) FROM by_source
+      )
+      SELECT billing_source, usd_mrr, non_usd_mrr, total_mrr,
+        CASE WHEN billing_source = 'Total' THEN 100
+          ELSE ROUND(total_mrr::numeric / NULLIF(SUM(CASE WHEN billing_source != 'Total' THEN total_mrr END) OVER (), 0) * 100, 1)
+        END AS pct_of_total
+      FROM with_total
+      ORDER BY CASE billing_source
+        WHEN 'Total' THEN 0 WHEN 'recharge' THEN 1 WHEN 'skool' THEN 2 WHEN 'stripe' THEN 3 ELSE 4
+      END
+    `;
+
+    return NextResponse.json(
+      { rows: result.rows },
+      {
+        headers: { "Cache-Control": "no-store" },
+      }
+    );
+  } catch (error) {
+    console.error("Dashboard revenue-by-source error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
