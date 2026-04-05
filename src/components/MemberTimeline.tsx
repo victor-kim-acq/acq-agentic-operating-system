@@ -84,7 +84,7 @@ function EventCard({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors leading-tight truncate block"
+        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors leading-tight"
       >
         {event.label}
       </a>
@@ -98,23 +98,27 @@ function EventCard({
           {event.sub.replace(/_/g, " ")}
         </p>
       )}
-      <p className="text-[11px] text-slate-400 mt-1">{formatDate(event.date)}</p>
     </div>
   );
 }
 
-function CircleMarker({
-  type,
-  circleClass,
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`;
+}
+
+function DateBadge({
+  date,
+  badgeClass,
 }: {
-  type: "membership" | "deal";
-  circleClass: string;
+  date: string;
+  badgeClass: string;
 }) {
   return (
     <div
-      className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 bg-white ${circleClass}`}
+      className={`px-2 py-1 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 bg-white whitespace-nowrap ${badgeClass}`}
     >
-      {type === "membership" ? "M" : "D"}
+      {formatShortDate(date)}
     </div>
   );
 }
@@ -228,20 +232,20 @@ export default function MemberTimeline({
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="flex-shrink-0 w-44 flex flex-col items-center"
+                className="flex-shrink-0 w-auto min-w-[100px] max-w-[180px] flex flex-col items-center"
               >
                 {isAbove ? (
                   <>
                     <div className="w-full flex-1 flex flex-col justify-end pb-2">
                       <EventCard event={event} href={href} cardClass={cardClass} />
                     </div>
-                    <CircleMarker type={event.type} circleClass={circleClass} />
+                    <DateBadge date={event.date} badgeClass={circleClass} />
                     <div className="flex-1" />
                   </>
                 ) : (
                   <>
                     <div className="flex-1" />
-                    <CircleMarker type={event.type} circleClass={circleClass} />
+                    <DateBadge date={event.date} badgeClass={circleClass} />
                     <div className="w-full flex-1 flex flex-col justify-start pt-2">
                       <EventCard event={event} href={href} cardClass={cardClass} />
                     </div>
