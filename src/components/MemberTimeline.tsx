@@ -167,9 +167,9 @@ export default function MemberTimeline({
     ...deals.map((d) => ({
       date: d.properties.createdate || d.properties.closedate || "",
       type: "deal" as const,
-      label: d.properties.dealname || "Deal",
+      label: "Deal",
       sub: d.properties.dealstage || "",
-      detail: "",
+      detail: d.properties.amount ? `$${parseFloat(d.properties.amount).toLocaleString()}` : "",
       id: d.id,
       dealId: d.id,
     })),
@@ -211,9 +211,9 @@ export default function MemberTimeline({
 
       <div
         ref={scrollRef}
-        className="overflow-x-auto scrollbar-thin"
+        className="overflow-x-auto scrollbar-thin min-h-[280px]"
       >
-        <div className="relative flex gap-4 px-4" style={{ minWidth: "min-content" }}>
+        <div className="relative flex gap-4 px-4 min-h-[280px]" style={{ minWidth: "min-content" }}>
           {/* Horizontal connector line — vertically centered */}
           <div className="absolute left-0 right-0 h-px bg-slate-200 top-1/2 -translate-y-px" />
 
