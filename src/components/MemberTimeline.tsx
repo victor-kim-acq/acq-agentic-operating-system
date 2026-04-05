@@ -91,7 +91,7 @@ function EventCard({
   cardClass: string;
 }) {
   return (
-    <div className={`rounded-lg border p-2.5 shadow-sm ${event.type === "membership" ? "border-dashed" : ""} ${cardClass}`}>
+    <div className={`rounded-lg border-2 p-2.5 shadow-sm ${event.type === "membership" ? "border-dashed" : "border-solid"} ${cardClass}`}>
       <a
         href={href}
         target="_blank"
@@ -253,7 +253,7 @@ export default function MemberTimeline({
         ref={scrollRef}
         className="overflow-x-auto scrollbar-thin min-h-[280px]"
       >
-        <div className="relative flex gap-6 px-8 min-h-[280px]">
+        <div className="relative flex gap-6 px-8 min-h-[280px] min-w-fit">
           {/* Horizontal connector line — vertically centered */}
           <div className="absolute left-0 right-0 h-px bg-slate-200 top-1/2 -translate-y-px" />
 
@@ -268,7 +268,7 @@ export default function MemberTimeline({
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="flex-1 min-w-[120px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
+                className="min-w-[160px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
               >
                 {isAbove ? (
                   <>
