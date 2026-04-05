@@ -204,6 +204,7 @@ function SkoolProfileCard({
 }) {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
+  const [activityFilter, setActivityFilter] = useState<"all" | "post" | "comment">("all");
   const ltvDollars = (profile.ltv / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
@@ -297,31 +298,52 @@ function SkoolProfileCard({
 
         if (allItems.length === 0) return null;
 
-        const items = allItems.slice(0, visibleCount);
-        const hasMore = visibleCount < allItems.length;
+        const filtered = activityFilter === "all"
+          ? allItems
+          : allItems.filter((item) => item.type === activityFilter);
+        const items = filtered.slice(0, visibleCount);
+        const hasMore = visibleCount < filtered.length;
 
         const totalPosts = posts.length;
         const totalComments = comments.length;
 
+        const labelCls = (active: boolean) =>
+          `text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-colors ${
+            active ? "text-slate-700" : "text-slate-400 hover:text-slate-600"
+          }`;
+        const badgeCls = (active: boolean) =>
+          `text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+            active ? "bg-slate-200 text-slate-700" : "bg-slate-100 text-slate-500"
+          }`;
+
         return (
           <div className="mt-4 pt-3 border-t border-slate-100">
             <div className="flex items-center gap-3 mb-3">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <button
+                onClick={() => { setActivityFilter("all"); setVisibleCount(5); }}
+                className={labelCls(activityFilter === "all")}
+              >
                 Recent Activity
-              </h3>
-              <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+              </button>
+              <span className={badgeCls(activityFilter === "all")}>
                 {totalPosts + totalComments}
               </span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <button
+                onClick={() => { setActivityFilter("post"); setVisibleCount(5); }}
+                className={labelCls(activityFilter === "post")}
+              >
                 Posts
-              </span>
-              <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+              </button>
+              <span className={badgeCls(activityFilter === "post")}>
                 {totalPosts}
               </span>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              <button
+                onClick={() => { setActivityFilter("comment"); setVisibleCount(5); }}
+                className={labelCls(activityFilter === "comment")}
+              >
                 Comments
-              </span>
-              <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+              </button>
+              <span className={badgeCls(activityFilter === "comment")}>
                 {totalComments}
               </span>
             </div>
@@ -401,9 +423,9 @@ function SkoolProfileCard({
                 <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/80 to-transparent -translate-y-full pointer-events-none" />
                 <button
                   onClick={() => setVisibleCount((c) => c + 5)}
-                  className="text-slate-300 hover:text-slate-500 cursor-pointer transition-colors"
+                  className="text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
                 >
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <svg width="24" height="24" viewBox="0 0 20 20" fill="none">
                     <path
                       d="M5 8l5 5 5-5"
                       stroke="currentColor"
