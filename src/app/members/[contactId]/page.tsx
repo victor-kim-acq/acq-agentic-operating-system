@@ -565,118 +565,15 @@ export default function MemberDetailPage() {
           <BillingButton member={member} />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Membership Records */}
-          <div className="bg-white rounded-xl border border-slate-200/80 p-5">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
-              Membership Records
-            </h2>
-            {member.membershipRecords.length === 0 ? (
-              <p className="text-sm text-slate-400">No records found.</p>
-            ) : (
-              <div className="space-y-3">
-                {member.membershipRecords.map((r) => {
-                  const subId = r.properties.vtg_subscription_id;
-                  return (
-                    <div
-                      key={r.id}
-                      className="border-b border-slate-100 pb-3 last:border-0 last:pb-0"
-                    >
-                      <a
-                        href={`https://app.hubspot.com/contacts/21368823/record/2-57143627/${r.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors capitalize"
-                      >
-                        {(r.properties.vtg_status || "—").replace(/_/g, " ")}
-                      </a>
-                      {(() => {
-                        const parts = [
-                          r.properties.vtg_membership_tier,
-                          r.properties.vtg_billing_source,
-                          r.properties.vtg_mrr
-                            ? `$${parseFloat(r.properties.vtg_mrr).toLocaleString()}`
-                            : null,
-                        ].filter((v): v is string => v != null && v !== "");
-                        return parts.length > 0 ? (
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {parts.join(" \u00b7 ")}
-                          </p>
-                        ) : null;
-                      })()}
-                      {r.properties.vtg_billing_date && (
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {formatDate(r.properties.vtg_billing_date)}
-                        </p>
-                      )}
-                      {subId && (
-                        <div className="flex gap-3 mt-1.5">
-                          <a
-                            href={
-                              r.properties.vtg_billing_source?.toLowerCase() === "recharge"
-                                ? `https://app.rechargeapps.com/merchant/subscriptions/${subId}`
-                                : `https://dashboard.stripe.com/subscriptions/${subId}`
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-blue-500 hover:text-blue-700 hover:underline transition-colors"
-                          >
-                            {r.properties.vtg_billing_source?.toLowerCase() === "recharge"
-                              ? "Recharge"
-                              : "Stripe"}{" "}
-                            ↗
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Deals */}
-          <div className="bg-white rounded-xl border border-slate-200/80 p-5">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
-              Deals
-            </h2>
-            {member.deals.length === 0 ? (
-              <p className="text-sm text-slate-400">No deals found.</p>
-            ) : (
-              <div className="space-y-3">
-                {member.deals.map((d) => (
-                  <div
-                    key={d.id}
-                    className="border-b border-slate-100 pb-3 last:border-0 last:pb-0"
-                  >
-                    <a
-                      href={`https://app.hubspot.com/contacts/21368823/record/0-3/${d.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                    >
-                      {d.properties.dealname || "Untitled deal"}
-                    </a>
-                    <p className="text-xs text-slate-500 capitalize mt-0.5">
-                      {(d.properties.dealstage || "").replace(/_/g, " ")}
-                    </p>
-                    <div className="flex items-center gap-3 mt-0.5">
-                      {d.properties.amount && (
-                        <span className="text-xs text-emerald-700 font-semibold">
-                          ${parseFloat(d.properties.amount).toLocaleString()}
-                        </span>
-                      )}
-                      {d.properties.closedate && (
-                        <span className="text-xs text-slate-400">
-                          {formatDate(d.properties.closedate)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+        {/* Timeline */}
+        <div className="bg-white rounded-xl border border-slate-200/80 p-5 mb-6">
+          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
+            Timeline
+          </h2>
+          <MemberTimeline
+            membershipRecords={member.membershipRecords}
+            deals={member.deals}
+          />
         </div>
 
         {/* Skool Community Profile */}
@@ -687,17 +584,6 @@ export default function MemberDetailPage() {
             comments={member.skoolComments ?? []}
           />
         )}
-
-        {/* Timeline */}
-        <div className="bg-white rounded-xl border border-slate-200/80 p-5 mt-6">
-          <h2 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
-            Timeline
-          </h2>
-          <MemberTimeline
-            membershipRecords={member.membershipRecords}
-            deals={member.deals}
-          />
-        </div>
       </div>
     </div>
   );
