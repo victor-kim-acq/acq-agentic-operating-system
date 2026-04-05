@@ -159,6 +159,14 @@ export default function MemberTimeline({
     dealColorMap.set(d.id, DEAL_COLORS[i % DEAL_COLORS.length]);
   });
 
+  // Reverse lookup: deal ID → first associated membership record
+  const dealMembershipMap = new Map<string, MembershipRecord>();
+  for (const rec of membershipRecords) {
+    if (rec.associatedDealId && !dealMembershipMap.has(rec.associatedDealId)) {
+      dealMembershipMap.set(rec.associatedDealId, rec);
+    }
+  }
+
   const events: TimelineEvent[] = [
     ...membershipRecords.map((r) => {
       const tier = r.properties.vtg_membership_tier || null;
@@ -180,15 +188,29 @@ export default function MemberTimeline({
         dealId: r.associatedDealId ?? null,
       };
     }),
-    ...deals.map((d) => ({
-      date: d.properties.createdate || d.properties.closedate || "",
-      type: "deal" as const,
-      label: (PIPELINE_NAMES[d.properties.pipeline ?? ""] ?? d.properties.pipeline ?? "Deal") + " Deal",
-      sub: d.properties.dealstage || "",
-      detail: d.properties.amount ? `$${parseFloat(d.properties.amount).toLocaleString()}` : "",
-      id: d.id,
-      dealId: d.id,
-    })),
+    ...deals.map((d) => {
+      const assocMembership = dealMembershipMap.get(d.id);
+      const detailParts = assocMembership
+        ? [
+            assocMembership.properties.vtg_membership_tier,
+            assocMembership.properties.vtg_billing_source,
+            assocMembership.properties.vtg_mrr
+              ? `$${parseFloat(assocMembership.properties.vtg_mrr).toLocaleString()}`
+              : null,
+          ].filter((v): v is string => v != null && v !== "")
+        : d.properties.amount
+          ? [`$${parseFloat(d.properties.amount).toLocaleString()}`]
+          : [];
+      return {
+        date: d.properties.createdate || d.properties.closedate || "",
+        type: "deal" as const,
+        label: (PIPELINE_NAMES[d.properties.pipeline ?? ""] ?? d.properties.pipeline ?? "Deal") + " Deal",
+        sub: "",
+        detail: detailParts.join(" \u00b7 "),
+        id: d.id,
+        dealId: d.id,
+      };
+    }),
   ]
     .filter((e) => e.date)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
