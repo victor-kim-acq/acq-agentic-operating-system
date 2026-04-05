@@ -37,26 +37,31 @@ const PIPELINE_NAMES: Record<string, string> = {
 const DEAL_COLORS = [
   {
     circle: "text-blue-600 ring-2 ring-blue-400",
+    pillBg: "bg-blue-50",
     cardDeal: "bg-blue-50 border-blue-200",
     cardMembership: "bg-blue-50/50 border-blue-200/60",
   },
   {
     circle: "text-amber-600 ring-2 ring-amber-400",
+    pillBg: "bg-amber-50",
     cardDeal: "bg-amber-50 border-amber-200",
     cardMembership: "bg-amber-50/50 border-amber-200/60",
   },
   {
     circle: "text-violet-600 ring-2 ring-violet-400",
+    pillBg: "bg-violet-50",
     cardDeal: "bg-violet-50 border-violet-200",
     cardMembership: "bg-violet-50/50 border-violet-200/60",
   },
   {
     circle: "text-teal-600 ring-2 ring-teal-400",
+    pillBg: "bg-teal-50",
     cardDeal: "bg-teal-50 border-teal-200",
     cardMembership: "bg-teal-50/50 border-teal-200/60",
   },
   {
     circle: "text-rose-600 ring-2 ring-rose-400",
+    pillBg: "bg-rose-50",
     cardDeal: "bg-rose-50 border-rose-200",
     cardMembership: "bg-rose-50/50 border-rose-200/60",
   },
@@ -64,6 +69,7 @@ const DEAL_COLORS = [
 
 const DEFAULT_STYLES = {
   circle: "text-slate-500 ring-2 ring-slate-300",
+  pillBg: "bg-slate-50",
   card: "bg-white border-slate-200/80",
 };
 
@@ -122,7 +128,7 @@ function DateBadge({
 }) {
   return (
     <div
-      className={`px-2 py-1 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 bg-white whitespace-nowrap ${badgeClass}`}
+      className={`px-2 py-1 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 whitespace-nowrap ${badgeClass}`}
     >
       {formatShortDate(date)}
     </div>
@@ -200,11 +206,13 @@ export default function MemberTimeline({
     if (!colorGroup) {
       return {
         circleClass: DEFAULT_STYLES.circle,
+        pillBg: DEFAULT_STYLES.pillBg,
         cardClass: DEFAULT_STYLES.card,
       };
     }
     return {
       circleClass: colorGroup.circle,
+      pillBg: colorGroup.pillBg,
       cardClass:
         event.type === "deal"
           ? colorGroup.cardDeal
@@ -232,27 +240,30 @@ export default function MemberTimeline({
               event.type === "membership"
                 ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
                 : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
-            const { circleClass, cardClass } = getStyles(event);
+            const { circleClass, pillBg, cardClass } = getStyles(event);
             const isAbove = i % 2 === 0;
 
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="flex-1 min-w-[120px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
+                className="relative flex-1 min-w-[120px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
               >
+                {/* Date badge — absolutely centered on the horizontal line */}
+                <div className="absolute top-1/2 -translate-y-1/2 z-10">
+                  <DateBadge date={event.date} badgeClass={`${circleClass} ${pillBg}`} />
+                </div>
+
                 {isAbove ? (
                   <>
-                    <div className="w-full flex-1 flex flex-col justify-end pb-2">
+                    <div className="w-full flex-1 flex flex-col justify-end pb-5">
                       <EventCard event={event} href={href} cardClass={cardClass} />
                     </div>
-                    <DateBadge date={event.date} badgeClass={circleClass} />
                     <div className="flex-1" />
                   </>
                 ) : (
                   <>
                     <div className="flex-1" />
-                    <DateBadge date={event.date} badgeClass={circleClass} />
-                    <div className="w-full flex-1 flex flex-col justify-start pt-2">
+                    <div className="w-full flex-1 flex flex-col justify-start pt-5">
                       <EventCard event={event} href={href} cardClass={cardClass} />
                     </div>
                   </>
