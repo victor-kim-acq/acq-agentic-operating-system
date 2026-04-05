@@ -29,9 +29,9 @@ interface MemberTimelineProps {
 }
 
 const PIPELINE_NAMES: Record<string, string> = {
+  "704159270": "L1",
+  "704159271": "L3 Workshops",
   "865935129": "ACQ Vantage",
-  "1028710734": "L3 Workshops",
-  "1028710730": "L1",
 };
 
 const DEAL_COLORS = [
@@ -183,7 +183,7 @@ export default function MemberTimeline({
     ...deals.map((d) => ({
       date: d.properties.createdate || d.properties.closedate || "",
       type: "deal" as const,
-      label: PIPELINE_NAMES[d.properties.pipeline ?? ""] ?? d.properties.pipeline ?? "Deal",
+      label: (PIPELINE_NAMES[d.properties.pipeline ?? ""] ?? d.properties.pipeline ?? "Deal") + " Deal",
       sub: d.properties.dealstage || "",
       detail: d.properties.amount ? `$${parseFloat(d.properties.amount).toLocaleString()}` : "",
       id: d.id,
@@ -246,24 +246,27 @@ export default function MemberTimeline({
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="relative flex-1 min-w-[120px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
+                className="flex-1 min-w-[120px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
               >
-                {/* Date badge — absolutely centered on the horizontal line */}
-                <div className="absolute top-1/2 -translate-y-1/2 z-10">
-                  <DateBadge date={event.date} badgeClass={`${circleClass} ${pillBg}`} />
-                </div>
-
                 {isAbove ? (
                   <>
-                    <div className="w-full flex-1 flex flex-col justify-end pb-5">
+                    <div className="w-full flex-1 flex flex-col justify-end">
                       <EventCard event={event} href={href} cardClass={cardClass} />
+                    </div>
+                    <div className="w-px h-4 bg-slate-200" />
+                    <div className="z-10">
+                      <DateBadge date={event.date} badgeClass={`${circleClass} ${pillBg}`} />
                     </div>
                     <div className="flex-1" />
                   </>
                 ) : (
                   <>
                     <div className="flex-1" />
-                    <div className="w-full flex-1 flex flex-col justify-start pt-5">
+                    <div className="z-10">
+                      <DateBadge date={event.date} badgeClass={`${circleClass} ${pillBg}`} />
+                    </div>
+                    <div className="w-px h-4 bg-slate-200" />
+                    <div className="w-full flex-1 flex flex-col justify-start">
                       <EventCard event={event} href={href} cardClass={cardClass} />
                     </div>
                   </>
