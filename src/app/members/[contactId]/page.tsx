@@ -203,6 +203,7 @@ function SkoolProfileCard({
   comments: SkoolComment[];
 }) {
   const [bioExpanded, setBioExpanded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(5);
   const ltvDollars = (profile.ltv / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
@@ -286,17 +287,18 @@ function SkoolProfileCard({
           | (SkoolPost & { type: "post" })
           | (SkoolComment & { type: "comment" });
 
-        const items: ActivityItem[] = [
+        const allItems: ActivityItem[] = [
           ...posts.map((p) => ({ ...p, type: "post" as const })),
           ...comments.map((c) => ({ ...c, type: "comment" as const })),
-        ]
-          .sort(
-            (a, b) =>
-              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-          )
-          .slice(0, 5);
+        ].sort(
+          (a, b) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
 
-        if (items.length === 0) return null;
+        if (allItems.length === 0) return null;
+
+        const items = allItems.slice(0, visibleCount);
+        const hasMore = visibleCount < allItems.length;
 
         const totalPosts = posts.length;
         const totalComments = comments.length;
@@ -394,6 +396,25 @@ function SkoolProfileCard({
                 )
               )}
             </div>
+            {hasMore && (
+              <div className="relative pt-2 flex justify-center">
+                <div className="absolute top-0 left-0 right-0 h-8 bg-gradient-to-t from-white via-white/80 to-transparent -translate-y-full pointer-events-none" />
+                <button
+                  onClick={() => setVisibleCount((c) => c + 5)}
+                  className="text-slate-300 hover:text-slate-500 cursor-pointer transition-colors"
+                >
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path
+                      d="M5 8l5 5 5-5"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            )}
           </div>
         );
       })()}
