@@ -306,9 +306,17 @@ function SkoolProfileCard({
                     key={`post-${item.post_id}`}
                     className="border-l-2 border-indigo-200 pl-3 pb-3 border-b border-b-slate-100 last:border-b-0 last:pb-0"
                   >
-                    <p className="text-sm font-medium text-slate-800">
+                    <span className="text-[10px] uppercase tracking-wide font-semibold text-indigo-400">
+                      Post
+                    </span>
+                    <a
+                      href={`https://www.skool.com/acq-vantage/${item.post_id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors mt-0.5"
+                    >
                       {item.title || "Untitled"}
-                    </p>
+                    </a>
                     {item.content && (
                       <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
                         {stripMarkdown(item.content).slice(0, 120)}
@@ -330,11 +338,19 @@ function SkoolProfileCard({
                     key={`comment-${item.comment_id}`}
                     className="border-l-2 border-slate-200 pl-3 pb-3 border-b border-b-slate-100 last:border-b-0 last:pb-0"
                   >
-                    <p className="text-xs text-slate-400">
+                    <span className="text-[10px] uppercase tracking-wide font-semibold text-slate-400">
+                      Comment
+                    </span>
+                    <p className="text-xs text-slate-400 mt-0.5">
                       Commented on:{" "}
-                      <span className="text-slate-600 font-medium">
+                      <a
+                        href={`https://www.skool.com/acq-vantage/${item.post_id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-800 hover:underline transition-colors font-medium"
+                      >
                         {item.parent_post_title || "Untitled"}
-                      </span>
+                      </a>
                     </p>
                     {item.content && (
                       <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
