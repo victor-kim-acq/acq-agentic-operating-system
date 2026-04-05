@@ -1,5 +1,7 @@
 "use client";
 
+import { useRef, useEffect } from "react";
+
 interface MembershipRecord {
   id: string;
   properties: Record<string, string | null>;
@@ -77,24 +79,26 @@ function EventCard({
   cardClass: string;
 }) {
   return (
-    <div className={`rounded-lg border p-3 shadow-sm ${cardClass}`}>
+    <div className={`rounded-lg border p-2.5 shadow-sm ${cardClass}`}>
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors leading-tight line-clamp-2"
       >
         {event.label}
       </a>
       {event.detail && (
-        <p className="text-xs text-slate-500 mt-0.5">{event.detail}</p>
+        <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+          {event.detail}
+        </p>
       )}
       {event.sub && (
-        <p className="text-xs text-slate-500 capitalize mt-0.5">
+        <p className="text-[11px] text-slate-500 capitalize mt-0.5 leading-tight">
           {event.sub.replace(/_/g, " ")}
         </p>
       )}
-      <p className="text-xs text-slate-400 mt-1">{formatDate(event.date)}</p>
+      <p className="text-[11px] text-slate-400 mt-1">{formatDate(event.date)}</p>
     </div>
   );
 }
@@ -119,6 +123,15 @@ export default function MemberTimeline({
   membershipRecords,
   deals,
 }: MemberTimelineProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to right (most recent) on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+    }
+  }, []);
+
   // Build color map: assign colors to deals in chronological order
   const dealColorMap = new Map<string, (typeof DEAL_COLORS)[number]>();
   const sortedDeals = [...deals].sort((a, b) => {
@@ -162,7 +175,7 @@ export default function MemberTimeline({
     })),
   ]
     .filter((e) => e.date)
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (events.length === 0) {
     return (
@@ -190,80 +203,43 @@ export default function MemberTimeline({
   }
 
   return (
-    <>
-      {/* Mobile: single-column left-aligned */}
-      <div className="md:hidden relative">
-        <div
-          className="absolute left-3.5 top-0 bottom-0 w-px"
-          style={{ backgroundColor: "#e8ecf1" }}
-        />
-        <div className="space-y-4">
+    <div className="relative">
+      {/* Left fade */}
+      <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+      {/* Right fade */}
+      <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+
+      <div
+        ref={scrollRef}
+        className="overflow-x-auto scrollbar-thin"
+      >
+        <div className="relative flex gap-4 px-4 pb-2" style={{ minWidth: "min-content" }}>
+          {/* Horizontal connector line — vertically centered on the circle markers */}
+          <div className="absolute left-0 right-0 h-px bg-slate-200" style={{ top: "calc(100% - 14px)" }} />
+
           {events.map((event) => {
             const href =
               event.type === "membership"
                 ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
                 : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
             const { circleClass, cardClass } = getStyles(event);
+
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="flex gap-3 relative items-start"
+                className="flex-shrink-0 w-48 flex flex-col items-center gap-2"
               >
-                <CircleMarker type={event.type} circleClass={circleClass} />
-                <div className="flex-1 pt-0.5">
+                {/* Card above the line */}
+                <div className="w-full">
                   <EventCard event={event} href={href} cardClass={cardClass} />
                 </div>
+                {/* Circle marker on the line */}
+                <CircleMarker type={event.type} circleClass={circleClass} />
               </div>
             );
           })}
         </div>
       </div>
-
-      {/* Desktop: alternating left-right */}
-      <div className="hidden md:block relative">
-        {/* Center vertical line */}
-        <div
-          className="absolute left-1/2 top-0 bottom-0 w-px -translate-x-px"
-          style={{ backgroundColor: "#e8ecf1" }}
-        />
-
-        <div className="space-y-6">
-          {events.map((event, i) => {
-            const href =
-              event.type === "membership"
-                ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
-                : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
-            const isLeft = i % 2 === 0;
-            const { circleClass, cardClass } = getStyles(event);
-
-            return (
-              <div
-                key={`${event.type}-${event.id}`}
-                className="relative flex items-start"
-              >
-                {/* Left side content */}
-                <div className="w-[calc(50%-18px)] flex-shrink-0">
-                  {isLeft && (
-                    <EventCard event={event} href={href} cardClass={cardClass} />
-                  )}
-                </div>
-
-                {/* Center circle */}
-                <div className="w-9 flex-shrink-0 flex justify-center z-10">
-                  <CircleMarker type={event.type} circleClass={circleClass} />
-                </div>
-
-                {/* Right side content */}
-                <div className="w-[calc(50%-18px)] flex-shrink-0">
-                  {!isLeft && (
-                    <EventCard event={event} href={href} cardClass={cardClass} />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </>
+    </div>
   );
 }
