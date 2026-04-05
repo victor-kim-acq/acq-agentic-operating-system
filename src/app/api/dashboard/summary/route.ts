@@ -16,6 +16,7 @@ export async function GET() {
               WHEN m.tier = 'VIP' THEN 3000
               WHEN m.tier = 'VIP (Yearly)' THEN 36000
               WHEN m.tier = 'Premium' THEN 8000
+              WHEN m.tier = 'Premium + Scale Workshop' THEN 8000
               ELSE 0
             END
           END
@@ -35,14 +36,12 @@ export async function GET() {
               WHEN m.tier = 'VIP' THEN 3000
               WHEN m.tier = 'VIP (Yearly)' THEN 36000
               WHEN m.tier = 'Premium' THEN 8000
+              WHEN m.tier = 'Premium + Scale Workshop' THEN 8000
               ELSE 0
             END
           END
         ), 0) * 12 AS annual_run_rate
         FROM memberships m
-        JOIN contact_membership cm ON m.membership_id = cm.membership_id
-        JOIN contacts c ON cm.contact_id = c.contact_id
-          AND c.membership_type = 'Paying Member'
         WHERE m.status = 'Active'
           AND m.membership_type = 'Paying Member'
           AND m.billing_date::date
@@ -57,6 +56,7 @@ export async function GET() {
               WHEN m.tier = 'VIP' THEN 3000
               WHEN m.tier = 'VIP (Yearly)' THEN 36000
               WHEN m.tier = 'Premium' THEN 8000
+              WHEN m.tier = 'Premium + Scale Workshop' THEN 8000
               ELSE 0
             END
           END

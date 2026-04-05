@@ -18,6 +18,7 @@ export async function GET() {
               WHEN m.tier = 'VIP' THEN 3000
               WHEN m.tier = 'VIP (Yearly)' THEN 36000
               WHEN m.tier = 'Premium' THEN 8000
+              WHEN m.tier = 'Premium + Scale Workshop' THEN 8000
               ELSE 0
             END
           END
@@ -30,6 +31,7 @@ export async function GET() {
               WHEN m.tier = 'VIP' THEN 3000
               WHEN m.tier = 'VIP (Yearly)' THEN 36000
               WHEN m.tier = 'Premium' THEN 8000
+              WHEN m.tier = 'Premium + Scale Workshop' THEN 8000
               ELSE 0
             END
           END
@@ -39,7 +41,7 @@ export async function GET() {
             CASE WHEN LOWER(m.currency) = 'usd' THEN m.mrr
               ELSE CASE
                 WHEN m.tier = 'Standard' THEN 1000 WHEN m.tier = 'VIP' THEN 3000
-                WHEN m.tier = 'VIP (Yearly)' THEN 36000 WHEN m.tier = 'Premium' THEN 8000 ELSE 0
+                WHEN m.tier = 'VIP (Yearly)' THEN 36000 WHEN m.tier = 'Premium' THEN 8000 WHEN m.tier = 'Premium + Scale Workshop' THEN 8000 ELSE 0
               END
             END
           ELSE 0 END), 0)::numeric
@@ -47,7 +49,7 @@ export async function GET() {
             CASE WHEN LOWER(m.currency) = 'usd' THEN m.mrr
               ELSE CASE
                 WHEN m.tier = 'Standard' THEN 1000 WHEN m.tier = 'VIP' THEN 3000
-                WHEN m.tier = 'VIP (Yearly)' THEN 36000 WHEN m.tier = 'Premium' THEN 8000 ELSE 0
+                WHEN m.tier = 'VIP (Yearly)' THEN 36000 WHEN m.tier = 'Premium' THEN 8000 WHEN m.tier = 'Premium + Scale Workshop' THEN 8000 ELSE 0
               END
             END
           ELSE 0 END), 0), 0) * 100,

@@ -19,6 +19,7 @@ export async function GET() {
               WHEN d.tier = 'VIP' THEN 3000
               WHEN d.tier = 'VIP (Yearly)' THEN 36000
               WHEN d.tier = 'Premium' THEN 8000
+              WHEN d.tier = 'Premium + Scale Workshop' THEN 8000
               ELSE 0
             END
           END AS deal_mrr,
