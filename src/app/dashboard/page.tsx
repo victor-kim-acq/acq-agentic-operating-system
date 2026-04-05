@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, Send, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
+import { RefreshCw, Send, ChevronDown, ChevronRight, Loader2, X, Table2 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Line,
@@ -69,6 +69,25 @@ interface ChatMessage {
   row_count: number;
   error: string | null;
   loading: boolean;
+}
+
+interface ColumnDef {
+  key: string;
+  label: string;
+  align?: 'left' | 'right';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  format?: (v: any) => string;
+  colorClass?: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  colorFn?: (v: any) => string;
+}
+
+interface TableModalData {
+  title: string;
+  columns: ColumnDef[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rows: any[];
+  highlightTotal?: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -145,6 +164,75 @@ function SkeletonTable({ rows = 4, cols = 4 }: { rows?: number; cols?: number })
 }
 
 /* ------------------------------------------------------------------ */
+/*  Table Modal component                                              */
+/* ------------------------------------------------------------------ */
+
+function TableModal({ open, onClose, title, columns, rows, highlightTotal }: TableModalData & { open: boolean; onClose: () => void }) {
+  useEffect(() => {
+    if (!open) return;
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  const thBase = 'text-xs text-slate-500 uppercase tracking-wider pb-2 border-b';
+  const tdBase = 'py-2 border-b border-slate-100';
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
+            <X className="w-5 h-5 text-slate-400" />
+          </button>
+        </div>
+        {/* Body */}
+        <div className="overflow-y-auto px-6 py-4 flex-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                {columns.map((col) => (
+                  <th key={col.key} className={`${thBase} ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+                    {col.label}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, i) => {
+                const firstVal = String(row[columns[0]?.key] ?? '');
+                const isTotal = highlightTotal && firstVal === 'Total';
+                return (
+                  <tr key={i} className={isTotal ? 'font-semibold bg-slate-50' : ''}>
+                    {columns.map((col) => {
+                      const raw = row[col.key];
+                      const display = col.format ? col.format(raw) : (raw == null ? '—' : String(raw));
+                      const color = col.colorFn ? col.colorFn(raw) : (col.colorClass ?? '');
+                      return (
+                        <td key={col.key} className={`${tdBase} ${col.align === 'right' ? 'text-right' : ''} ${color}`}>
+                          {display}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Chat bubble component                                              */
 /* ------------------------------------------------------------------ */
 
@@ -154,10 +242,8 @@ function ChatBubble({ msg, thClass, tdClass }: { msg: ChatMessage; thClass: stri
 
   return (
     <div className="space-y-2">
-      {/* Question */}
       <div className="bg-slate-100 rounded-lg p-3 text-sm text-slate-700">{msg.question}</div>
 
-      {/* Loading */}
       {msg.loading && (
         <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -165,7 +251,6 @@ function ChatBubble({ msg, thClass, tdClass }: { msg: ChatMessage; thClass: stri
         </div>
       )}
 
-      {/* Error */}
       {msg.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
           {msg.error}
@@ -175,12 +260,10 @@ function ChatBubble({ msg, thClass, tdClass }: { msg: ChatMessage; thClass: stri
         </div>
       )}
 
-      {/* Summary */}
       {msg.summary && (
         <div className="text-base text-slate-900 font-medium py-1">{msg.summary}</div>
       )}
 
-      {/* SQL toggle */}
       {msg.sql && !msg.error && (
         <button
           onClick={() => setSqlOpen(!sqlOpen)}
@@ -194,7 +277,6 @@ function ChatBubble({ msg, thClass, tdClass }: { msg: ChatMessage; thClass: stri
         <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 font-mono text-xs overflow-x-auto whitespace-pre-wrap">{msg.sql}</pre>
       )}
 
-      {/* Results table */}
       {msg.rows && msg.rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -225,6 +307,22 @@ function ChatBubble({ msg, thClass, tdClass }: { msg: ChatMessage; thClass: stri
 }
 
 /* ------------------------------------------------------------------ */
+/*  View Table button helper                                           */
+/* ------------------------------------------------------------------ */
+
+function ViewTableButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+    >
+      <Table2 className="w-3.5 h-3.5" />
+      View Table
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page component                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -238,6 +336,9 @@ export default function DashboardPage() {
   const [momRows, setMoMRows] = useState<MoMRow[]>([]);
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
+
+  /* ---- Table modal state ---- */
+  const [tableModal, setTableModal] = useState<TableModalData | null>(null);
 
   /* ---- Chat state ---- */
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -401,12 +502,10 @@ export default function DashboardPage() {
     .map((r) => ({ ...r, label: displaySource(r.billing_source) }));
 
   /* ---------------------------------------------------------------- */
-  /*  Table header style                                               */
+  /*  Table header style (for chat bubbles)                            */
   /* ---------------------------------------------------------------- */
   const thClass = 'text-left text-xs text-slate-500 uppercase tracking-wider pb-2 border-b';
-  const thRight = `${thClass} text-right`;
   const tdClass = 'py-2 border-b border-slate-100';
-  const tdRight = `${tdClass} text-right`;
 
   /* ---------------------------------------------------------------- */
   /*  Render                                                           */
@@ -468,7 +567,21 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Revenue by Tier */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Revenue by Tier</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Revenue by Tier</h2>
+                  <ViewTableButton onClick={() => setTableModal({
+                    title: 'Revenue by Tier',
+                    columns: [
+                      { key: 'tier', label: 'Tier' },
+                      { key: 'usd_mrr', label: 'USD MRR', align: 'right', format: fmt },
+                      { key: 'non_usd_mrr', label: 'Non-USD MRR', align: 'right', format: fmt },
+                      { key: 'total_mrr', label: 'Total MRR', align: 'right', format: fmt },
+                      { key: 'pct_of_total', label: '% of Total', align: 'right', format: (v) => `${Number(v).toFixed(1)}%` },
+                    ],
+                    rows: tierRows,
+                    highlightTotal: true,
+                  })} />
+                </div>
                 {tierChartData.length > 0 && (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={tierChartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -482,36 +595,25 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 )}
-                <table className="w-full text-sm mt-4">
-                  <thead>
-                    <tr>
-                      <th className={thClass}>Tier</th>
-                      <th className={thRight}>USD MRR</th>
-                      <th className={thRight}>Non-USD MRR</th>
-                      <th className={thRight}>Total MRR</th>
-                      <th className={thRight}>% of Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tierRows.map((row) => {
-                      const isTotal = row.tier === 'Total';
-                      return (
-                        <tr key={row.tier} className={isTotal ? 'font-semibold bg-slate-50' : ''}>
-                          <td className={tdClass}>{row.tier}</td>
-                          <td className={tdRight}>{fmt(row.usd_mrr)}</td>
-                          <td className={tdRight}>{fmt(row.non_usd_mrr)}</td>
-                          <td className={tdRight}>{fmt(row.total_mrr)}</td>
-                          <td className={tdRight}>{row.pct_of_total.toFixed(1)}%</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
               </div>
 
               {/* Revenue by Billing Source */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <h2 className="text-lg font-semibold mb-4">Revenue by Billing Source</h2>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold">Revenue by Billing Source</h2>
+                  <ViewTableButton onClick={() => setTableModal({
+                    title: 'Revenue by Billing Source',
+                    columns: [
+                      { key: 'billing_source', label: 'Billing Source', format: displaySource },
+                      { key: 'usd_mrr', label: 'USD MRR', align: 'right', format: fmt },
+                      { key: 'non_usd_mrr', label: 'Non-USD MRR', align: 'right', format: fmt },
+                      { key: 'total_mrr', label: 'Total MRR', align: 'right', format: fmt },
+                      { key: 'pct_of_total', label: '% of Total', align: 'right', format: (v) => `${Number(v).toFixed(1)}%` },
+                    ],
+                    rows: sourceRows,
+                    highlightTotal: true,
+                  })} />
+                </div>
                 {sourceChartData.length > 0 && (
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={sourceChartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -525,37 +627,25 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 )}
-                <table className="w-full text-sm mt-4">
-                  <thead>
-                    <tr>
-                      <th className={thClass}>Billing Source</th>
-                      <th className={thRight}>USD MRR</th>
-                      <th className={thRight}>Non-USD MRR</th>
-                      <th className={thRight}>Total MRR</th>
-                      <th className={thRight}>% of Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sourceRows.map((row) => {
-                      const isTotal = row.billing_source === 'Total';
-                      return (
-                        <tr key={row.billing_source} className={isTotal ? 'font-semibold bg-slate-50' : ''}>
-                          <td className={tdClass}>{displaySource(row.billing_source)}</td>
-                          <td className={tdRight}>{fmt(row.usd_mrr)}</td>
-                          <td className={tdRight}>{fmt(row.non_usd_mrr)}</td>
-                          <td className={tdRight}>{fmt(row.total_mrr)}</td>
-                          <td className={tdRight}>{row.pct_of_total.toFixed(1)}%</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
               </div>
             </div>
 
             {/* Row 3: MoM Revenue */}
             <div className="bg-white border border-slate-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Month-over-Month Revenue by Billing Source</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Month-over-Month Revenue by Billing Source</h2>
+                <ViewTableButton onClick={() => setTableModal({
+                  title: 'Month-over-Month Revenue by Billing Source',
+                  columns: [
+                    { key: 'month_label', label: 'Month' },
+                    { key: 'Recharge', label: 'Recharge', align: 'right', format: fmt },
+                    { key: 'Skool', label: 'Skool', align: 'right', format: fmt },
+                    { key: 'ACE', label: 'ACE', align: 'right', format: fmt },
+                    { key: 'Total', label: 'Total', align: 'right', format: fmt },
+                  ],
+                  rows: momPivoted,
+                })} />
+              </div>
               {momPivoted.length > 0 && (
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={momPivoted} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -570,33 +660,27 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               )}
-              <table className="w-full text-sm mt-4">
-                <thead>
-                  <tr>
-                    <th className={thClass}>Month</th>
-                    <th className={thRight}>Recharge</th>
-                    <th className={thRight}>Skool</th>
-                    <th className={thRight}>ACE</th>
-                    <th className={thRight}>Total</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {momPivoted.map((row) => (
-                    <tr key={row.sort_month}>
-                      <td className={tdClass}>{row.month_label}</td>
-                      <td className={tdRight}>{fmt(row.Recharge)}</td>
-                      <td className={tdRight}>{fmt(row.Skool)}</td>
-                      <td className={tdRight}>{fmt(row.ACE)}</td>
-                      <td className={tdRight}>{fmt(row.Total)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
 
             {/* Row 4: Sold vs Collected */}
             <div className="bg-white border border-slate-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Sold Revenue vs Collected Revenue</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Sold Revenue vs Collected Revenue</h2>
+                <ViewTableButton onClick={() => setTableModal({
+                  title: 'Sold Revenue vs Collected Revenue',
+                  columns: [
+                    { key: 'close_month', label: 'Month' },
+                    { key: 'closed_mrr', label: 'Closed MRR', align: 'right', format: fmt },
+                    { key: 'collected_mrr', label: 'Collected MRR', align: 'right', format: fmt, colorClass: 'text-emerald-600' },
+                    { key: 'cancelled_mrr', label: 'Cancelled MRR', align: 'right', format: fmt, colorClass: 'text-red-500' },
+                    { key: 'payment_failed_mrr', label: 'Payment Failed MRR', align: 'right', format: fmt, colorClass: 'text-red-500' },
+                    { key: 'no_billing_mrr', label: 'No Billing Yet MRR', align: 'right', format: fmt, colorClass: 'text-slate-400' },
+                    { key: 'deal_count', label: 'Deal Count', align: 'right' },
+                  ],
+                  rows: [...soldRows, { close_month: 'Total', sort_month: 'zzz', ...soldTotals }],
+                  highlightTotal: true,
+                })} />
+              </div>
               {soldRows.length > 0 && (
                 <ResponsiveContainer width="100%" height={350}>
                   <BarChart data={soldRows} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -613,48 +697,23 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               )}
-              <div className="overflow-x-auto mt-4">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className={thClass}>Month</th>
-                      <th className={thRight}>Closed MRR</th>
-                      <th className={thRight}>Collected MRR</th>
-                      <th className={thRight}>Cancelled MRR</th>
-                      <th className={thRight}>Payment Failed MRR</th>
-                      <th className={thRight}>No Billing Yet MRR</th>
-                      <th className={thRight}>Deal Count</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {soldRows.map((row) => (
-                      <tr key={row.sort_month}>
-                        <td className={tdClass}>{row.close_month}</td>
-                        <td className={tdRight}>{fmt(row.closed_mrr)}</td>
-                        <td className={`${tdRight} text-emerald-600`}>{fmt(row.collected_mrr)}</td>
-                        <td className={`${tdRight} text-red-500`}>{fmt(row.cancelled_mrr)}</td>
-                        <td className={`${tdRight} text-red-500`}>{fmt(row.payment_failed_mrr)}</td>
-                        <td className={`${tdRight} text-slate-400`}>{fmt(row.no_billing_mrr)}</td>
-                        <td className={tdRight}>{row.deal_count}</td>
-                      </tr>
-                    ))}
-                    <tr className="font-semibold bg-slate-50">
-                      <td className={tdClass}>Total</td>
-                      <td className={tdRight}>{fmt(soldTotals.closed_mrr)}</td>
-                      <td className={`${tdRight} text-emerald-600`}>{fmt(soldTotals.collected_mrr)}</td>
-                      <td className={`${tdRight} text-red-500`}>{fmt(soldTotals.cancelled_mrr)}</td>
-                      <td className={`${tdRight} text-red-500`}>{fmt(soldTotals.payment_failed_mrr)}</td>
-                      <td className={`${tdRight} text-slate-400`}>{fmt(soldTotals.no_billing_mrr)}</td>
-                      <td className={tdRight}>{soldTotals.deal_count}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
             </div>
 
             {/* Row 5: Churn Cohort */}
             <div className="bg-white border border-slate-200 rounded-lg p-6">
-              <h2 className="text-lg font-semibold mb-4">Churn Rate by Deal Close Month</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold">Churn Rate by Deal Close Month</h2>
+                <ViewTableButton onClick={() => setTableModal({
+                  title: 'Churn Rate by Deal Close Month',
+                  columns: [
+                    { key: 'close_month_cohort', label: 'Cohort Month' },
+                    { key: 'active_mrr', label: 'Active MRR', align: 'right', format: fmt, colorClass: 'text-emerald-600' },
+                    { key: 'cancellation_mrr', label: 'Cancellation MRR', align: 'right', format: fmt, colorClass: 'text-red-500' },
+                    { key: 'churn_rate_pct', label: 'Churn Rate %', align: 'right', format: (v) => `${Number(v).toFixed(1)}%`, colorFn: churnColor },
+                  ],
+                  rows: churnRows,
+                })} />
+              </div>
               {churnRows.length > 0 && (
                 <ResponsiveContainer width="100%" height={350}>
                   <ComposedChart data={churnRows} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
@@ -670,28 +729,6 @@ export default function DashboardPage() {
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
-              <table className="w-full text-sm mt-4">
-                <thead>
-                  <tr>
-                    <th className={thClass}>Cohort Month</th>
-                    <th className={thRight}>Active MRR</th>
-                    <th className={thRight}>Cancellation MRR</th>
-                    <th className={thRight}>Churn Rate %</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {churnRows.map((row) => (
-                    <tr key={row.sort_month}>
-                      <td className={tdClass}>{row.close_month_cohort}</td>
-                      <td className={`${tdRight} text-emerald-600`}>{fmt(row.active_mrr)}</td>
-                      <td className={`${tdRight} text-red-500`}>{fmt(row.cancellation_mrr)}</td>
-                      <td className={`${tdRight} ${churnColor(row.churn_rate_pct)}`}>
-                        {row.churn_rate_pct.toFixed(1)}%
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </>
         )}
@@ -708,7 +745,6 @@ export default function DashboardPage() {
 
           {chatOpen && (
             <div className="border-t border-slate-100 p-4 space-y-4">
-              {/* Suggestion chips */}
               {chatMessages.length === 0 && (
                 <div className="flex flex-wrap gap-2">
                   {SUGGESTIONS.map((s) => (
@@ -723,7 +759,6 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Messages */}
               {chatMessages.length > 0 && (
                 <div className="max-h-[600px] overflow-y-auto space-y-4">
                   {chatMessages.map((msg) => (
@@ -733,7 +768,6 @@ export default function DashboardPage() {
                 </div>
               )}
 
-              {/* Input */}
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
@@ -760,6 +794,16 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
+
+      {/* ---- Table Modal ---- */}
+      <TableModal
+        open={tableModal !== null}
+        onClose={() => setTableModal(null)}
+        title={tableModal?.title ?? ''}
+        columns={tableModal?.columns ?? []}
+        rows={tableModal?.rows ?? []}
+        highlightTotal={tableModal?.highlightTotal}
+      />
     </div>
   );
 }
