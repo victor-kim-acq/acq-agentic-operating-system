@@ -58,7 +58,7 @@ export async function GET() {
       LEFT JOIN deals d ON dm.deal_id = d.deal_id
       WHERE m.status IN ('Active', 'Cancellation')
         AND m.membership_type = 'Paying Member'
-        AND (m.billing_date AT TIME ZONE 'America/Los_Angeles')::date >= '2026-02-01'
+        AND m.billing_date::date >= '2026-02-01'
         AND (d.close_date AT TIME ZONE 'America/Los_Angeles')::date >= '2026-02-01'
       GROUP BY 1, 2
       ORDER BY 2

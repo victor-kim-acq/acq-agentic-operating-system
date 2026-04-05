@@ -23,7 +23,7 @@ export async function GET() {
         FROM memberships m
         WHERE m.status = 'Active'
           AND m.membership_type = 'Paying Member'
-          AND (m.billing_date AT TIME ZONE 'America/Los_Angeles')::date
+          AND m.billing_date::date
               >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
       `,
       sql`
@@ -45,7 +45,7 @@ export async function GET() {
           AND c.membership_type = 'Paying Member'
         WHERE m.status = 'Active'
           AND m.membership_type = 'Paying Member'
-          AND (m.billing_date AT TIME ZONE 'America/Los_Angeles')::date
+          AND m.billing_date::date
               >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
       `,
       sql`
@@ -64,7 +64,7 @@ export async function GET() {
         FROM memberships m
         WHERE m.status = 'Cancellation'
           AND m.membership_type = 'Paying Member'
-          AND (m.billing_date AT TIME ZONE 'America/Los_Angeles')::date
+          AND m.billing_date::date
               >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
       `,
     ]);

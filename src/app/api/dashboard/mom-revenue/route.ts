@@ -8,8 +8,8 @@ export async function GET() {
   try {
     const result = await sql`
       SELECT
-        TO_CHAR(DATE_TRUNC('month', (m.billing_date AT TIME ZONE 'America/Los_Angeles')), 'Mon YYYY') AS month_label,
-        DATE_TRUNC('month', (m.billing_date AT TIME ZONE 'America/Los_Angeles')) AS sort_month,
+        TO_CHAR(DATE_TRUNC('month', m.billing_date::date), 'Mon YYYY') AS month_label,
+        DATE_TRUNC('month', m.billing_date::date) AS sort_month,
         m.billing_source,
         COALESCE(SUM(
           CASE
@@ -26,7 +26,7 @@ export async function GET() {
       FROM memberships m
       WHERE m.status = 'Active'
         AND m.membership_type = 'Paying Member'
-        AND (m.billing_date AT TIME ZONE 'America/Los_Angeles')::date >= '2026-02-01'
+        AND m.billing_date::date >= '2026-02-01'
       GROUP BY 1, 2, 3
       ORDER BY 2, CASE m.billing_source
         WHEN 'recharge' THEN 1 WHEN 'skool' THEN 2 WHEN 'stripe' THEN 3 ELSE 4
