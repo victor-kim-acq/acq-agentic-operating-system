@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { RefreshCw, Send, ChevronDown, ChevronRight, Loader2 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
   ResponsiveContainer, ComposedChart, Line,
@@ -57,6 +57,18 @@ interface ChurnRow {
   active_mrr: number;
   cancellation_mrr: number;
   churn_rate_pct: number;
+}
+
+interface ChatMessage {
+  id: string;
+  question: string;
+  summary: string | null;
+  sql: string | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  rows: any[] | null;
+  row_count: number;
+  error: string | null;
+  loading: boolean;
 }
 
 /* ------------------------------------------------------------------ */
@@ -133,6 +145,86 @@ function SkeletonTable({ rows = 4, cols = 4 }: { rows?: number; cols?: number })
 }
 
 /* ------------------------------------------------------------------ */
+/*  Chat bubble component                                              */
+/* ------------------------------------------------------------------ */
+
+function ChatBubble({ msg, thClass, tdClass }: { msg: ChatMessage; thClass: string; tdClass: string }) {
+  const [sqlOpen, setSqlOpen] = useState(false);
+  const MAX_DISPLAY_ROWS = 20;
+
+  return (
+    <div className="space-y-2">
+      {/* Question */}
+      <div className="bg-slate-100 rounded-lg p-3 text-sm text-slate-700">{msg.question}</div>
+
+      {/* Loading */}
+      {msg.loading && (
+        <div className="flex items-center gap-2 text-sm text-slate-400 py-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Generating query...
+        </div>
+      )}
+
+      {/* Error */}
+      {msg.error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-700">
+          {msg.error}
+          {msg.sql && (
+            <pre className="mt-2 bg-slate-900 text-slate-100 rounded-lg p-3 font-mono text-xs overflow-x-auto whitespace-pre-wrap">{msg.sql}</pre>
+          )}
+        </div>
+      )}
+
+      {/* Summary */}
+      {msg.summary && (
+        <div className="text-base text-slate-900 font-medium py-1">{msg.summary}</div>
+      )}
+
+      {/* SQL toggle */}
+      {msg.sql && !msg.error && (
+        <button
+          onClick={() => setSqlOpen(!sqlOpen)}
+          className="flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors"
+        >
+          {sqlOpen ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+          {sqlOpen ? 'Hide SQL' : 'Show SQL'}
+        </button>
+      )}
+      {sqlOpen && msg.sql && (
+        <pre className="bg-slate-900 text-slate-100 rounded-lg p-4 font-mono text-xs overflow-x-auto whitespace-pre-wrap">{msg.sql}</pre>
+      )}
+
+      {/* Results table */}
+      {msg.rows && msg.rows.length > 0 && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                {Object.keys(msg.rows[0]).map((col) => (
+                  <th key={col} className={thClass}>{col}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {msg.rows.slice(0, MAX_DISPLAY_ROWS).map((row, i) => (
+                <tr key={i}>
+                  {Object.values(row).map((val, j) => (
+                    <td key={j} className={tdClass}>{val == null ? '—' : String(val)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {msg.row_count > MAX_DISPLAY_ROWS && (
+            <p className="text-xs text-slate-400 mt-2">Showing {MAX_DISPLAY_ROWS} of {msg.row_count} rows</p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Page component                                                     */
 /* ------------------------------------------------------------------ */
 
@@ -146,6 +238,46 @@ export default function DashboardPage() {
   const [momRows, setMoMRows] = useState<MoMRow[]>([]);
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
+
+  /* ---- Chat state ---- */
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatOpen, setChatOpen] = useState(true);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const SUGGESTIONS = [
+    'How many active members do we have right now?',
+    "What's our total MRR by tier this month?",
+    'Show me the top 5 deals by MRR that closed in March',
+    'Which billing source has the highest churn rate?',
+  ];
+
+  const submitQuestion = useCallback(async (question: string) => {
+    const id = crypto.randomUUID();
+    const msg: ChatMessage = { id, question, summary: null, sql: null, rows: null, row_count: 0, error: null, loading: true };
+    setChatMessages((prev) => [...prev, msg]);
+    setChatInput('');
+
+    try {
+      const res = await fetch('/api/dashboard/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setChatMessages((prev) => prev.map((m) => m.id === id ? { ...m, loading: false, error: data.error || 'Request failed', sql: data.sql || null } : m));
+      } else {
+        setChatMessages((prev) => prev.map((m) => m.id === id ? { ...m, loading: false, summary: data.summary, sql: data.sql, rows: data.rows, row_count: data.row_count } : m));
+      }
+    } catch {
+      setChatMessages((prev) => prev.map((m) => m.id === id ? { ...m, loading: false, error: 'Network error' } : m));
+    }
+  }, []);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -563,6 +695,70 @@ export default function DashboardPage() {
             </div>
           </>
         )}
+
+        {/* ---- Chat Panel ---- */}
+        <div className="bg-white border border-slate-200 rounded-lg">
+          <button
+            onClick={() => setChatOpen(!chatOpen)}
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+          >
+            <h2 className="text-lg font-semibold">Ask a question about your data</h2>
+            {chatOpen ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+          </button>
+
+          {chatOpen && (
+            <div className="border-t border-slate-100 p-4 space-y-4">
+              {/* Suggestion chips */}
+              {chatMessages.length === 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => submitQuestion(s)}
+                      className="text-xs text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1.5 transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Messages */}
+              {chatMessages.length > 0 && (
+                <div className="max-h-[600px] overflow-y-auto space-y-4">
+                  {chatMessages.map((msg) => (
+                    <ChatBubble key={msg.id} msg={msg} thClass={thClass} tdClass={tdClass} />
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+
+              {/* Input */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (chatInput.trim()) submitQuestion(chatInput.trim());
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask about revenue, members, deals, churn..."
+                  className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
