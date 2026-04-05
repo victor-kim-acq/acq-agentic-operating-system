@@ -147,6 +147,7 @@ export async function GET(
 
   let skoolProfile = null;
   let skoolPosts: Array<Record<string, unknown>> = [];
+  let skoolComments: Array<Record<string, unknown>> = [];
 
   if (allEmails.length > 0) {
     try {
@@ -161,13 +162,24 @@ export async function GET(
       if (memberResult.rows.length > 0) {
         skoolProfile = memberResult.rows[0];
 
-        const postsResult = await sql`
-          SELECT post_id, title, content, category, upvotes, comments_count, created_at
-          FROM skool_posts
-          WHERE author_id = ${skoolProfile.user_id}
-          ORDER BY created_at DESC
-        `;
+        const [postsResult, commentsResult] = await Promise.all([
+          sql`
+            SELECT post_id, title, content, category, upvotes, comments_count, created_at
+            FROM skool_posts
+            WHERE author_id = ${skoolProfile.user_id}
+            ORDER BY created_at DESC
+          `,
+          sql`
+            SELECT c.comment_id, c.content, c.upvotes, c.created_at, c.post_id,
+                   p.title AS parent_post_title
+            FROM skool_comments c
+            JOIN skool_posts p ON p.post_id = c.post_id
+            WHERE c.author_id = ${skoolProfile.user_id}
+            ORDER BY c.created_at DESC
+          `,
+        ]);
         skoolPosts = postsResult.rows;
+        skoolComments = commentsResult.rows;
       }
     } catch (e) {
       console.error("Skool query failed:", e);
@@ -189,5 +201,6 @@ export async function GET(
     deals,
     skoolProfile,
     skoolPosts,
+    skoolComments,
   });
 }

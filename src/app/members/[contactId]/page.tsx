@@ -40,6 +40,15 @@ interface SkoolPost {
   created_at: string;
 }
 
+interface SkoolComment {
+  comment_id: string;
+  content: string;
+  upvotes: number;
+  created_at: string;
+  post_id: string;
+  parent_post_title: string;
+}
+
 interface MemberProfile {
   contactId: string;
   firstname: string;
@@ -54,6 +63,7 @@ interface MemberProfile {
   deals: Deal[];
   skoolProfile: SkoolProfile | null;
   skoolPosts: SkoolPost[];
+  skoolComments: SkoolComment[];
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -174,7 +184,15 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
-function SkoolProfileCard({ profile }: { profile: SkoolProfile }) {
+function SkoolProfileCard({
+  profile,
+  posts,
+  comments,
+}: {
+  profile: SkoolProfile;
+  posts: SkoolPost[];
+  comments: SkoolComment[];
+}) {
   const [bioExpanded, setBioExpanded] = useState(false);
   const ltvDollars = (profile.ltv / 100).toLocaleString("en-US", {
     style: "currency",
@@ -253,6 +271,92 @@ function SkoolProfileCard({ profile }: { profile: SkoolProfile }) {
           )}
         </div>
       )}
+
+      {(() => {
+        type ActivityItem =
+          | (SkoolPost & { type: "post" })
+          | (SkoolComment & { type: "comment" });
+
+        const items: ActivityItem[] = [
+          ...posts.map((p) => ({ ...p, type: "post" as const })),
+          ...comments.map((c) => ({ ...c, type: "comment" as const })),
+        ]
+          .sort(
+            (a, b) =>
+              new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          )
+          .slice(0, 5);
+
+        if (items.length === 0) return null;
+
+        return (
+          <div className="mt-4 pt-3 border-t border-slate-100">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                Recent Activity
+              </h3>
+              <span className="text-[10px] font-semibold bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                {items.length}
+              </span>
+            </div>
+            <div className="space-y-3">
+              {items.map((item) =>
+                item.type === "post" ? (
+                  <div
+                    key={`post-${item.post_id}`}
+                    className="border-l-2 border-indigo-200 pl-3 pb-3 border-b border-b-slate-100 last:border-b-0 last:pb-0"
+                  >
+                    <p className="text-sm font-medium text-slate-800">
+                      {item.title || "Untitled"}
+                    </p>
+                    {item.content && (
+                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        {stripMarkdown(item.content).slice(0, 120)}
+                        {item.content.length > 120 ? "..." : ""}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                      {item.category && <span>{item.category}</span>}
+                      {item.created_at && <span>{formatDate(item.created_at)}</span>}
+                      {item.upvotes > 0 && (
+                        <span>
+                          {item.upvotes} upvote{item.upvotes !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    key={`comment-${item.comment_id}`}
+                    className="border-l-2 border-slate-200 pl-3 pb-3 border-b border-b-slate-100 last:border-b-0 last:pb-0"
+                  >
+                    <p className="text-xs text-slate-400">
+                      Commented on:{" "}
+                      <span className="text-slate-600 font-medium">
+                        {item.parent_post_title || "Untitled"}
+                      </span>
+                    </p>
+                    {item.content && (
+                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        {stripMarkdown(item.content).slice(0, 120)}
+                        {item.content.length > 120 ? "..." : ""}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                      {item.created_at && <span>{formatDate(item.created_at)}</span>}
+                      {item.upvotes > 0 && (
+                        <span>
+                          {item.upvotes} upvote{item.upvotes !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -577,12 +681,11 @@ export default function MemberDetailPage() {
 
         {/* Skool Community Profile */}
         {member.skoolProfile && (
-          <SkoolProfileCard profile={member.skoolProfile} />
-        )}
-
-        {/* Skool Community Posts */}
-        {member.skoolPosts && member.skoolPosts.length > 0 && (
-          <SkoolPostsSection posts={member.skoolPosts} />
+          <SkoolProfileCard
+            profile={member.skoolProfile}
+            posts={member.skoolPosts ?? []}
+            comments={member.skoolComments ?? []}
+          />
         )}
 
         {/* Timeline */}
