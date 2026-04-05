@@ -28,6 +28,12 @@ interface MemberTimelineProps {
   deals: Deal[];
 }
 
+const PIPELINE_NAMES: Record<string, string> = {
+  "865935129": "ACQ Vantage",
+  "1028710734": "L3 Workshops",
+  "1028710730": "L1",
+};
+
 const DEAL_COLORS = [
   {
     circle: "text-blue-600 ring-2 ring-blue-400",
@@ -171,7 +177,7 @@ export default function MemberTimeline({
     ...deals.map((d) => ({
       date: d.properties.createdate || d.properties.closedate || "",
       type: "deal" as const,
-      label: "Deal",
+      label: PIPELINE_NAMES[d.properties.pipeline ?? ""] ?? d.properties.pipeline ?? "Deal",
       sub: d.properties.dealstage || "",
       detail: d.properties.amount ? `$${parseFloat(d.properties.amount).toLocaleString()}` : "",
       id: d.id,
@@ -217,7 +223,7 @@ export default function MemberTimeline({
         ref={scrollRef}
         className="overflow-x-auto scrollbar-thin min-h-[280px]"
       >
-        <div className="relative flex gap-4 px-4 min-h-[280px]" style={{ minWidth: "min-content" }}>
+        <div className="relative flex gap-6 px-8 min-h-[280px]">
           {/* Horizontal connector line — vertically centered */}
           <div className="absolute left-0 right-0 h-px bg-slate-200 top-1/2 -translate-y-px" />
 
@@ -232,7 +238,7 @@ export default function MemberTimeline({
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="flex-shrink-0 w-auto min-w-[100px] max-w-[180px] flex flex-col items-center"
+                className="flex-1 min-w-[120px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
               >
                 {isAbove ? (
                   <>

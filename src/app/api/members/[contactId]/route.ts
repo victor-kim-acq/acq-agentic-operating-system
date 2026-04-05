@@ -80,7 +80,7 @@ export async function GET(
     "vtg_subscription_id",
   ];
 
-  const dealProps = ["dealname", "dealstage", "amount", "closedate", "createdate"];
+  const dealProps = ["dealname", "dealstage", "amount", "closedate", "createdate", "pipeline"];
 
   const [membershipRecordsRaw, deals, membershipDealAssocData] = await Promise.all([
     membershipIds.length > 0
