@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { RefreshCw, Send, ChevronDown, ChevronRight, Loader2, X, Table2 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-  ResponsiveContainer, ComposedChart, Line,
+  ResponsiveContainer, ComposedChart, Line, LabelList,
 } from 'recharts';
 
 /* ------------------------------------------------------------------ */
@@ -82,14 +82,6 @@ interface ColumnDef {
   colorFn?: (v: any) => string;
 }
 
-interface TableModalData {
-  title: string;
-  columns: ColumnDef[];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  rows: any[];
-  highlightTotal?: boolean;
-}
-
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
@@ -102,6 +94,11 @@ const fmt = (n: number) =>
     maximumFractionDigits: 0,
   }).format(n);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const fmtLabel: any = (v: unknown) => { const n = Number(v); return n > 0 ? fmt(n) : ''; };
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pctLabel: any = (v: unknown) => { const n = Number(v); return n > 0 ? `${n.toFixed(1)}%` : ''; };
+
 const sourceLabel: Record<string, string> = {
   recharge: 'Recharge',
   skool: 'Skool',
@@ -110,6 +107,77 @@ const sourceLabel: Record<string, string> = {
 };
 
 const displaySource = (s: string) => sourceLabel[s] ?? s;
+
+/* ------------------------------------------------------------------ */
+/*  Detail column definitions per panel                                */
+/* ------------------------------------------------------------------ */
+
+const DETAIL_COLUMNS: Record<string, ColumnDef[]> = {
+  'revenue-by-tier': [
+    { key: 'membership_id', label: 'ID' },
+    { key: 'membership_name', label: 'Name' },
+    { key: 'tier', label: 'Tier' },
+    { key: 'billing_source', label: 'Source' },
+    { key: 'mrr', label: 'Raw MRR', align: 'right', format: fmt },
+    { key: 'normalized_mrr', label: 'Normalized MRR', align: 'right', format: fmt },
+    { key: 'currency', label: 'Currency' },
+    { key: 'billing_date', label: 'Billing Date' },
+  ],
+  'revenue-by-source': [
+    { key: 'membership_id', label: 'ID' },
+    { key: 'membership_name', label: 'Name' },
+    { key: 'tier', label: 'Tier' },
+    { key: 'billing_source', label: 'Source' },
+    { key: 'mrr', label: 'Raw MRR', align: 'right', format: fmt },
+    { key: 'normalized_mrr', label: 'Normalized MRR', align: 'right', format: fmt },
+    { key: 'currency', label: 'Currency' },
+    { key: 'billing_date', label: 'Billing Date' },
+  ],
+  'mom-revenue': [
+    { key: 'membership_id', label: 'ID' },
+    { key: 'membership_name', label: 'Name' },
+    { key: 'billing_month', label: 'Month' },
+    { key: 'tier', label: 'Tier' },
+    { key: 'billing_source', label: 'Source' },
+    { key: 'normalized_mrr', label: 'Normalized MRR', align: 'right', format: fmt },
+    { key: 'currency', label: 'Currency' },
+    { key: 'billing_date', label: 'Billing Date' },
+  ],
+  'sold-vs-collected': [
+    { key: 'deal_id', label: 'Deal ID' },
+    { key: 'dealname', label: 'Deal Name' },
+    { key: 'close_month', label: 'Close Month' },
+    { key: 'firstname', label: 'First Name' },
+    { key: 'lastname', label: 'Last Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'tier', label: 'Tier' },
+    { key: 'normalized_mrr', label: 'MRR', align: 'right', format: fmt },
+    {
+      key: 'deal_status', label: 'Status',
+      colorFn: (v: string) => {
+        if (v === 'Collected') return 'text-emerald-600';
+        if (v === 'Cancelled') return 'text-red-500';
+        if (v === 'Payment Failed') return 'text-amber-500';
+        if (v === 'No Billing Yet') return 'text-slate-400';
+        return '';
+      },
+    },
+  ],
+  'churn-cohort': [
+    { key: 'membership_id', label: 'ID' },
+    { key: 'membership_name', label: 'Name' },
+    {
+      key: 'status', label: 'Status',
+      colorFn: (v: string) => v === 'Active' ? 'text-emerald-600' : v === 'Cancellation' ? 'text-red-500' : '',
+    },
+    { key: 'close_month', label: 'Deal Close Month' },
+    { key: 'dealname', label: 'Deal Name' },
+    { key: 'tier', label: 'Tier' },
+    { key: 'billing_source', label: 'Source' },
+    { key: 'normalized_mrr', label: 'Normalized MRR', align: 'right', format: fmt },
+    { key: 'billing_date', label: 'Billing Date' },
+  ],
+};
 
 /* ------------------------------------------------------------------ */
 /*  Chart tooltip                                                      */
@@ -164,10 +232,17 @@ function SkeletonTable({ rows = 4, cols = 4 }: { rows?: number; cols?: number })
 }
 
 /* ------------------------------------------------------------------ */
-/*  Table Modal component                                              */
+/*  Detail Table Modal                                                 */
 /* ------------------------------------------------------------------ */
 
-function TableModal({ open, onClose, title, columns, rows, highlightTotal }: TableModalData & { open: boolean; onClose: () => void }) {
+function DetailModal({ open, onClose, title, panel }: { open: boolean; onClose: () => void; title: string; panel: string }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [rows, setRows] = useState<any[]>([]);
+  const [rowCount, setRowCount] = useState(0);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const MAX_DISPLAY = 200;
+
   useEffect(() => {
     if (!open) return;
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
@@ -175,57 +250,96 @@ function TableModal({ open, onClose, title, columns, rows, highlightTotal }: Tab
     return () => document.removeEventListener('keydown', handleEsc);
   }, [open, onClose]);
 
+  useEffect(() => {
+    if (!open || !panel) return;
+    setDetailLoading(true);
+    setError(null);
+    setRows([]);
+    fetch(`/api/dashboard/detail?panel=${panel}&t=${Date.now()}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          setError(data.error);
+        } else {
+          setRows(data.rows ?? []);
+          setRowCount(data.row_count ?? 0);
+        }
+      })
+      .catch(() => setError('Failed to fetch detail data'))
+      .finally(() => setDetailLoading(false));
+  }, [open, panel]);
+
   if (!open) return null;
 
-  const thBase = 'text-xs text-slate-500 uppercase tracking-wider pb-2 border-b';
-  const tdBase = 'py-2 border-b border-slate-100';
+  const columns = DETAIL_COLUMNS[panel] ?? [];
+  const thBase = 'text-xs text-slate-500 uppercase tracking-wider pb-2 border-b whitespace-nowrap';
+  const tdBase = 'py-2 border-b border-slate-100 whitespace-nowrap';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] flex flex-col"
+        className="bg-white rounded-xl shadow-xl max-w-6xl w-full mx-4 max-h-[85vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
-          <h3 className="text-lg font-semibold">{title}</h3>
+        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4 shrink-0">
+          <h3 className="text-lg font-semibold">
+            {title}
+            {!detailLoading && rowCount > 0 && (
+              <span className="text-sm font-normal text-slate-400 ml-2">({rowCount} records)</span>
+            )}
+          </h3>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 transition-colors">
             <X className="w-5 h-5 text-slate-400" />
           </button>
         </div>
         {/* Body */}
-        <div className="overflow-y-auto px-6 py-4 flex-1">
-          <table className="w-full text-sm">
-            <thead>
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.key} className={`${thBase} ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row, i) => {
-                const firstVal = String(row[columns[0]?.key] ?? '');
-                const isTotal = highlightTotal && firstVal === 'Total';
-                return (
-                  <tr key={i} className={isTotal ? 'font-semibold bg-slate-50' : ''}>
-                    {columns.map((col) => {
-                      const raw = row[col.key];
-                      const display = col.format ? col.format(raw) : (raw == null ? '—' : String(raw));
-                      const color = col.colorFn ? col.colorFn(raw) : (col.colorClass ?? '');
-                      return (
-                        <td key={col.key} className={`${tdBase} ${col.align === 'right' ? 'text-right' : ''} ${color}`}>
-                          {display}
-                        </td>
-                      );
-                    })}
+        <div className="overflow-auto px-6 py-4 flex-1">
+          {detailLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+            </div>
+          )}
+          {error && (
+            <div className="text-sm text-red-600 py-4">{error}</div>
+          )}
+          {!detailLoading && !error && rows.length > 0 && (
+            <>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    {columns.map((col) => (
+                      <th key={col.key} className={`${thBase} ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+                        {col.label}
+                      </th>
+                    ))}
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {rows.slice(0, MAX_DISPLAY).map((row, i) => (
+                    <tr key={i} className="hover:bg-slate-50">
+                      {columns.map((col) => {
+                        const raw = row[col.key];
+                        const display = col.format ? col.format(Number(raw)) : (raw == null ? '—' : String(raw));
+                        const color = col.colorFn ? col.colorFn(raw) : (col.colorClass ?? '');
+                        return (
+                          <td key={col.key} className={`${tdBase} ${col.align === 'right' ? 'text-right' : ''} ${color}`}>
+                            {display}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {rowCount > MAX_DISPLAY && (
+                <p className="text-xs text-slate-400 mt-3">Showing {MAX_DISPLAY} of {rowCount} records</p>
+              )}
+            </>
+          )}
+          {!detailLoading && !error && rows.length === 0 && (
+            <p className="text-sm text-slate-400 py-4">No records found.</p>
+          )}
         </div>
       </div>
     </div>
@@ -337,8 +451,8 @@ export default function DashboardPage() {
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
 
-  /* ---- Table modal state ---- */
-  const [tableModal, setTableModal] = useState<TableModalData | null>(null);
+  /* ---- Detail modal state ---- */
+  const [detailModal, setDetailModal] = useState<{ title: string; panel: string } | null>(null);
 
   /* ---- Chat state ---- */
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -457,7 +571,7 @@ export default function DashboardPage() {
     fetchAll();
   }, [fetchAll]);
 
-  /* ---- Pivot MoM data: rows = months, cols = billing sources ---- */
+  /* ---- Pivot MoM data ---- */
   const momPivoted = (() => {
     const monthMap = new Map<string, { month_label: string; sort_month: string; Recharge: number; Skool: number; ACE: number; Total: number }>();
     for (const row of momRows) {
@@ -474,7 +588,7 @@ export default function DashboardPage() {
     return Array.from(monthMap.values()).sort((a, b) => a.sort_month.localeCompare(b.sort_month));
   })();
 
-  /* ---- Sold totals row ---- */
+  /* ---- Sold totals ---- */
   const soldTotals = soldRows.reduce(
     (acc, r) => ({
       closed_mrr: acc.closed_mrr + r.closed_mrr,
@@ -487,23 +601,13 @@ export default function DashboardPage() {
     { closed_mrr: 0, collected_mrr: 0, cancelled_mrr: 0, payment_failed_mrr: 0, no_billing_mrr: 0, deal_count: 0 },
   );
 
-  /* ---- Churn rate color ---- */
-  const churnColor = (pct: number) => {
-    if (pct > 50) return 'text-red-600';
-    if (pct > 25) return 'text-red-500';
-    if (pct > 10) return 'text-amber-500';
-    return 'text-emerald-600';
-  };
-
-  /* ---- Chart data: tier/source rows excluding Total ---- */
+  /* ---- Chart data ---- */
   const tierChartData = tierRows.filter((r) => r.tier !== 'Total');
   const sourceChartData = sourceRows
     .filter((r) => r.billing_source !== 'Total')
     .map((r) => ({ ...r, label: displaySource(r.billing_source) }));
 
-  /* ---------------------------------------------------------------- */
-  /*  Table header style (for chat bubbles)                            */
-  /* ---------------------------------------------------------------- */
+  /* ---- Styles for chat ---- */
   const thClass = 'text-left text-xs text-slate-500 uppercase tracking-wider pb-2 border-b';
   const tdClass = 'py-2 border-b border-slate-100';
 
@@ -519,11 +623,7 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-semibold">Dashboard</h1>
           <div className="flex items-center gap-3">
             {lastUpdated && <span className="text-xs text-slate-400">Last updated: {lastUpdated}</span>}
-            <button
-              onClick={fetchAll}
-              className="p-2 rounded-lg hover:bg-slate-200 transition-colors"
-              title="Refresh"
-            >
+            <button onClick={fetchAll} className="p-2 rounded-lg hover:bg-slate-200 transition-colors" title="Refresh">
               <RefreshCw className={`w-4 h-4 text-slate-600 ${loading ? 'animate-spin' : ''}`} />
             </button>
           </div>
@@ -532,15 +632,8 @@ export default function DashboardPage() {
         {/* Loading skeleton */}
         {loading && !summary ? (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <SkeletonCard />
-              <SkeletonCard />
-              <SkeletonCard />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <SkeletonTable cols={5} />
-              <SkeletonTable cols={5} />
-            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><SkeletonTable cols={5} /><SkeletonTable cols={5} /></div>
             <SkeletonTable cols={5} rows={6} />
             <SkeletonTable cols={7} rows={6} />
             <SkeletonTable cols={4} rows={6} />
@@ -563,35 +656,28 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Row 2: Two panels side by side */}
+            {/* Row 2: Revenue by Tier + Source */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Revenue by Tier */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold">Revenue by Tier</h2>
-                  <ViewTableButton onClick={() => setTableModal({
-                    title: 'Revenue by Tier',
-                    columns: [
-                      { key: 'tier', label: 'Tier' },
-                      { key: 'usd_mrr', label: 'USD MRR', align: 'right', format: fmt },
-                      { key: 'non_usd_mrr', label: 'Non-USD MRR', align: 'right', format: fmt },
-                      { key: 'total_mrr', label: 'Total MRR', align: 'right', format: fmt },
-                      { key: 'pct_of_total', label: '% of Total', align: 'right', format: (v) => `${Number(v).toFixed(1)}%` },
-                    ],
-                    rows: tierRows,
-                    highlightTotal: true,
-                  })} />
+                  <ViewTableButton onClick={() => setDetailModal({ title: 'Revenue by Tier — Detail', panel: 'revenue-by-tier' })} />
                 </div>
                 {tierChartData.length > 0 && (
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={tierChartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <BarChart data={tierChartData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="tier" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
                       <Tooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="usd_mrr" name="USD MRR" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="non_usd_mrr" name="Non-USD MRR" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="usd_mrr" name="USD MRR" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="usd_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                      </Bar>
+                      <Bar dataKey="non_usd_mrr" name="Non-USD MRR" fill="#10b981" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="non_usd_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -601,29 +687,22 @@ export default function DashboardPage() {
               <div className="bg-white border border-slate-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold">Revenue by Billing Source</h2>
-                  <ViewTableButton onClick={() => setTableModal({
-                    title: 'Revenue by Billing Source',
-                    columns: [
-                      { key: 'billing_source', label: 'Billing Source', format: displaySource },
-                      { key: 'usd_mrr', label: 'USD MRR', align: 'right', format: fmt },
-                      { key: 'non_usd_mrr', label: 'Non-USD MRR', align: 'right', format: fmt },
-                      { key: 'total_mrr', label: 'Total MRR', align: 'right', format: fmt },
-                      { key: 'pct_of_total', label: '% of Total', align: 'right', format: (v) => `${Number(v).toFixed(1)}%` },
-                    ],
-                    rows: sourceRows,
-                    highlightTotal: true,
-                  })} />
+                  <ViewTableButton onClick={() => setDetailModal({ title: 'Revenue by Billing Source — Detail', panel: 'revenue-by-source' })} />
                 </div>
                 {sourceChartData.length > 0 && (
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={sourceChartData} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                    <BarChart data={sourceChartData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 12 }} />
                       <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
                       <Tooltip content={<ChartTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }} />
-                      <Bar dataKey="usd_mrr" name="USD MRR" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="non_usd_mrr" name="Non-USD MRR" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="usd_mrr" name="USD MRR" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="usd_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                      </Bar>
+                      <Bar dataKey="non_usd_mrr" name="Non-USD MRR" fill="#10b981" radius={[4, 4, 0, 0]}>
+                        <LabelList dataKey="non_usd_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                      </Bar>
                     </BarChart>
                   </ResponsiveContainer>
                 )}
@@ -634,21 +713,11 @@ export default function DashboardPage() {
             <div className="bg-white border border-slate-200 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Month-over-Month Revenue by Billing Source</h2>
-                <ViewTableButton onClick={() => setTableModal({
-                  title: 'Month-over-Month Revenue by Billing Source',
-                  columns: [
-                    { key: 'month_label', label: 'Month' },
-                    { key: 'Recharge', label: 'Recharge', align: 'right', format: fmt },
-                    { key: 'Skool', label: 'Skool', align: 'right', format: fmt },
-                    { key: 'ACE', label: 'ACE', align: 'right', format: fmt },
-                    { key: 'Total', label: 'Total', align: 'right', format: fmt },
-                  ],
-                  rows: momPivoted,
-                })} />
+                <ViewTableButton onClick={() => setDetailModal({ title: 'MoM Revenue — Detail', panel: 'mom-revenue' })} />
               </div>
               {momPivoted.length > 0 && (
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={momPivoted} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                  <BarChart data={momPivoted} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="month_label" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
@@ -656,7 +725,9 @@ export default function DashboardPage() {
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="Recharge" stackId="a" fill="#84cc16" />
                     <Bar dataKey="Skool" stackId="a" fill="#fbbf24" />
-                    <Bar dataKey="ACE" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="ACE" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="Total" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -666,34 +737,31 @@ export default function DashboardPage() {
             <div className="bg-white border border-slate-200 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Sold Revenue vs Collected Revenue</h2>
-                <ViewTableButton onClick={() => setTableModal({
-                  title: 'Sold Revenue vs Collected Revenue',
-                  columns: [
-                    { key: 'close_month', label: 'Month' },
-                    { key: 'closed_mrr', label: 'Closed MRR', align: 'right', format: fmt },
-                    { key: 'collected_mrr', label: 'Collected MRR', align: 'right', format: fmt, colorClass: 'text-emerald-600' },
-                    { key: 'cancelled_mrr', label: 'Cancelled MRR', align: 'right', format: fmt, colorClass: 'text-red-500' },
-                    { key: 'payment_failed_mrr', label: 'Payment Failed MRR', align: 'right', format: fmt, colorClass: 'text-red-500' },
-                    { key: 'no_billing_mrr', label: 'No Billing Yet MRR', align: 'right', format: fmt, colorClass: 'text-slate-400' },
-                    { key: 'deal_count', label: 'Deal Count', align: 'right' },
-                  ],
-                  rows: [...soldRows, { close_month: 'Total', sort_month: 'zzz', ...soldTotals }],
-                  highlightTotal: true,
-                })} />
+                <ViewTableButton onClick={() => setDetailModal({ title: 'Sold Revenue vs Collected — Detail', panel: 'sold-vs-collected' })} />
               </div>
               {soldRows.length > 0 && (
                 <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={soldRows} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                  <BarChart data={soldRows} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="close_month" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
                     <Tooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="closed_mrr" name="Closed MRR" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="collected_mrr" name="Collected MRR" fill="#10b981" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="payment_failed_mrr" name="Payment Failed" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="no_billing_mrr" name="No Billing Yet" fill="#94a3b8" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="closed_mrr" name="Closed MRR" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="closed_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
+                    <Bar dataKey="collected_mrr" name="Collected MRR" fill="#10b981" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="collected_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
+                    <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="#ef4444" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="cancelled_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
+                    <Bar dataKey="payment_failed_mrr" name="Payment Failed" fill="#f59e0b" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="payment_failed_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
+                    <Bar dataKey="no_billing_mrr" name="No Billing Yet" fill="#94a3b8" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="no_billing_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               )}
@@ -703,29 +771,26 @@ export default function DashboardPage() {
             <div className="bg-white border border-slate-200 rounded-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold">Churn Rate by Deal Close Month</h2>
-                <ViewTableButton onClick={() => setTableModal({
-                  title: 'Churn Rate by Deal Close Month',
-                  columns: [
-                    { key: 'close_month_cohort', label: 'Cohort Month' },
-                    { key: 'active_mrr', label: 'Active MRR', align: 'right', format: fmt, colorClass: 'text-emerald-600' },
-                    { key: 'cancellation_mrr', label: 'Cancellation MRR', align: 'right', format: fmt, colorClass: 'text-red-500' },
-                    { key: 'churn_rate_pct', label: 'Churn Rate %', align: 'right', format: (v) => `${Number(v).toFixed(1)}%`, colorFn: churnColor },
-                  ],
-                  rows: churnRows,
-                })} />
+                <ViewTableButton onClick={() => setDetailModal({ title: 'Churn Cohort — Detail', panel: 'churn-cohort' })} />
               </div>
               {churnRows.length > 0 && (
                 <ResponsiveContainer width="100%" height={350}>
-                  <ComposedChart data={churnRows} margin={{ top: 5, right: 20, left: 20, bottom: 5 }}>
+                  <ComposedChart data={churnRows} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                     <XAxis dataKey="close_month_cohort" tick={{ fontSize: 12 }} />
                     <YAxis yAxisId="left" tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
                     <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} tickFormatter={(v) => `${v}%`} />
                     <Tooltip content={<ChartTooltip />} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                    <Bar yAxisId="left" dataKey="cancellation_mrr" name="Cancellation MRR" fill="#ef4444" radius={[4, 4, 0, 0]} />
-                    <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 4 }} />
+                    <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="#3b82f6" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="active_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
+                    <Bar yAxisId="left" dataKey="cancellation_mrr" name="Cancellation MRR" fill="#ef4444" radius={[4, 4, 0, 0]}>
+                      <LabelList dataKey="cancellation_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+                    </Bar>
+                    <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 4 }}>
+                      <LabelList dataKey="churn_rate_pct" position="top" fontSize={11} formatter={pctLabel} />
+                    </Line>
                   </ComposedChart>
                 </ResponsiveContainer>
               )}
@@ -795,14 +860,12 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ---- Table Modal ---- */}
-      <TableModal
-        open={tableModal !== null}
-        onClose={() => setTableModal(null)}
-        title={tableModal?.title ?? ''}
-        columns={tableModal?.columns ?? []}
-        rows={tableModal?.rows ?? []}
-        highlightTotal={tableModal?.highlightTotal}
+      {/* ---- Detail Modal ---- */}
+      <DetailModal
+        open={detailModal !== null}
+        onClose={() => setDetailModal(null)}
+        title={detailModal?.title ?? ''}
+        panel={detailModal?.panel ?? ''}
       />
     </div>
   );
