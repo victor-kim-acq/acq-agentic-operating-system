@@ -91,7 +91,7 @@ function EventCard({
   cardClass: string;
 }) {
   return (
-    <div className={`rounded-lg border p-2.5 shadow-sm ${cardClass}`}>
+    <div className={`rounded-lg border p-2.5 shadow-sm ${event.type === "membership" ? "border-dashed" : ""} ${cardClass}`}>
       <a
         href={href}
         target="_blank"
