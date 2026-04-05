@@ -84,7 +84,7 @@ function EventCard({
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors leading-tight line-clamp-2"
+        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors leading-tight truncate block"
       >
         {event.label}
       </a>
@@ -213,28 +213,40 @@ export default function MemberTimeline({
         ref={scrollRef}
         className="overflow-x-auto scrollbar-thin"
       >
-        <div className="relative flex gap-4 px-4 pb-2" style={{ minWidth: "min-content" }}>
-          {/* Horizontal connector line — vertically centered on the circle markers */}
-          <div className="absolute left-0 right-0 h-px bg-slate-200" style={{ top: "calc(100% - 14px)" }} />
+        <div className="relative flex gap-4 px-4" style={{ minWidth: "min-content" }}>
+          {/* Horizontal connector line — vertically centered */}
+          <div className="absolute left-0 right-0 h-px bg-slate-200 top-1/2 -translate-y-px" />
 
-          {events.map((event) => {
+          {events.map((event, i) => {
             const href =
               event.type === "membership"
                 ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
                 : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
             const { circleClass, cardClass } = getStyles(event);
+            const isAbove = i % 2 === 0;
 
             return (
               <div
                 key={`${event.type}-${event.id}`}
-                className="flex-shrink-0 w-48 flex flex-col items-center gap-2"
+                className="flex-shrink-0 w-44 flex flex-col items-center"
               >
-                {/* Card above the line */}
-                <div className="w-full">
-                  <EventCard event={event} href={href} cardClass={cardClass} />
-                </div>
-                {/* Circle marker on the line */}
-                <CircleMarker type={event.type} circleClass={circleClass} />
+                {isAbove ? (
+                  <>
+                    <div className="w-full flex-1 flex flex-col justify-end pb-2">
+                      <EventCard event={event} href={href} cardClass={cardClass} />
+                    </div>
+                    <CircleMarker type={event.type} circleClass={circleClass} />
+                    <div className="flex-1" />
+                  </>
+                ) : (
+                  <>
+                    <div className="flex-1" />
+                    <CircleMarker type={event.type} circleClass={circleClass} />
+                    <div className="w-full flex-1 flex flex-col justify-start pt-2">
+                      <EventCard event={event} href={href} cardClass={cardClass} />
+                    </div>
+                  </>
+                )}
               </div>
             );
           })}

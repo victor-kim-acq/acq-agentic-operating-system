@@ -413,7 +413,7 @@ function SkoolPostsSection({ posts }: { posts: SkoolPost[] }) {
 function ProfileSkeleton() {
   return (
     <div className="min-h-[calc(100vh-44px)] bg-slate-50">
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="h-4 w-24 bg-slate-200 rounded mb-6 animate-pulse" />
 
         {/* Profile header skeleton */}
@@ -521,7 +521,7 @@ export default function MemberDetailPage() {
 
   return (
     <div className="min-h-[calc(100vh-44px)] bg-slate-50">
-      <div className="max-w-3xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         <MemberSearch mode="compact" />
 
         {/* Back */}
