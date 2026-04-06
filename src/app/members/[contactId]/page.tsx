@@ -248,13 +248,26 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
+const TOPIC_LABELS: Record<string, string> = {
+  paid_ads: "Paid Ads",
+  content_organic: "Organic Content",
+  lead_gen_funnels: "Lead Gen Funnels",
+  email_outreach: "Email Outreach",
+  ai_tools: "AI Tools",
+  sales_offers: "Sales Offers",
+  tracking_analytics: "Tracking Analytics",
+  scaling_strategy: "Scaling Strategy",
+  hiring: "Hiring",
+  operations: "Operations",
+  conversational: "Conversational",
+};
+
 function TopicBadge({ topic }: { topic?: string }) {
-  if (!topic || topic === "conversational") return null;
-  const meta = TOPIC_META[topic];
-  if (!meta) return null;
+  if (!topic) return null;
+  const label = TOPIC_LABELS[topic] || topic;
   return (
-    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ring-1 ${meta.color}`}>
-      {meta.label}
+    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500 ring-1 ring-slate-200">
+      {label}
     </span>
   );
 }
@@ -353,11 +366,6 @@ function SkoolProfileCard({
   const [visibleCount, setVisibleCount] = useState(5);
   const [activityFilter, setActivityFilter] = useState<"all" | "post" | "comment">("all");
   const [regenerating, setRegenerating] = useState(false);
-  const ltvDollars = (profile.ltv / 100).toLocaleString("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-  });
 
   const answers = profile.onboarding_answers as Record<string, string> | null;
   const hasAnswers = answers && Object.keys(answers).length > 0;
@@ -382,40 +390,30 @@ function SkoolProfileCard({
           <p className="text-[11px] text-slate-400 uppercase tracking-wide">Points</p>
           <p className="font-medium text-slate-800">{profile.points.toLocaleString()}</p>
         </div>
-        <div>
-          <p className="text-[11px] text-slate-400 uppercase tracking-wide">LTV</p>
-          <p className="font-medium text-emerald-700">{ltvDollars}</p>
-        </div>
+        {profile.join_date && (
+          <div>
+            <p className="text-[11px] text-slate-400 uppercase tracking-wide">Joined</p>
+            <p className="font-medium text-slate-800">{formatDate(profile.join_date)}</p>
+          </div>
+        )}
       </div>
 
-      {(profile.join_date || profile.bio) && (
-        <div className="grid grid-cols-[auto_1fr] gap-x-8 mt-4 text-sm">
-          {profile.join_date && (
-            <div>
-              <p className="text-[11px] text-slate-400 uppercase tracking-wide">Joined</p>
-              <p className="font-medium text-slate-800">{formatDate(profile.join_date)}</p>
-            </div>
+      {profile.bio && (
+        <div className="mt-4 text-sm">
+          <p className="text-[11px] text-slate-400 uppercase tracking-wide">Profile Bio</p>
+          <p className="text-sm text-slate-600 leading-relaxed mt-0.5">
+            {bioExpanded || profile.bio.length <= 200
+              ? profile.bio
+              : `${profile.bio.slice(0, 200)}...`}
+          </p>
+          {profile.bio.length > 200 && (
+            <button
+              onClick={() => setBioExpanded(!bioExpanded)}
+              className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+            >
+              {bioExpanded ? "Show less" : "Show more"}
+            </button>
           )}
-          {profile.bio ? (
-            <div>
-              <p className="text-[11px] text-slate-400 uppercase tracking-wide">Profile Bio</p>
-              <p className="text-sm text-slate-600 leading-relaxed">
-                {bioExpanded || profile.bio.length <= 200
-                  ? profile.bio
-                  : `${profile.bio.slice(0, 200)}...`}
-              </p>
-              {profile.bio.length > 200 && (
-                <button
-                  onClick={() => setBioExpanded(!bioExpanded)}
-                  className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-                >
-                  {bioExpanded ? "Show less" : "Show more"}
-                </button>
-              )}
-            </div>
-          ) : profile.join_date ? (
-            <div />
-          ) : null}
         </div>
       )}
 
@@ -574,8 +572,8 @@ function SkoolProfileCard({
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400 flex-wrap">
-                      <TopicBadge topic={item.semantic_topic} />
                       <RoleBadge role={item.semantic_role} />
+                      <TopicBadge topic={item.semantic_topic} />
                       {item.category && <span>{item.category}</span>}
                       {item.created_at && <span>{formatDate(item.created_at)}</span>}
                       {item.upvotes > 0 && (
@@ -611,8 +609,8 @@ function SkoolProfileCard({
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400 flex-wrap">
-                      <TopicBadge topic={item.semantic_topic} />
                       <RoleBadge role={item.semantic_role} />
+                      <TopicBadge topic={item.semantic_topic} />
                       {item.created_at && <span>{formatDate(item.created_at)}</span>}
                       {item.upvotes > 0 && (
                         <span>
