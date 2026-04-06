@@ -137,6 +137,24 @@ export async function GET(
     })
   );
 
+  // --- Revenue snapshot ---
+  let totalRevenue = 0;
+  let totalCancelled = 0;
+  let totalRefunded = 0;
+
+  for (const rec of membershipRecords) {
+    const mrr = parseFloat(rec.properties?.vtg_mrr || "0") || 0;
+    const status = (rec.properties?.vtg_status || "").toLowerCase();
+
+    if (status === "refund" || status === "refunded") {
+      totalRefunded += mrr;
+    } else if (status === "cancellation" || status === "cancelled" || status === "canceled") {
+      totalCancelled += mrr;
+    } else {
+      totalRevenue += mrr;
+    }
+  }
+
   // --- Skool community data ---
   const primaryEmail = (props.email ?? "").toLowerCase().trim();
   const additionalEmails = (props.hs_additional_emails ?? "")
@@ -264,5 +282,10 @@ If there is very little activity, say so directly.`;
     skoolProfile,
     skoolPosts,
     skoolComments,
+    revenueSnapshot: {
+      total: totalRevenue,
+      cancelled: totalCancelled,
+      refunded: totalRefunded,
+    },
   });
 }

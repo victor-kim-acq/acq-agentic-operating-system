@@ -66,6 +66,11 @@ interface MemberProfile {
   skoolProfile: SkoolProfile | null;
   skoolPosts: SkoolPost[];
   skoolComments: SkoolComment[];
+  revenueSnapshot: {
+    total: number;
+    cancelled: number;
+    refunded: number;
+  };
 }
 
 const TIER_COLORS: Record<string, string> = {
@@ -257,13 +262,38 @@ function SkoolProfileCard({
           <p className="text-[11px] text-slate-400 uppercase tracking-wide">LTV</p>
           <p className="font-medium text-emerald-700">{ltvDollars}</p>
         </div>
-        {profile.join_date && (
-          <div>
-            <p className="text-[11px] text-slate-400 uppercase tracking-wide">Joined</p>
-            <p className="font-medium text-slate-800">{formatDate(profile.join_date)}</p>
-          </div>
-        )}
       </div>
+
+      {(profile.join_date || profile.bio) && (
+        <div className="grid grid-cols-[auto_1fr] gap-x-8 mt-4 text-sm">
+          {profile.join_date && (
+            <div>
+              <p className="text-[11px] text-slate-400 uppercase tracking-wide">Joined</p>
+              <p className="font-medium text-slate-800">{formatDate(profile.join_date)}</p>
+            </div>
+          )}
+          {profile.bio ? (
+            <div>
+              <p className="text-[11px] text-slate-400 uppercase tracking-wide">Profile Bio</p>
+              <p className="text-sm text-slate-600 leading-relaxed">
+                {bioExpanded || profile.bio.length <= 200
+                  ? profile.bio
+                  : `${profile.bio.slice(0, 200)}...`}
+              </p>
+              {profile.bio.length > 200 && (
+                <button
+                  onClick={() => setBioExpanded(!bioExpanded)}
+                  className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                >
+                  {bioExpanded ? "Show less" : "Show more"}
+                </button>
+              )}
+            </div>
+          ) : profile.join_date ? (
+            <div />
+          ) : null}
+        </div>
+      )}
 
       {hasAnswers && (
         <div className="mt-4 pt-3 border-t border-slate-100">
@@ -281,24 +311,6 @@ function SkoolProfileCard({
               </p>
             )}
           </div>
-        </div>
-      )}
-
-      {profile.bio && (
-        <div className="mt-3">
-          <p className="text-sm text-slate-600 leading-relaxed">
-            {bioExpanded || profile.bio.length <= 200
-              ? profile.bio
-              : `${profile.bio.slice(0, 200)}...`}
-          </p>
-          {profile.bio.length > 200 && (
-            <button
-              onClick={() => setBioExpanded(!bioExpanded)}
-              className="text-xs text-blue-600 hover:text-blue-800 mt-1"
-            >
-              {bioExpanded ? "Show less" : "Show more"}
-            </button>
-          )}
         </div>
       )}
 
@@ -710,6 +722,30 @@ export default function MemberDetailPage() {
           </div>
 
           <BillingButton member={member} />
+
+          {member.revenueSnapshot && (
+            <div className="mt-4">
+              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+                Vantage Revenue
+              </h3>
+              <div className="flex items-center gap-1.5 text-xs">
+                <span className="text-emerald-700 font-semibold">
+                  ${member.revenueSnapshot.total.toLocaleString()}
+                </span>
+                <span className="text-slate-400">earned</span>
+                <span className="text-slate-300">·</span>
+                <span className="text-amber-600 font-semibold">
+                  ${member.revenueSnapshot.cancelled.toLocaleString()}
+                </span>
+                <span className="text-slate-400">cancelled</span>
+                <span className="text-slate-300">·</span>
+                <span className="text-red-600 font-semibold">
+                  ${member.revenueSnapshot.refunded.toLocaleString()}
+                </span>
+                <span className="text-slate-400">refunded</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Timeline */}
