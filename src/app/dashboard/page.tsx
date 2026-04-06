@@ -59,6 +59,28 @@ interface ChurnRow {
   churn_rate_pct: number;
 }
 
+interface RevenueChurnRow {
+  period: string;
+  active_mrr: number;
+  cancelled_mrr: number;
+  churn_rate_pct: number;
+}
+
+interface NewDealsRow {
+  period: string;
+  deal_count: number;
+  sold_mrr: number;
+}
+
+interface SoldCollectedChartRow {
+  period: string;
+  closed_mrr: number;
+  collected_mrr: number;
+  cancelled_mrr: number;
+}
+
+type ChartView = 'mom' | 'wow';
+
 interface ChatMessage {
   id: string;
   question: string;
@@ -192,7 +214,7 @@ const ChartTooltip = ({ active, payload, label }: any) => {
       {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       {payload.map((entry: any, i: number) => (
         <p key={i} style={{ color: entry.color }}>
-          {entry.name}: {entry.name === 'Churn Rate %' ? `${Number(entry.value).toFixed(1)}%` : fmt(entry.value)}
+          {entry.name}: {entry.name === 'Churn Rate %' ? `${Number(entry.value).toFixed(1)}%` : entry.name === 'Deal Count' ? Number(entry.value).toLocaleString() : fmt(entry.value)}
         </p>
       ))}
     </div>
@@ -229,6 +251,34 @@ function SkeletonTable({ rows = 4, cols = 4 }: { rows?: number; cols?: number })
       ))}
     </div>
   );
+}
+
+/* ------------------------------------------------------------------ */
+/*  View toggle (MoM / WoW)                                            */
+/* ------------------------------------------------------------------ */
+
+function ViewToggle({ view, onChange }: { view: ChartView; onChange: (v: ChartView) => void }) {
+  const base = 'px-3 py-1 text-xs font-medium rounded transition-colors';
+  const active = 'bg-slate-900 text-white';
+  const inactive = 'bg-slate-100 text-slate-500 hover:bg-slate-200';
+  return (
+    <div className="flex gap-1">
+      <button className={`${base} ${view === 'mom' ? active : inactive}`} onClick={() => onChange('mom')}>MoM</button>
+      <button className={`${base} ${view === 'wow' ? active : inactive}`} onClick={() => onChange('wow')}>WoW</button>
+    </div>
+  );
+}
+
+function formatPeriodLabel(period: string, view: ChartView): string {
+  if (view === 'wow') {
+    // period is YYYY-MM-DD, format as M/D
+    const d = new Date(period + 'T00:00:00');
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+  // MoM: YYYY-MM → Mon YY
+  const [y, m] = period.split('-');
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[parseInt(m, 10) - 1]} ${y.slice(2)}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -459,6 +509,42 @@ export default function DashboardPage() {
   const [chatInput, setChatInput] = useState('');
   const [chatOpen, setChatOpen] = useState(true);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  /* ---- Top chart state ---- */
+  const [revChurnView, setRevChurnView] = useState<ChartView>('mom');
+  const [revChurnData, setRevChurnData] = useState<RevenueChurnRow[]>([]);
+  const [newDealsView, setNewDealsView] = useState<ChartView>('mom');
+  const [newDealsData, setNewDealsData] = useState<NewDealsRow[]>([]);
+  const [soldCollView, setSoldCollView] = useState<ChartView>('mom');
+  const [soldCollData, setSoldCollData] = useState<SoldCollectedChartRow[]>([]);
+
+  const fetchChart = useCallback(async (endpoint: string, view: ChartView) => {
+    const res = await fetch(`/api/dashboard/${endpoint}?view=${view}&t=${Date.now()}`);
+    const data = await res.json();
+    return data.rows ?? [];
+  }, []);
+
+  // Fetch top charts on view change
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchChart('revenue-churn', revChurnView).then((rows: any[]) =>
+      setRevChurnData(rows.map((r) => ({ ...r, active_mrr: Number(r.active_mrr), cancelled_mrr: Number(r.cancelled_mrr), churn_rate_pct: Number(r.churn_rate_pct) })))
+    );
+  }, [revChurnView, fetchChart]);
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchChart('new-deals', newDealsView).then((rows: any[]) =>
+      setNewDealsData(rows.map((r) => ({ ...r, deal_count: Number(r.deal_count), sold_mrr: Number(r.sold_mrr) })))
+    );
+  }, [newDealsView, fetchChart]);
+
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchChart('sold-collected-chart', soldCollView).then((rows: any[]) =>
+      setSoldCollData(rows.map((r) => ({ ...r, closed_mrr: Number(r.closed_mrr), collected_mrr: Number(r.collected_mrr), cancelled_mrr: Number(r.cancelled_mrr) })))
+    );
+  }, [soldCollView, fetchChart]);
 
   const SUGGESTIONS = [
     'How many active members do we have right now?',
@@ -693,7 +779,7 @@ export default function DashboardPage() {
         {/* Loading skeleton */}
         {loading && !summary ? (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><SkeletonTable cols={3} rows={5} /><SkeletonTable cols={3} rows={5} /><SkeletonTable cols={3} rows={5} /></div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><SkeletonTable cols={5} /><SkeletonTable cols={5} /></div>
             <SkeletonTable cols={5} rows={6} />
             <SkeletonTable cols={7} rows={6} />
@@ -701,19 +787,79 @@ export default function DashboardPage() {
           </>
         ) : (
           <>
-            {/* Row 1: Stat cards */}
+            {/* Row 1: Three top charts */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Chart 1: Revenue & Churn */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="text-3xl font-bold text-emerald-600">{fmt(summary?.collected_revenue ?? 0)}</div>
-                <div className="text-sm text-slate-500 mt-1">Current Month Collected</div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold">Revenue &amp; Churn</h2>
+                  <ViewToggle view={revChurnView} onChange={setRevChurnView} />
+                </div>
+                {revChurnData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ComposedChart data={revChurnData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, revChurnView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(v)} width={70} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="#10b981" radius={[3, 3, 0, 0]} />
+                      <Bar yAxisId="left" dataKey="cancelled_mrr" name="Cancelled MRR" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="#f59e0b" strokeWidth={2} dot={{ fill: '#f59e0b', r: 3 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                )}
               </div>
+
+              {/* Chart 2: New Deals & Revenue */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="text-3xl font-bold text-slate-900">{fmt(summary?.annual_run_rate ?? 0)}</div>
-                <div className="text-sm text-slate-500 mt-1">Annual Run Rate</div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold">New Deals &amp; Revenue</h2>
+                  <ViewToggle view={newDealsView} onChange={setNewDealsView} />
+                </div>
+                {newDealsData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <ComposedChart data={newDealsData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, newDealsView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis yAxisId="left" tick={{ fontSize: 11 }} width={35} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(v)} width={70} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar yAxisId="left" dataKey="deal_count" name="Deal Count" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                      <Line yAxisId="right" type="monotone" dataKey="sold_mrr" name="Sold MRR" stroke="#8b5cf6" strokeWidth={2} dot={{ fill: '#8b5cf6', r: 3 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                )}
               </div>
+
+              {/* Chart 3: Sold vs Collected */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
-                <div className="text-3xl font-bold text-red-500">{fmt(summary?.churned_revenue ?? 0)}</div>
-                <div className="text-sm text-slate-500 mt-1">Current Month Churned</div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-sm font-semibold">Sold vs Collected</h2>
+                  <ViewToggle view={soldCollView} onChange={setSoldCollView} />
+                </div>
+                {soldCollData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={soldCollData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, soldCollView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis dataKey="label" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmt(v)} width={70} />
+                      <Tooltip content={<ChartTooltip />} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="closed_mrr" name="Closed MRR" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="collected_mrr" name="Collected MRR" fill="#10b981" radius={[3, 3, 0, 0]} />
+                      <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                )}
               </div>
             </div>
 
