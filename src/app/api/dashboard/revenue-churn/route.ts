@@ -14,10 +14,10 @@ export async function GET(req: NextRequest) {
           TO_CHAR((DATE_TRUNC('week', m.billing_date::date + 1) - INTERVAL '1 day')::date, 'YYYY-MM-DD') AS period,
           SUM(CASE WHEN m.status = 'Active' THEN m.mrr ELSE 0 END) AS active_mrr,
           SUM(CASE WHEN m.status = 'Cancellation' THEN m.mrr ELSE 0 END) AS cancelled_mrr,
-          ROUND(
+          COALESCE(ROUND(
             SUM(CASE WHEN m.status = 'Cancellation' THEN m.mrr ELSE 0 END) * 100.0 /
             NULLIF(SUM(CASE WHEN m.status = 'Active' THEN m.mrr ELSE 0 END), 0)
-          , 2) AS churn_rate_pct
+          , 2), 0) AS churn_rate_pct
         FROM memberships m
         WHERE m.mrr > 0
           AND m.billing_date::date >= CURRENT_DATE - INTERVAL '8 weeks'
@@ -36,12 +36,14 @@ export async function GET(req: NextRequest) {
         LEFT(m.billing_date, 7) AS period,
         SUM(CASE WHEN m.status = 'Active' THEN m.mrr ELSE 0 END) AS active_mrr,
         SUM(CASE WHEN m.status = 'Cancellation' THEN m.mrr ELSE 0 END) AS cancelled_mrr,
-        ROUND(
+        COALESCE(ROUND(
           SUM(CASE WHEN m.status = 'Cancellation' THEN m.mrr ELSE 0 END) * 100.0 /
           NULLIF(SUM(CASE WHEN m.status = 'Active' THEN m.mrr ELSE 0 END), 0)
-        , 2) AS churn_rate_pct
+        , 2), 0) AS churn_rate_pct
       FROM memberships m
       WHERE m.mrr > 0
+        AND m.billing_date IS NOT NULL
+        AND LEFT(m.billing_date, 7) ~ '^\d{4}-\d{2}$'
       GROUP BY LEFT(m.billing_date, 7)
       ORDER BY period
     `;
