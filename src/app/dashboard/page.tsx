@@ -801,7 +801,7 @@ export default function DashboardPage() {
                   <ViewToggle view={revChurnView} onChange={setRevChurnView} />
                 </div>
                 {revChurnData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height={500}>
                     <ComposedChart data={revChurnData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, revChurnView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -815,7 +815,7 @@ export default function DashboardPage() {
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[320px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                  <div className="h-[500px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
                 )}
               </div>
 
@@ -826,7 +826,7 @@ export default function DashboardPage() {
                   <ViewToggle view={newDealsView} onChange={setNewDealsView} />
                 </div>
                 {newDealsData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height={500}>
                     <ComposedChart data={newDealsData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, newDealsView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -839,7 +839,7 @@ export default function DashboardPage() {
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[320px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                  <div className="h-[500px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
                 )}
               </div>
 
@@ -850,7 +850,7 @@ export default function DashboardPage() {
                   <ViewToggle view={soldCollView} onChange={setSoldCollView} />
                 </div>
                 {soldCollData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={320}>
+                  <ResponsiveContainer width="100%" height={500}>
                     <BarChart data={soldCollData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, soldCollView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -863,7 +863,7 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[320px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                  <div className="h-[500px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
                 )}
               </div>
             </div>

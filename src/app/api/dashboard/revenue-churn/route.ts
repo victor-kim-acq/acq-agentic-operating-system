@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       FROM memberships m
       WHERE m.mrr > 0
         AND m.billing_date IS NOT NULL
-        AND LEFT(m.billing_date, 7) ~ '^\d{4}-\d{2}$'
+        AND LENGTH(m.billing_date) >= 7
       GROUP BY LEFT(m.billing_date, 7)
       ORDER BY period
     `;
