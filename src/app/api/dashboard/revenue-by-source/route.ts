@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const startDate = req.nextUrl.searchParams.get("startDate");
+  const endDate = req.nextUrl.searchParams.get("endDate");
+
   try {
+    const dateFilterStart = startDate ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+    const dateFilterEnd = endDate ?? new Date().toISOString().slice(0, 10);
+
     const result = await sql`
       WITH base AS (
         SELECT
@@ -26,8 +32,8 @@ export async function GET() {
         FROM memberships m
         WHERE m.status = 'Active'
           AND m.membership_type = 'Paying Member'
-          AND m.billing_date::date
-              >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
+          AND m.billing_date >= ${dateFilterStart}
+          AND m.billing_date <= ${dateFilterEnd}
       ),
       by_source AS (
         SELECT billing_source,
@@ -51,17 +57,9 @@ export async function GET() {
       END
     `;
 
-    return NextResponse.json(
-      { rows: result.rows },
-      {
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
+    return NextResponse.json({ rows: result.rows }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Dashboard revenue-by-source error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

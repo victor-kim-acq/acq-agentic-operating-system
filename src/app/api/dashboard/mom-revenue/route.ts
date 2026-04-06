@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const startDate = req.nextUrl.searchParams.get("startDate");
+  const endDate = req.nextUrl.searchParams.get("endDate");
+
   try {
+    const dateFilterStart = startDate ?? '2026-02-01';
+    const dateFilterEnd = endDate ?? '2099-12-31';
+
     const result = await sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', m.billing_date::date), 'Mon YYYY') AS month_label,
@@ -27,24 +33,17 @@ export async function GET() {
       FROM memberships m
       WHERE m.status = 'Active'
         AND m.membership_type = 'Paying Member'
-        AND m.billing_date::date >= '2026-02-01'
+        AND m.billing_date >= ${dateFilterStart}
+        AND m.billing_date <= ${dateFilterEnd}
       GROUP BY 1, 2, 3
       ORDER BY 2, CASE m.billing_source
         WHEN 'recharge' THEN 1 WHEN 'skool' THEN 2 WHEN 'stripe' THEN 3 ELSE 4
       END
     `;
 
-    return NextResponse.json(
-      { rows: result.rows },
-      {
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
+    return NextResponse.json({ rows: result.rows }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Dashboard mom-revenue error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

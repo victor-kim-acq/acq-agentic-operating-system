@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const startDate = req.nextUrl.searchParams.get("startDate");
+  const endDate = req.nextUrl.searchParams.get("endDate");
+
   try {
+    const dateFilterStart = startDate ?? '2026-02-01';
+    const dateFilterEnd = endDate ?? '2099-12-31';
+
     const result = await sql`
       SELECT
         TO_CHAR(DATE_TRUNC('month', (d.close_date AT TIME ZONE 'America/Los_Angeles')), 'Mon YYYY') AS close_month_cohort,
@@ -60,23 +66,16 @@ export async function GET() {
       LEFT JOIN deals d ON dm.deal_id = d.deal_id
       WHERE m.status IN ('Active', 'Cancellation')
         AND m.membership_type = 'Paying Member'
-        AND m.billing_date::date >= '2026-02-01'
-        AND (d.close_date AT TIME ZONE 'America/Los_Angeles')::date >= '2026-02-01'
+        AND m.billing_date >= ${dateFilterStart}
+        AND m.billing_date <= ${dateFilterEnd}
+        AND (d.close_date AT TIME ZONE 'America/Los_Angeles')::date >= ${dateFilterStart}::date
       GROUP BY 1, 2
       ORDER BY 2
     `;
 
-    return NextResponse.json(
-      { rows: result.rows },
-      {
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
+    return NextResponse.json({ rows: result.rows }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Dashboard churn-cohort error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

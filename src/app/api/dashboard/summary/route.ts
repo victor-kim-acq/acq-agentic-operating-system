@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const startDate = req.nextUrl.searchParams.get("startDate");
+  const endDate = req.nextUrl.searchParams.get("endDate");
+
   try {
+    const dateFilterStart = startDate ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+    const dateFilterEnd = endDate ?? new Date().toISOString().slice(0, 10);
+
     const [collectedResult, arrResult, churnedResult] = await Promise.all([
       sql`
         SELECT COALESCE(SUM(
@@ -24,8 +30,8 @@ export async function GET() {
         FROM memberships m
         WHERE m.status = 'Active'
           AND m.membership_type = 'Paying Member'
-          AND m.billing_date::date
-              >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
+          AND m.billing_date >= ${dateFilterStart}
+          AND m.billing_date <= ${dateFilterEnd}
       `,
       sql`
         SELECT COALESCE(SUM(
@@ -44,8 +50,8 @@ export async function GET() {
         FROM memberships m
         WHERE m.status = 'Active'
           AND m.membership_type = 'Paying Member'
-          AND m.billing_date::date
-              >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
+          AND m.billing_date >= ${dateFilterStart}
+          AND m.billing_date <= ${dateFilterEnd}
       `,
       sql`
         SELECT COALESCE(SUM(
@@ -64,8 +70,8 @@ export async function GET() {
         FROM memberships m
         WHERE m.status = 'Cancellation'
           AND m.membership_type = 'Paying Member'
-          AND m.billing_date::date
-              >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
+          AND m.billing_date >= ${dateFilterStart}
+          AND m.billing_date <= ${dateFilterEnd}
       `,
     ]);
 
@@ -75,15 +81,10 @@ export async function GET() {
         annual_run_rate: Number(arrResult.rows[0].annual_run_rate),
         churned_revenue: Number(churnedResult.rows[0].cancellation_revenue),
       },
-      {
-        headers: { "Cache-Control": "no-store" },
-      }
+      { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
     console.error("Dashboard summary error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

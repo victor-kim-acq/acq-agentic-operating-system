@@ -1,11 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
 
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const startDate = req.nextUrl.searchParams.get("startDate");
+  const endDate = req.nextUrl.searchParams.get("endDate");
+
   try {
+    const dateFilterStart = startDate ?? '2026-02-01';
+    const dateFilterEnd = endDate ?? '2099-12-31';
+
     const result = await sql`
       WITH deal_memberships AS (
         SELECT
@@ -37,7 +43,8 @@ export async function GET() {
           AND m.status IN ('Active', 'Cancellation', 'Payment Failed')
         WHERE d.mrr IS NOT NULL
           AND d.mrr != 0
-          AND (d.close_date AT TIME ZONE 'America/Los_Angeles')::date >= '2026-02-01'
+          AND (d.close_date AT TIME ZONE 'America/Los_Angeles')::date >= ${dateFilterStart}::date
+          AND (d.close_date AT TIME ZONE 'America/Los_Angeles')::date <= ${dateFilterEnd}::date
         GROUP BY 1, 2, 3, 4
       ),
       classified AS (
@@ -63,17 +70,9 @@ export async function GET() {
       ORDER BY 2
     `;
 
-    return NextResponse.json(
-      { rows: result.rows },
-      {
-        headers: { "Cache-Control": "no-store" },
-      }
-    );
+    return NextResponse.json({ rows: result.rows }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Dashboard sold-vs-collected error:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
