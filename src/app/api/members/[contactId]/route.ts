@@ -166,6 +166,8 @@ export async function GET(
   let skoolProfile = null;
   let skoolPosts: Array<Record<string, unknown>> = [];
   let skoolComments: Array<Record<string, unknown>> = [];
+  let topicAggregation: Array<Record<string, unknown>> = [];
+  let roleDistribution: Array<Record<string, unknown>> = [];
 
   if (allEmails.length > 0) {
     try {
@@ -180,24 +182,48 @@ export async function GET(
       if (memberResult.rows.length > 0) {
         skoolProfile = memberResult.rows[0];
 
-        const [postsResult, commentsResult] = await Promise.all([
+        const [postsResult, commentsResult, topicAggResult, roleDistResult] = await Promise.all([
           sql`
-            SELECT post_id, title, content, category, upvotes, comments_count, created_at
+            SELECT post_id, title, content, category, upvotes, comments_count, created_at, semantic_topic, semantic_role
             FROM skool_posts
             WHERE author_id = ${skoolProfile.user_id}
             ORDER BY created_at DESC
           `,
           sql`
             SELECT c.comment_id, c.content, c.upvotes, c.created_at, c.post_id,
-                   p.title AS parent_post_title
+                   p.title AS parent_post_title, c.semantic_topic, c.semantic_role
             FROM skool_comments c
             JOIN skool_posts p ON p.post_id = c.post_id
             WHERE c.author_id = ${skoolProfile.user_id}
             ORDER BY c.created_at DESC
           `,
+          sql`
+            SELECT semantic_topic, semantic_role, COUNT(*)::int AS count
+            FROM (
+              SELECT semantic_topic, semantic_role FROM skool_posts
+              WHERE author_id = ${skoolProfile.user_id} AND semantic_topic IS NOT NULL AND semantic_topic != 'conversational'
+              UNION ALL
+              SELECT semantic_topic, semantic_role FROM skool_comments
+              WHERE author_id = ${skoolProfile.user_id} AND semantic_topic IS NOT NULL AND semantic_topic != 'conversational'
+            ) combined
+            GROUP BY semantic_topic, semantic_role
+            ORDER BY count DESC
+          `,
+          sql`
+            SELECT semantic_role, COUNT(*)::int AS count
+            FROM (
+              SELECT semantic_role FROM skool_posts WHERE author_id = ${skoolProfile.user_id} AND semantic_role IS NOT NULL
+              UNION ALL
+              SELECT semantic_role FROM skool_comments WHERE author_id = ${skoolProfile.user_id} AND semantic_role IS NOT NULL
+            ) combined
+            GROUP BY semantic_role
+            ORDER BY count DESC
+          `,
         ]);
         skoolPosts = postsResult.rows;
         skoolComments = commentsResult.rows;
+        topicAggregation = topicAggResult.rows;
+        roleDistribution = roleDistResult.rows;
 
         // --- AI Summary generation/caching ---
         if (skoolPosts.length > 0 || skoolComments.length > 0) {
@@ -209,24 +235,37 @@ export async function GET(
           if (!skoolProfile.ai_summary || summaryAge > SEVEN_DAYS) {
             try {
               const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-              const postContext = skoolPosts.slice(0, 20).map((p: Record<string, unknown>) =>
-                `[Post] ${p.title}: ${(String(p.content || "")).slice(0, 300)}`
-              ).join("\n");
-              const commentContext = skoolComments.slice(0, 20).map((c: Record<string, unknown>) =>
-                `[Comment on "${c.parent_post_title}"]: ${(String(c.content || "")).slice(0, 200)}`
+
+              // Build topic breakdown from classification data
+              const topicSummary = topicAggregation.length > 0
+                ? topicAggregation.map((r: Record<string, unknown>) =>
+                    `${r.semantic_topic} (${r.count} ${r.semantic_role === 'giver' ? 'giving' : r.semantic_role === 'seeker' ? 'seeking' : 'neutral'})`
+                  ).join(", ")
+                : "No substantive topics classified";
+
+              const roleSummary = roleDistribution.map((r: Record<string, unknown>) =>
+                `${r.semantic_role}: ${r.count}`
+              ).join(", ");
+
+              // Include a handful of recent post titles for color
+              const recentTitles = skoolPosts.slice(0, 8).map((p: Record<string, unknown>) =>
+                `- "${p.title}" [${p.semantic_topic || "unclassified"}]`
               ).join("\n");
 
-              const summaryPrompt = `You are analyzing a community member's engagement in ACQ Vantage (a paid business community). Based on their posts and comments below, write a 2-3 sentence summary of: (1) what topics they engage with most, (2) their engagement style (asking questions, sharing wins, helping others, etc.), and (3) any notable patterns. Be specific and concise. No fluff.
+              const summaryPrompt = `You are analyzing a community member's engagement in ACQ Vantage (a paid business community). Based on their classified activity data below, write a 2-3 sentence summary of: (1) their primary areas of expertise or interest, (2) whether they primarily give value or seek help, and (3) any notable patterns. Be specific and concise. No fluff.
 
 Member: ${skoolProfile.full_name}
 Tier: ${skoolProfile.tier || "Unknown"}
 Level: ${skoolProfile.level}, Points: ${skoolProfile.points}
+Total posts: ${skoolPosts.length}, Total comments: ${skoolComments.length}
 
-Activity:
-${postContext}
-${commentContext}
+Topic breakdown (excluding conversational): ${topicSummary}
+Role distribution: ${roleSummary}
 
-If there is very little activity, say so directly.`;
+Recent post titles:
+${recentTitles}
+
+If there is very little substantive activity, say so directly.`;
 
               const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
                 method: "POST",
@@ -282,6 +321,8 @@ If there is very little activity, say so directly.`;
     skoolProfile,
     skoolPosts,
     skoolComments,
+    topicAggregation,
+    roleDistribution,
     revenueSnapshot: {
       total: totalRevenue,
       cancelled: totalCancelled,

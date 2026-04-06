@@ -40,6 +40,8 @@ interface SkoolPost {
   upvotes: number;
   comments_count: number;
   created_at: string;
+  semantic_topic?: string;
+  semantic_role?: string;
 }
 
 interface SkoolComment {
@@ -49,6 +51,19 @@ interface SkoolComment {
   created_at: string;
   post_id: string;
   parent_post_title: string;
+  semantic_topic?: string;
+  semantic_role?: string;
+}
+
+interface TopicAggRow {
+  semantic_topic: string;
+  semantic_role: string;
+  count: number;
+}
+
+interface RoleDistRow {
+  semantic_role: string;
+  count: number;
 }
 
 interface MemberProfile {
@@ -66,12 +81,33 @@ interface MemberProfile {
   skoolProfile: SkoolProfile | null;
   skoolPosts: SkoolPost[];
   skoolComments: SkoolComment[];
+  topicAggregation: TopicAggRow[];
+  roleDistribution: RoleDistRow[];
   revenueSnapshot: {
     total: number;
     cancelled: number;
     refunded: number;
   };
 }
+
+const TOPIC_META: Record<string, { label: string; color: string }> = {
+  paid_ads: { label: "Paid Ads", color: "bg-red-50 text-red-700 ring-red-200" },
+  content_organic: { label: "Organic Content", color: "bg-pink-50 text-pink-700 ring-pink-200" },
+  lead_gen_funnels: { label: "Lead Gen / Funnels", color: "bg-orange-50 text-orange-700 ring-orange-200" },
+  email_outreach: { label: "Email / Outreach", color: "bg-yellow-50 text-yellow-700 ring-yellow-200" },
+  ai_tools: { label: "AI Tools", color: "bg-cyan-50 text-cyan-700 ring-cyan-200" },
+  sales_offers: { label: "Sales / Offers", color: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
+  tracking_analytics: { label: "Tracking / Analytics", color: "bg-blue-50 text-blue-700 ring-blue-200" },
+  scaling_strategy: { label: "Scaling Strategy", color: "bg-violet-50 text-violet-700 ring-violet-200" },
+  hiring: { label: "Hiring", color: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
+  operations: { label: "Operations", color: "bg-slate-100 text-slate-700 ring-slate-200" },
+};
+
+const ROLE_META: Record<string, { label: string; icon: string }> = {
+  giver: { label: "Giver", icon: "giving value" },
+  seeker: { label: "Seeker", icon: "asking questions" },
+  neutral: { label: "Neutral", icon: "social interaction" },
+};
 
 const TIER_COLORS: Record<string, string> = {
   gold: "bg-amber-50 text-amber-800 ring-1 ring-amber-200",
@@ -212,18 +248,106 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
+function TopicBadge({ topic }: { topic?: string }) {
+  if (!topic || topic === "conversational") return null;
+  const meta = TOPIC_META[topic];
+  if (!meta) return null;
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ring-1 ${meta.color}`}>
+      {meta.label}
+    </span>
+  );
+}
+
+function RoleBadge({ role }: { role?: string }) {
+  if (!role) return null;
+  const meta = ROLE_META[role];
+  if (!meta) return null;
+  const cls = role === "giver"
+    ? "bg-emerald-50 text-emerald-600 ring-emerald-200"
+    : role === "seeker"
+      ? "bg-amber-50 text-amber-600 ring-amber-200"
+      : "bg-slate-50 text-slate-500 ring-slate-200";
+  return (
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ring-1 ${cls}`}>
+      {meta.label}
+    </span>
+  );
+}
+
+function TopicExpertise({ topicAggregation, roleDistribution }: { topicAggregation: TopicAggRow[]; roleDistribution: RoleDistRow[] }) {
+  if (topicAggregation.length === 0) return null;
+
+  // Aggregate by topic (combine giver/seeker/neutral counts)
+  const topicTotals = new Map<string, number>();
+  for (const row of topicAggregation) {
+    topicTotals.set(row.semantic_topic, (topicTotals.get(row.semantic_topic) || 0) + row.count);
+  }
+  const sortedTopics = [...topicTotals.entries()].sort((a, b) => b[1] - a[1]);
+  const maxCount = sortedTopics[0]?.[1] || 1;
+
+  // Role summary
+  const totalRoleCount = roleDistribution.reduce((s, r) => s + r.count, 0);
+  const dominantRole = roleDistribution[0];
+  const dominantPct = dominantRole ? Math.round((dominantRole.count / totalRoleCount) * 100) : 0;
+
+  return (
+    <div className="mt-4 pt-4 border-t border-slate-100">
+      <div className="flex items-center gap-3 mb-3">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+          Topic Expertise
+        </h3>
+        {dominantRole && dominantPct > 40 && (
+          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+            dominantRole.semantic_role === "giver"
+              ? "bg-emerald-50 text-emerald-700"
+              : dominantRole.semantic_role === "seeker"
+                ? "bg-amber-50 text-amber-700"
+                : "bg-slate-50 text-slate-600"
+          }`}>
+            {dominantPct}% {ROLE_META[dominantRole.semantic_role]?.icon || dominantRole.semantic_role}
+          </span>
+        )}
+      </div>
+      <div className="space-y-1.5">
+        {sortedTopics.slice(0, 6).map(([topic, count]) => {
+          const meta = TOPIC_META[topic];
+          if (!meta) return null;
+          const pct = Math.round((count / maxCount) * 100);
+          return (
+            <div key={topic} className="flex items-center gap-2">
+              <span className="text-xs text-slate-600 w-32 flex-shrink-0 truncate">{meta.label}</span>
+              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-slate-400 rounded-full transition-all"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              <span className="text-[11px] text-slate-400 w-6 text-right flex-shrink-0">{count}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function SkoolProfileCard({
   profile,
   posts,
   comments,
   contactId,
   onRegenerate,
+  topicAggregation,
+  roleDistribution,
 }: {
   profile: SkoolProfile;
   posts: SkoolPost[];
   comments: SkoolComment[];
   contactId: string;
   onRegenerate: () => void;
+  topicAggregation: TopicAggRow[];
+  roleDistribution: RoleDistRow[];
 }) {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
@@ -359,6 +483,8 @@ function SkoolProfileCard({
         </div>
       )}
 
+      <TopicExpertise topicAggregation={topicAggregation} roleDistribution={roleDistribution} />
+
       {(() => {
         type ActivityItem =
           | (SkoolPost & { type: "post" })
@@ -447,7 +573,9 @@ function SkoolProfileCard({
                         {item.content.length > 120 ? "..." : ""}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400 flex-wrap">
+                      <TopicBadge topic={item.semantic_topic} />
+                      <RoleBadge role={item.semantic_role} />
                       {item.category && <span>{item.category}</span>}
                       {item.created_at && <span>{formatDate(item.created_at)}</span>}
                       {item.upvotes > 0 && (
@@ -482,7 +610,9 @@ function SkoolProfileCard({
                         {item.content.length > 120 ? "..." : ""}
                       </p>
                     )}
-                    <div className="flex items-center gap-3 mt-1.5 text-[11px] text-slate-400">
+                    <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-400 flex-wrap">
+                      <TopicBadge topic={item.semantic_topic} />
+                      <RoleBadge role={item.semantic_role} />
                       {item.created_at && <span>{formatDate(item.created_at)}</span>}
                       {item.upvotes > 0 && (
                         <span>
@@ -759,6 +889,8 @@ export default function MemberDetailPage() {
             posts={member.skoolPosts ?? []}
             comments={member.skoolComments ?? []}
             contactId={contactId}
+            topicAggregation={member.topicAggregation ?? []}
+            roleDistribution={member.roleDistribution ?? []}
             onRegenerate={() => {
               fetch(`/api/members/${contactId}`)
                 .then((r) => r.json())
