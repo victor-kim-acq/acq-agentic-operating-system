@@ -1,25 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "@/lib/db";
+import { getSchemaContext } from "@/lib/schema-context";
 
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-const SYSTEM_PROMPT = `You are a SQL assistant for ACQ Vantage's Neon Postgres database. Generate a single read-only SELECT query to answer the user's question.
+function buildSystemPrompt(schemaContext: string): string {
+  return `You are a SQL assistant for ACQ Vantage's Neon Postgres database. Generate a single read-only SELECT query to answer the user's question.
 
-## Schema
+## Schema (loaded from pg_catalog comments)
 
-### Entity tables
-- contacts (contact_id PK, email, firstname, lastname, membership_tier, membership_status, membership_type, clerk_user_id, skool_invite, updated_at)
-- contact_emails (contact_id, email, is_primary) — one row per email per contact
-- memberships (membership_id PK, membership_name, billing_source, tier, status, mrr NUMERIC, membership_type, billing_date TEXT, create_date, currency, updated_at)
-- deals (deal_id PK, dealname, close_date TIMESTAMPTZ, mrr NUMERIC, currency, billing_source, tier, updated_at)
+${schemaContext}
 
-### Bridge tables (many-to-many, composite PKs)
-- contact_membership (contact_id, membership_id)
-- contact_deal (contact_id, deal_id)
-- deal_membership (deal_id, membership_id)
+## Query guidance
 
-## Key values
+### Key values
 - memberships.status: 'Active', 'Cancellation', 'Payment Failed', 'Re-Subscribed', 'Refund', 'Upsell', 'Downgrade'
 - memberships.billing_source: 'Recharge', 'Skool', 'ACE' (stored as these display names)
 - memberships.tier: 'Standard', 'Premium', 'VIP', 'VIP (Yearly)', 'Premium + Scale Workshop'
@@ -27,20 +22,21 @@ const SYSTEM_PROMPT = `You are a SQL assistant for ACQ Vantage's Neon Postgres d
 - memberships.billing_date is stored as TEXT (not TIMESTAMPTZ) — cast with ::date for date comparisons
 - deals.close_date is TIMESTAMPTZ — use AT TIME ZONE 'America/Los_Angeles' for date ops
 
-## MRR normalization (ALWAYS use for revenue calculations)
+### MRR normalization (ALWAYS use for revenue calculations)
 Non-USD or NULL currency memberships use tier-based normalization:
 - Standard = 1000, VIP = 3000, VIP (Yearly) = 36000, Premium = 8000, Premium + Scale Workshop = 8000
 
 The full CASE expression:
 CASE WHEN LOWER(currency) = 'usd' THEN mrr ELSE CASE WHEN tier = 'Standard' THEN 1000 WHEN tier = 'VIP' THEN 3000 WHEN tier = 'VIP (Yearly)' THEN 36000 WHEN tier = 'Premium' THEN 8000 WHEN tier = 'Premium + Scale Workshop' THEN 8000 ELSE 0 END END
 
-## Rules
+### Rules
 - ONLY generate SELECT queries. Never INSERT, UPDATE, DELETE, DROP, ALTER, or any DDL/DML.
 - Return ONLY the SQL query, nothing else. No markdown, no backticks, no explanation.
 - Keep queries efficient — use appropriate WHERE filters and LIMIT when the user asks for examples or samples.
 - For date-based queries referencing "this month" or "current month", use: billing_date::date >= DATE_TRUNC('month', (NOW() AT TIME ZONE 'America/Los_Angeles'))::date
 - For questions about revenue, always use the MRR normalization CASE and filter on membership_type = 'Paying Member'.
 - For "billing source" display context: 'ACE' in the DB corresponds to Stripe payments in business language.`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +56,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Load schema context from pg_catalog comments
+    const schemaContext = await getSchemaContext();
+    const systemPrompt = buildSystemPrompt(schemaContext);
+
     // Step 1: Ask Claude to generate SQL
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
-        system: SYSTEM_PROMPT,
+        system: systemPrompt,
         messages: [{ role: "user", content: question }],
       }),
     });
