@@ -629,6 +629,67 @@ export default function DashboardPage() {
           </div>
         </div>
 
+        {/* ---- Chat Panel ---- */}
+        <div className="bg-white border border-slate-200 rounded-lg">
+          <button
+            onClick={() => setChatOpen(!chatOpen)}
+            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
+          >
+            <h2 className="text-lg font-semibold">Ask a question about your data</h2>
+            {chatOpen ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
+          </button>
+
+          {chatOpen && (
+            <div className="border-t border-slate-100 p-4 space-y-4">
+              {chatMessages.length === 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {SUGGESTIONS.map((s) => (
+                    <button
+                      key={s}
+                      onClick={() => submitQuestion(s)}
+                      className="text-xs text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1.5 transition-colors"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {chatMessages.length > 0 && (
+                <div className="max-h-[600px] overflow-y-auto space-y-4">
+                  {chatMessages.map((msg) => (
+                    <ChatBubble key={msg.id} msg={msg} thClass={thClass} tdClass={tdClass} />
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (chatInput.trim()) submitQuestion(chatInput.trim());
+                }}
+                className="flex gap-2"
+              >
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  placeholder="Ask about revenue, members, deals, churn..."
+                  className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
+                />
+                <button
+                  type="submit"
+                  disabled={!chatInput.trim()}
+                  className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            </div>
+          )}
+        </div>
+
         {/* Loading skeleton */}
         {loading && !summary ? (
           <>
@@ -798,66 +859,6 @@ export default function DashboardPage() {
           </>
         )}
 
-        {/* ---- Chat Panel ---- */}
-        <div className="bg-white border border-slate-200 rounded-lg">
-          <button
-            onClick={() => setChatOpen(!chatOpen)}
-            className="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition-colors"
-          >
-            <h2 className="text-lg font-semibold">Ask a question about your data</h2>
-            {chatOpen ? <ChevronDown className="w-5 h-5 text-slate-400" /> : <ChevronRight className="w-5 h-5 text-slate-400" />}
-          </button>
-
-          {chatOpen && (
-            <div className="border-t border-slate-100 p-4 space-y-4">
-              {chatMessages.length === 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {SUGGESTIONS.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => submitQuestion(s)}
-                      className="text-xs text-slate-500 bg-slate-100 hover:bg-slate-200 rounded-full px-3 py-1.5 transition-colors"
-                    >
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {chatMessages.length > 0 && (
-                <div className="max-h-[600px] overflow-y-auto space-y-4">
-                  {chatMessages.map((msg) => (
-                    <ChatBubble key={msg.id} msg={msg} thClass={thClass} tdClass={tdClass} />
-                  ))}
-                  <div ref={chatEndRef} />
-                </div>
-              )}
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (chatInput.trim()) submitQuestion(chatInput.trim());
-                }}
-                className="flex gap-2"
-              >
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  placeholder="Ask about revenue, members, deals, churn..."
-                  className="flex-1 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-300"
-                />
-                <button
-                  type="submit"
-                  disabled={!chatInput.trim()}
-                  className="px-4 py-2 bg-slate-900 text-white rounded-lg hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
-            </div>
-          )}
-        </div>
       </div>
 
       {/* ---- Detail Modal ---- */}
