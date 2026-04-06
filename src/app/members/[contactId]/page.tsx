@@ -715,33 +715,30 @@ export default function MemberDetailPage() {
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">{member.email}</p>
             </div>
-            <div className="text-right">
-              {member.revenueSnapshot && (
-                <div className="flex items-center gap-1.5 text-sm justify-end">
-                  <span className="text-emerald-700 font-semibold">
-                    ${member.revenueSnapshot.total.toLocaleString()}
-                  </span>
-                  <span className="text-slate-400">earned</span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-amber-600 font-semibold">
-                    ${member.revenueSnapshot.cancelled.toLocaleString()}
-                  </span>
-                  <span className="text-slate-400">cancelled</span>
-                  <span className="text-slate-300">·</span>
-                  <span className="text-red-600 font-semibold">
-                    ${member.revenueSnapshot.refunded.toLocaleString()}
-                  </span>
-                  <span className="text-slate-400">refunded</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 mt-1.5 justify-end">
-                <StatusBadge status={member.vtg_current_membership_status} />
-                <TierBadge tier={member.vtg_current_membership_tier} />
-              </div>
+            <div className="flex items-center gap-2">
+              <StatusBadge status={member.vtg_current_membership_status} />
+              <TierBadge tier={member.vtg_current_membership_tier} />
             </div>
           </div>
 
           <BillingButton member={member} />
+
+          {member.revenueSnapshot && (member.revenueSnapshot.total > 0 || member.revenueSnapshot.cancelled > 0 || member.revenueSnapshot.refunded > 0) && (
+            <div className="grid grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-slate-100">
+              <div>
+                <p className="text-[11px] text-slate-400 uppercase tracking-wide">Earned</p>
+                <p className="text-emerald-700 font-medium">${member.revenueSnapshot.total.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-400 uppercase tracking-wide">Cancelled</p>
+                <p className="text-amber-600 font-medium">${member.revenueSnapshot.cancelled.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-400 uppercase tracking-wide">Refunded</p>
+                <p className="text-red-600 font-medium">${member.revenueSnapshot.refunded.toLocaleString()}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Timeline */}
