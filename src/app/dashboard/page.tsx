@@ -519,30 +519,35 @@ export default function DashboardPage() {
   const [soldCollData, setSoldCollData] = useState<SoldCollectedChartRow[]>([]);
 
   const fetchChart = useCallback(async (endpoint: string, view: ChartView) => {
-    const res = await fetch(`/api/dashboard/${endpoint}?view=${view}&t=${Date.now()}`);
-    const data = await res.json();
-    return data.rows ?? [];
+    try {
+      const res = await fetch(`/api/dashboard/${endpoint}?view=${view}&t=${Date.now()}`);
+      const data = await res.json();
+      return data.rows ?? [];
+    } catch (err) {
+      console.error(`Failed to fetch ${endpoint}:`, err);
+      return [];
+    }
   }, []);
 
   // Fetch top charts on view change
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fetchChart('revenue-churn', revChurnView).then((rows: any[]) =>
-      setRevChurnData(rows.map((r) => ({ ...r, active_mrr: Number(r.active_mrr), cancelled_mrr: Number(r.cancelled_mrr), churn_rate_pct: Number(r.churn_rate_pct) })))
+      setRevChurnData(rows.map((r: any) => ({ period: r.period, active_mrr: Number(r.active_mrr) || 0, cancelled_mrr: Number(r.cancelled_mrr) || 0, churn_rate_pct: Number(r.churn_rate_pct) || 0 })))
     );
   }, [revChurnView, fetchChart]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fetchChart('new-deals', newDealsView).then((rows: any[]) =>
-      setNewDealsData(rows.map((r) => ({ ...r, deal_count: Number(r.deal_count), sold_mrr: Number(r.sold_mrr) })))
+      setNewDealsData(rows.map((r: any) => ({ period: r.period, deal_count: Number(r.deal_count) || 0, sold_mrr: Number(r.sold_mrr) || 0 })))
     );
   }, [newDealsView, fetchChart]);
 
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     fetchChart('sold-collected-chart', soldCollView).then((rows: any[]) =>
-      setSoldCollData(rows.map((r) => ({ ...r, closed_mrr: Number(r.closed_mrr), collected_mrr: Number(r.collected_mrr), cancelled_mrr: Number(r.cancelled_mrr) })))
+      setSoldCollData(rows.map((r: any) => ({ period: r.period, closed_mrr: Number(r.closed_mrr) || 0, collected_mrr: Number(r.collected_mrr) || 0, cancelled_mrr: Number(r.cancelled_mrr) || 0 })))
     );
   }, [soldCollView, fetchChart]);
 
@@ -779,7 +784,7 @@ export default function DashboardPage() {
         {/* Loading skeleton */}
         {loading && !summary ? (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><SkeletonTable cols={3} rows={5} /><SkeletonTable cols={3} rows={5} /><SkeletonTable cols={3} rows={5} /></div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><SkeletonTable cols={3} rows={7} /><SkeletonTable cols={3} rows={7} /><SkeletonTable cols={3} rows={7} /></div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><SkeletonTable cols={5} /><SkeletonTable cols={5} /></div>
             <SkeletonTable cols={5} rows={6} />
             <SkeletonTable cols={7} rows={6} />
@@ -788,7 +793,7 @@ export default function DashboardPage() {
         ) : (
           <>
             {/* Row 1: Three top charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {/* Chart 1: Revenue & Churn */}
               <div className="bg-white border border-slate-200 rounded-lg p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -796,7 +801,7 @@ export default function DashboardPage() {
                   <ViewToggle view={revChurnView} onChange={setRevChurnView} />
                 </div>
                 {revChurnData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <ComposedChart data={revChurnData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, revChurnView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -810,7 +815,7 @@ export default function DashboardPage() {
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                  <div className="h-[320px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
                 )}
               </div>
 
@@ -821,7 +826,7 @@ export default function DashboardPage() {
                   <ViewToggle view={newDealsView} onChange={setNewDealsView} />
                 </div>
                 {newDealsData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <ComposedChart data={newDealsData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, newDealsView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -834,7 +839,7 @@ export default function DashboardPage() {
                     </ComposedChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                  <div className="h-[320px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
                 )}
               </div>
 
@@ -845,7 +850,7 @@ export default function DashboardPage() {
                   <ViewToggle view={soldCollView} onChange={setSoldCollView} />
                 </div>
                 {soldCollData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={220}>
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={soldCollData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, soldCollView) }))} margin={{ top: 15, right: 10, left: 0, bottom: 5 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                       <XAxis dataKey="label" tick={{ fontSize: 11 }} />
@@ -858,7 +863,7 @@ export default function DashboardPage() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[220px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
+                  <div className="h-[320px] flex items-center justify-center text-sm text-slate-400">Loading...</div>
                 )}
               </div>
             </div>
