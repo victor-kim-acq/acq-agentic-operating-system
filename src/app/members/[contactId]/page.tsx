@@ -715,37 +715,33 @@ export default function MemberDetailPage() {
               </h1>
               <p className="text-sm text-slate-500 mt-0.5">{member.email}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <StatusBadge status={member.vtg_current_membership_status} />
-              <TierBadge tier={member.vtg_current_membership_tier} />
+            <div className="text-right">
+              {member.revenueSnapshot && (
+                <div className="flex items-center gap-1.5 text-sm justify-end">
+                  <span className="text-emerald-700 font-semibold">
+                    ${member.revenueSnapshot.total.toLocaleString()}
+                  </span>
+                  <span className="text-slate-400">earned</span>
+                  <span className="text-slate-300">·</span>
+                  <span className="text-amber-600 font-semibold">
+                    ${member.revenueSnapshot.cancelled.toLocaleString()}
+                  </span>
+                  <span className="text-slate-400">cancelled</span>
+                  <span className="text-slate-300">·</span>
+                  <span className="text-red-600 font-semibold">
+                    ${member.revenueSnapshot.refunded.toLocaleString()}
+                  </span>
+                  <span className="text-slate-400">refunded</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 mt-1.5 justify-end">
+                <StatusBadge status={member.vtg_current_membership_status} />
+                <TierBadge tier={member.vtg_current_membership_tier} />
+              </div>
             </div>
           </div>
 
           <BillingButton member={member} />
-
-          {member.revenueSnapshot && (
-            <div className="mt-4">
-              <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-                Vantage Revenue
-              </h3>
-              <div className="flex items-center gap-1.5 text-xs">
-                <span className="text-emerald-700 font-semibold">
-                  ${member.revenueSnapshot.total.toLocaleString()}
-                </span>
-                <span className="text-slate-400">earned</span>
-                <span className="text-slate-300">·</span>
-                <span className="text-amber-600 font-semibold">
-                  ${member.revenueSnapshot.cancelled.toLocaleString()}
-                </span>
-                <span className="text-slate-400">cancelled</span>
-                <span className="text-slate-300">·</span>
-                <span className="text-red-600 font-semibold">
-                  ${member.revenueSnapshot.refunded.toLocaleString()}
-                </span>
-                <span className="text-slate-400">refunded</span>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Timeline */}
