@@ -153,7 +153,7 @@ export async function GET(
     try {
       const emailArrayLiteral = `{${allEmails.join(",")}}`;
       const memberResult = await sql`
-        SELECT user_id, email, full_name, tier, bio, points, level, ltv, join_date, onboarding_answers
+        SELECT user_id, email, full_name, tier, bio, points, level, ltv, join_date, onboarding_answers, ai_summary, summary_generated_at
         FROM skool_members
         WHERE LOWER(email) = ANY(${emailArrayLiteral}::text[])
         LIMIT 1
@@ -180,6 +180,68 @@ export async function GET(
         ]);
         skoolPosts = postsResult.rows;
         skoolComments = commentsResult.rows;
+
+        // --- AI Summary generation/caching ---
+        if (skoolPosts.length > 0 || skoolComments.length > 0) {
+          const summaryAge = skoolProfile.summary_generated_at
+            ? Date.now() - new Date(skoolProfile.summary_generated_at).getTime()
+            : Infinity;
+          const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+          if (!skoolProfile.ai_summary || summaryAge > SEVEN_DAYS) {
+            try {
+              const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+              const postContext = skoolPosts.slice(0, 20).map((p: Record<string, unknown>) =>
+                `[Post] ${p.title}: ${(String(p.content || "")).slice(0, 300)}`
+              ).join("\n");
+              const commentContext = skoolComments.slice(0, 20).map((c: Record<string, unknown>) =>
+                `[Comment on "${c.parent_post_title}"]: ${(String(c.content || "")).slice(0, 200)}`
+              ).join("\n");
+
+              const summaryPrompt = `You are analyzing a community member's engagement in ACQ Vantage (a paid business community). Based on their posts and comments below, write a 2-3 sentence summary of: (1) what topics they engage with most, (2) their engagement style (asking questions, sharing wins, helping others, etc.), and (3) any notable patterns. Be specific and concise. No fluff.
+
+Member: ${skoolProfile.full_name}
+Tier: ${skoolProfile.tier || "Unknown"}
+Level: ${skoolProfile.level}, Points: ${skoolProfile.points}
+
+Activity:
+${postContext}
+${commentContext}
+
+If there is very little activity, say so directly.`;
+
+              const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "x-api-key": ANTHROPIC_API_KEY!,
+                  "anthropic-version": "2023-06-01",
+                },
+                body: JSON.stringify({
+                  model: "claude-sonnet-4-20250514",
+                  max_tokens: 300,
+                  messages: [{ role: "user", content: summaryPrompt }],
+                }),
+              });
+
+              const anthropicData = await anthropicRes.json();
+              const summaryText = anthropicData.content?.[0]?.text || null;
+
+              if (summaryText && skoolProfile.user_id) {
+                await sql`
+                  UPDATE skool_members
+                  SET ai_summary = ${summaryText}, summary_generated_at = NOW()
+                  WHERE user_id = ${skoolProfile.user_id}
+                `;
+                skoolProfile.ai_summary = summaryText;
+                skoolProfile.summary_generated_at = new Date().toISOString();
+              }
+            } catch (summaryErr) {
+              console.error("AI summary generation failed:", summaryErr);
+              // Non-fatal — page loads without summary
+            }
+          }
+        }
       }
     } catch (e) {
       console.error("Skool query failed:", e);

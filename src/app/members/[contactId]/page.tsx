@@ -28,6 +28,8 @@ interface SkoolProfile {
   ltv: number;
   join_date: string | null;
   onboarding_answers: Record<string, unknown> | null;
+  ai_summary: string | null;
+  summary_generated_at: string | null;
 }
 
 interface SkoolPost {
@@ -184,6 +186,18 @@ function stripMarkdown(text: string): string {
     .trim();
 }
 
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return `${Math.floor(days / 7)}w ago`;
+}
+
 function slugify(text: string): string {
   return text
     .toLowerCase()
@@ -197,14 +211,19 @@ function SkoolProfileCard({
   profile,
   posts,
   comments,
+  contactId,
+  onRegenerate,
 }: {
   profile: SkoolProfile;
   posts: SkoolPost[];
   comments: SkoolComment[];
+  contactId: string;
+  onRegenerate: () => void;
 }) {
   const [bioExpanded, setBioExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
   const [activityFilter, setActivityFilter] = useState<"all" | "post" | "comment">("all");
+  const [regenerating, setRegenerating] = useState(false);
   const ltvDollars = (profile.ltv / 100).toLocaleString("en-US", {
     style: "currency",
     currency: "USD",
@@ -266,7 +285,7 @@ function SkoolProfileCard({
       )}
 
       {profile.bio && (
-        <div className="mt-3 pt-3 border-t border-slate-100">
+        <div className="mt-3">
           <p className="text-sm text-slate-600 leading-relaxed">
             {bioExpanded || profile.bio.length <= 200
               ? profile.bio
@@ -279,6 +298,51 @@ function SkoolProfileCard({
             >
               {bioExpanded ? "Show less" : "Show more"}
             </button>
+          )}
+        </div>
+      )}
+
+      {/* AI Summary */}
+      {(posts.length > 0 || comments.length > 0) && (
+        <div className="mt-4 pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+              ✨ AI Summary
+            </h3>
+            {profile.summary_generated_at && (
+              <>
+                <span className="text-[10px] text-slate-300">
+                  Generated {formatRelativeTime(profile.summary_generated_at)}
+                </span>
+                <button
+                  onClick={async () => {
+                    setRegenerating(true);
+                    try {
+                      await fetch(`/api/members/${contactId}/regenerate-summary`, { method: "POST" });
+                      onRegenerate();
+                    } catch {
+                      setRegenerating(false);
+                    }
+                  }}
+                  className="text-slate-300 hover:text-slate-500 transition-colors"
+                  title="Regenerate summary"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M11.5 7a4.5 4.5 0 1 1-1.3-3.2M11.5 2v1.8h-1.8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </>
+            )}
+          </div>
+          {profile.ai_summary && !regenerating ? (
+            <p className="text-sm text-slate-600 leading-relaxed">{profile.ai_summary}</p>
+          ) : (
+            <div className="animate-pulse">
+              <div className="h-3 w-full bg-slate-100 rounded mb-2" />
+              <div className="h-3 w-3/4 bg-slate-100 rounded mb-2" />
+              <div className="h-3 w-1/2 bg-slate-100 rounded" />
+              <p className="text-xs text-slate-400 mt-2">Generating summary...</p>
+            </div>
           )}
         </div>
       )}
@@ -665,6 +729,12 @@ export default function MemberDetailPage() {
             profile={member.skoolProfile}
             posts={member.skoolPosts ?? []}
             comments={member.skoolComments ?? []}
+            contactId={contactId}
+            onRegenerate={() => {
+              fetch(`/api/members/${contactId}`)
+                .then((r) => r.json())
+                .then(setMember);
+            }}
           />
         )}
       </div>
