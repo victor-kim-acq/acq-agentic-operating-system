@@ -39,6 +39,7 @@ CASE WHEN LOWER(currency) = 'usd' THEN mrr ELSE CASE WHEN tier = 'Standard' THEN
 }
 
 export async function POST(req: NextRequest) {
+  let generatedSql: string | undefined;
   try {
     const { question } = await req.json();
     if (!question || typeof question !== "string") {
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
     }
 
     const anthropicData = await anthropicRes.json();
-    const generatedSql = anthropicData.content?.[0]?.text?.trim();
+    generatedSql = anthropicData.content?.[0]?.text?.trim();
 
     if (!generatedSql) {
       return NextResponse.json(
@@ -168,19 +169,21 @@ export async function POST(req: NextRequest) {
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error: unknown) {
-    console.error("Dashboard chat error:", error);
-    const pgError = error as { code?: string; message?: string };
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const pgError = error as { code?: string };
     if (pgError.code) {
+      console.error("Dashboard chat SQL error:", { sql: generatedSql, error });
       return NextResponse.json(
         {
-          error: "Query execution failed",
-          detail: pgError.message,
+          error: `Query execution failed: ${errMsg}`,
+          sql: generatedSql,
         },
         { status: 400 }
       );
     }
+    console.error("Dashboard chat error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: `Internal server error: ${errMsg}` },
       { status: 500 }
     );
   }
