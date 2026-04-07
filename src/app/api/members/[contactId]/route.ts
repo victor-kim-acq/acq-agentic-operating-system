@@ -201,10 +201,10 @@ export async function GET(
             SELECT semantic_topic, semantic_role, COUNT(*)::int AS count
             FROM (
               SELECT semantic_topic, semantic_role FROM skool_posts
-              WHERE author_id = ${skoolProfile.user_id} AND semantic_topic IS NOT NULL AND semantic_topic != 'conversational'
+              WHERE author_id = ${skoolProfile.user_id} AND semantic_topic IS NOT NULL
               UNION ALL
               SELECT semantic_topic, semantic_role FROM skool_comments
-              WHERE author_id = ${skoolProfile.user_id} AND semantic_topic IS NOT NULL AND semantic_topic != 'conversational'
+              WHERE author_id = ${skoolProfile.user_id} AND semantic_topic IS NOT NULL
             ) combined
             GROUP BY semantic_topic, semantic_role
             ORDER BY count DESC

@@ -90,17 +90,18 @@ interface MemberProfile {
   };
 }
 
-const TOPIC_META: Record<string, { label: string; color: string }> = {
-  paid_ads: { label: "Paid Ads", color: "bg-red-50 text-red-700 ring-red-200" },
-  content_organic: { label: "Organic Content", color: "bg-pink-50 text-pink-700 ring-pink-200" },
-  lead_gen_funnels: { label: "Lead Gen / Funnels", color: "bg-orange-50 text-orange-700 ring-orange-200" },
-  email_outreach: { label: "Email / Outreach", color: "bg-yellow-50 text-yellow-700 ring-yellow-200" },
-  ai_tools: { label: "AI Tools", color: "bg-cyan-50 text-cyan-700 ring-cyan-200" },
-  sales_offers: { label: "Sales / Offers", color: "bg-emerald-50 text-emerald-700 ring-emerald-200" },
-  tracking_analytics: { label: "Tracking / Analytics", color: "bg-blue-50 text-blue-700 ring-blue-200" },
-  scaling_strategy: { label: "Scaling Strategy", color: "bg-violet-50 text-violet-700 ring-violet-200" },
-  hiring: { label: "Hiring", color: "bg-indigo-50 text-indigo-700 ring-indigo-200" },
-  operations: { label: "Operations", color: "bg-slate-100 text-slate-700 ring-slate-200" },
+const TOPIC_COLORS: Record<string, { label: string; cls: string }> = {
+  conversational: { label: "Conversational", cls: "bg-slate-100 text-slate-700" },
+  ai_tools: { label: "AI Tools", cls: "bg-violet-100 text-violet-700" },
+  paid_ads: { label: "Paid Ads", cls: "bg-blue-100 text-blue-700" },
+  content_organic: { label: "Organic Content", cls: "bg-teal-100 text-teal-700" },
+  lead_gen_funnels: { label: "Lead Gen Funnels", cls: "bg-emerald-100 text-emerald-700" },
+  email_outreach: { label: "Email Outreach", cls: "bg-amber-100 text-amber-700" },
+  sales_offers: { label: "Sales Offers", cls: "bg-orange-100 text-orange-700" },
+  tracking_analytics: { label: "Tracking Analytics", cls: "bg-cyan-100 text-cyan-700" },
+  scaling_strategy: { label: "Scaling Strategy", cls: "bg-indigo-100 text-indigo-700" },
+  hiring: { label: "Hiring", cls: "bg-rose-100 text-rose-700" },
+  operations: { label: "Operations", cls: "bg-stone-100 text-stone-700" },
 };
 
 const ROLE_META: Record<string, { label: string; icon: string }> = {
@@ -248,26 +249,13 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
-const TOPIC_LABELS: Record<string, string> = {
-  paid_ads: "Paid Ads",
-  content_organic: "Organic Content",
-  lead_gen_funnels: "Lead Gen Funnels",
-  email_outreach: "Email Outreach",
-  ai_tools: "AI Tools",
-  sales_offers: "Sales Offers",
-  tracking_analytics: "Tracking Analytics",
-  scaling_strategy: "Scaling Strategy",
-  hiring: "Hiring",
-  operations: "Operations",
-  conversational: "Conversational",
-};
-
 function TopicBadge({ topic }: { topic?: string }) {
   if (!topic) return null;
-  const label = TOPIC_LABELS[topic] || topic;
+  const meta = TOPIC_COLORS[topic];
+  if (!meta) return null;
   return (
-    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500 ring-1 ring-slate-200">
-      {label}
+    <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium ${meta.cls}`}>
+      {meta.label}
     </span>
   );
 }
@@ -288,7 +276,7 @@ function RoleBadge({ role }: { role?: string }) {
   );
 }
 
-function TopicExpertise({ topicAggregation, roleDistribution }: { topicAggregation: TopicAggRow[]; roleDistribution: RoleDistRow[] }) {
+function TopicExpertise({ topicAggregation }: { topicAggregation: TopicAggRow[] }) {
   if (topicAggregation.length === 0) return null;
 
   // Aggregate by topic (combine giver/seeker/neutral counts)
@@ -297,47 +285,22 @@ function TopicExpertise({ topicAggregation, roleDistribution }: { topicAggregati
     topicTotals.set(row.semantic_topic, (topicTotals.get(row.semantic_topic) || 0) + row.count);
   }
   const sortedTopics = [...topicTotals.entries()].sort((a, b) => b[1] - a[1]);
-  const maxCount = sortedTopics[0]?.[1] || 1;
-
-  // Role summary
-  const totalRoleCount = roleDistribution.reduce((s, r) => s + r.count, 0);
-  const dominantRole = roleDistribution[0];
-  const dominantPct = dominantRole ? Math.round((dominantRole.count / totalRoleCount) * 100) : 0;
+  const totalActivity = sortedTopics.reduce((s, [, c]) => s + c, 0);
 
   return (
     <div className="mt-4 pt-4 border-t border-slate-100">
-      <div className="flex items-center gap-3 mb-3">
-        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-          Topic Expertise
-        </h3>
-        {dominantRole && dominantPct > 40 && (
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-            dominantRole.semantic_role === "giver"
-              ? "bg-emerald-50 text-emerald-700"
-              : dominantRole.semantic_role === "seeker"
-                ? "bg-amber-50 text-amber-700"
-                : "bg-slate-50 text-slate-600"
-          }`}>
-            {dominantPct}% {ROLE_META[dominantRole.semantic_role]?.icon || dominantRole.semantic_role}
-          </span>
-        )}
-      </div>
-      <div className="space-y-1.5">
-        {sortedTopics.slice(0, 6).map(([topic, count]) => {
-          const meta = TOPIC_META[topic];
+      <h3 className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-3">
+        Topic Expertise
+      </h3>
+      <div className="flex flex-wrap gap-2">
+        {sortedTopics.map(([topic, count]) => {
+          const meta = TOPIC_COLORS[topic];
           if (!meta) return null;
-          const pct = Math.round((count / maxCount) * 100);
+          const pct = Math.round((count / totalActivity) * 100);
           return (
-            <div key={topic} className="flex items-center gap-2">
-              <span className="text-xs text-slate-600 w-32 flex-shrink-0 truncate">{meta.label}</span>
-              <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-slate-400 rounded-full transition-all"
-                  style={{ width: `${pct}%` }}
-                />
-              </div>
-              <span className="text-[11px] text-slate-400 w-6 text-right flex-shrink-0">{count}</span>
-            </div>
+            <span key={topic} className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium ${meta.cls}`}>
+              {meta.label} {count} ({pct}%)
+            </span>
           );
         })}
       </div>
@@ -481,7 +444,7 @@ function SkoolProfileCard({
         </div>
       )}
 
-      <TopicExpertise topicAggregation={topicAggregation} roleDistribution={roleDistribution} />
+      <TopicExpertise topicAggregation={topicAggregation} />
 
       {(() => {
         type ActivityItem =
