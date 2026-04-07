@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Node } from "@xyflow/react";
 import { X, Plus, Trash2, GripVertical } from "lucide-react";
 
@@ -16,6 +16,22 @@ interface EditNodeModalProps {
   onSave: (id: string, updates: { name: string; metadata: { icon: string; color: string; stats: Stat[] } }) => void;
 }
 
+const COLOR_PALETTE: string[][] = [
+  ["#000000", "#434343", "#666666", "#999999", "#b7b7b7", "#cccccc", "#d9d9d9", "#efefef", "#f3f3f3", "#ffffff"],
+  ["#980000", "#ff0000", "#ff9900", "#ffff00", "#00ff00", "#00ffff", "#4a86e8", "#0000ff", "#9900ff", "#ff00ff"],
+  ["#e6b8af", "#f4cccc", "#fce5cd", "#fff2cc", "#d9ead3", "#d0e0e3", "#c9daf8", "#cfe2f3", "#d9d2e9", "#ead1dc"],
+  ["#dd7e6b", "#ea9999", "#f9cb9c", "#ffe599", "#b6d7a8", "#a2c4c9", "#a4c2f4", "#9fc5e8", "#b4a7d6", "#d5a6bd"],
+  ["#cc4125", "#e06666", "#f6b26b", "#ffd966", "#93c47d", "#76a5af", "#6d9eeb", "#6fa8dc", "#8e7cc3", "#c27ba0"],
+  ["#a61c00", "#cc0000", "#e69138", "#f1c232", "#6aa84f", "#45818e", "#3c78d8", "#3d85c6", "#674ea7", "#a64d79"],
+  ["#85200c", "#990000", "#b45f06", "#bf9000", "#38761d", "#134f5c", "#1155cc", "#0b5394", "#351c75", "#741b47"],
+];
+
+function autoSize(el: HTMLTextAreaElement | null) {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = el.scrollHeight + "px";
+}
+
 export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalProps) {
   const [label, setLabel] = useState("");
   const [icon, setIcon] = useState("");
@@ -23,6 +39,7 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
   const [stats, setStats] = useState<Stat[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const textareaRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
 
   useEffect(() => {
     if (!node) return;
@@ -32,6 +49,10 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
     setColor(meta.color || "#6b7280");
     setStats(meta.stats ? meta.stats.map((s) => ({ ...s })) : []);
   }, [node]);
+
+  useEffect(() => {
+    textareaRefs.current.forEach((el) => autoSize(el));
+  }, [stats]);
 
   if (!node) return null;
 
@@ -92,6 +113,8 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
     marginBottom: 6,
   };
 
+  const normalizedColor = color.toLowerCase();
+
   return (
     <div
       style={{
@@ -110,15 +133,16 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
           background: "white",
           borderRadius: 12,
           padding: 24,
-          width: 560,
-          maxHeight: "85vh",
-          overflowY: "auto",
+          width: "min(900px, 90vw)",
+          maxHeight: "90vh",
+          display: "flex",
+          flexDirection: "column",
           boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ fontSize: 20 }}>{icon}</span>
             <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#1e293b" }}>Edit Node</h2>
@@ -129,7 +153,7 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
         </div>
 
         {/* Label */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, flexShrink: 0 }}>
           <label style={labelStyle}>Node Label</label>
           <input
             type="text"
@@ -142,7 +166,7 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
         </div>
 
         {/* Icon */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, flexShrink: 0 }}>
           <label style={labelStyle}>Icon (emoji)</label>
           <input
             type="text"
@@ -155,39 +179,52 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
         </div>
 
         {/* Color */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 16, flexShrink: 0 }}>
           <label style={labelStyle}>Color</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
-            {[
-              "#16a34a", "#2563eb", "#7c3aed", "#ec4899",
-              "#ea580c", "#ca8a04", "#0891b2", "#dc2626",
-              "#4f46e5", "#059669", "#d97706", "#6366f1",
-              "#84cc16", "#f43f5e", "#06b6d4", "#8b5cf6",
-            ].map((c) => (
-              <button
-                key={c}
-                onClick={() => setColor(c)}
-                style={{
-                  width: 28,
-                  height: 28,
-                  borderRadius: "50%",
-                  background: c,
-                  border: color === c ? "2px solid #1e293b" : "2px solid transparent",
-                  boxShadow: color === c ? `0 0 0 2px ${c}40` : "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                }}
-              >
-                {color === c && (
-                  <span style={{ color: "white", fontSize: 14, fontWeight: 700, textShadow: "0 1px 2px rgba(0,0,0,0.3)" }}>
-                    ✓
-                  </span>
-                )}
-              </button>
-            ))}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(10, 24px)",
+              gap: 2,
+              marginBottom: 8,
+            }}
+          >
+            {COLOR_PALETTE.flat().map((c) => {
+              const selected = normalizedColor === c;
+              return (
+                <button
+                  key={c}
+                  onClick={() => setColor(c)}
+                  title={c}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 1,
+                    background: c,
+                    border: selected ? "2px solid #1e293b" : "1px solid #e2e8f0",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                  }}
+                >
+                  {selected && (
+                    <span
+                      style={{
+                        color: ["#ffffff", "#f3f3f3", "#efefef", "#ffff00", "#fff2cc"].includes(c) ? "#1e293b" : "white",
+                        fontSize: 12,
+                        fontWeight: 700,
+                        textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                        lineHeight: 1,
+                      }}
+                    >
+                      ✓
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{ width: 28, height: 28, borderRadius: 6, background: color, border: "1px solid #e2e8f0", flexShrink: 0 }} />
@@ -203,9 +240,9 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
           </div>
         </div>
 
-        {/* Stats */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        {/* Steps */}
+        <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0, marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, flexShrink: 0 }}>
             <label style={labelStyle}>Steps</label>
             <button
               onClick={addStat}
@@ -225,81 +262,94 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
               <Plus size={11} /> Add
             </button>
           </div>
-          {stats.map((s, i) => {
-            const showIndicator = dragIndex !== null && dropIndex === i && dragIndex !== i;
-            return (
-              <div
-                key={i}
-                onDragOver={(e) => handleDragOver(e, i)}
-                onDrop={handleDrop}
-                style={{
-                  borderTop: showIndicator ? "2px solid #2563eb" : "2px solid transparent",
-                  opacity: dragIndex === i ? 0.4 : 1,
-                  display: "flex",
-                  gap: 6,
-                  marginBottom: 6,
-                  alignItems: "center",
-                }}
-              >
-                <span
-                  draggable
-                  onDragStart={() => handleDragStart(i)}
-                  onDragEnd={handleDragEnd}
+          <div style={{ flex: 1, overflowY: "auto", minHeight: 0, paddingRight: 4 }}>
+            {stats.map((s, i) => {
+              const showIndicator = dragIndex !== null && dropIndex === i && dragIndex !== i;
+              return (
+                <div
+                  key={i}
+                  onDragOver={(e) => handleDragOver(e, i)}
+                  onDrop={handleDrop}
                   style={{
-                    cursor: "grab",
-                    color: "#94a3b8",
+                    borderTop: showIndicator ? "2px solid #2563eb" : "2px solid transparent",
+                    opacity: dragIndex === i ? 0.4 : 1,
                     display: "flex",
-                    alignItems: "center",
-                    padding: "0 2px",
+                    gap: 6,
+                    marginBottom: 6,
+                    alignItems: "flex-start",
                   }}
-                  title="Drag to reorder"
                 >
-                  <GripVertical size={16} />
-                </span>
-                <input
-                  type="text"
-                  value={s.icon}
-                  onChange={(e) => updateStat(i, "icon", e.target.value)}
-                  style={{
-                    width: 36,
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 5,
-                    padding: "8px 4px",
-                    fontSize: 14,
-                    textAlign: "center",
-                    outline: "none",
-                    flexShrink: 0,
-                  }}
-                />
-                <input
-                  type="text"
-                  value={s.label}
-                  onChange={(e) => updateStat(i, "label", e.target.value)}
-                  placeholder="Step description"
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    border: "1px solid #e2e8f0",
-                    borderRadius: 5,
-                    padding: "8px 10px",
-                    fontSize: 13,
-                    outline: "none",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                />
-                <button
-                  onClick={() => removeStat(i)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4, flexShrink: 0 }}
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            );
-          })}
+                  <span
+                    draggable
+                    onDragStart={() => handleDragStart(i)}
+                    onDragEnd={handleDragEnd}
+                    style={{
+                      cursor: "grab",
+                      color: "#94a3b8",
+                      display: "flex",
+                      alignItems: "center",
+                      padding: "8px 2px 0",
+                    }}
+                    title="Drag to reorder"
+                  >
+                    <GripVertical size={16} />
+                  </span>
+                  <input
+                    type="text"
+                    value={s.icon}
+                    onChange={(e) => updateStat(i, "icon", e.target.value)}
+                    style={{
+                      width: 36,
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 5,
+                      padding: "8px 4px",
+                      fontSize: 14,
+                      textAlign: "center",
+                      outline: "none",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <textarea
+                    ref={(el) => {
+                      textareaRefs.current[i] = el;
+                      autoSize(el);
+                    }}
+                    rows={1}
+                    value={s.label}
+                    onChange={(e) => {
+                      updateStat(i, "label", e.target.value);
+                      autoSize(e.target);
+                    }}
+                    placeholder="Step description"
+                    style={{
+                      flex: 1,
+                      minWidth: 0,
+                      border: "1px solid #e2e8f0",
+                      borderRadius: 5,
+                      padding: "8px 10px",
+                      fontSize: 13,
+                      outline: "none",
+                      fontFamily: "Inter, sans-serif",
+                      resize: "none",
+                      overflow: "hidden",
+                      lineHeight: 1.4,
+                      boxSizing: "border-box",
+                    }}
+                  />
+                  <button
+                    onClick={() => removeStat(i)}
+                    style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 8, flexShrink: 0 }}
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", flexShrink: 0 }}>
           <button
             onClick={onClose}
             style={{
