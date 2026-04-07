@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Node } from "@xyflow/react";
-import { X, Plus, Trash2, GripVertical } from "lucide-react";
+import { X, Plus, Trash2, GripVertical, ChevronDown, ChevronUp } from "lucide-react";
 
 interface Stat {
   icon: string;
@@ -39,6 +39,7 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
   const [stats, setStats] = useState<Stat[]>([]);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dropIndex, setDropIndex] = useState<number | null>(null);
+  const [colorOpen, setColorOpen] = useState(false);
   const textareaRefs = useRef<Array<HTMLTextAreaElement | null>>([]);
 
   useEffect(() => {
@@ -152,35 +153,61 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
           </button>
         </div>
 
-        {/* Label */}
+        {/* Label + inline emoji */}
         <div style={{ marginBottom: 16, flexShrink: 0 }}>
           <label style={labelStyle}>Node Label</label>
-          <input
-            type="text"
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            style={inputStyle}
-            onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
-            onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
-          />
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <input
+              type="text"
+              value={icon}
+              onChange={(e) => setIcon(e.target.value)}
+              style={{
+                width: 36,
+                border: "1px solid #e2e8f0",
+                borderRadius: 6,
+                padding: "8px 4px",
+                fontSize: 18,
+                textAlign: "center",
+                outline: "none",
+                flexShrink: 0,
+              }}
+            />
+            <input
+              type="text"
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              style={{ ...inputStyle, flex: 1 }}
+              onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
+              onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
+            />
+          </div>
         </div>
 
-        {/* Icon */}
-        <div style={{ marginBottom: 16, flexShrink: 0 }}>
-          <label style={labelStyle}>Icon (emoji)</label>
-          <input
-            type="text"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            style={{ ...inputStyle, width: 60, textAlign: "center", fontSize: 18 }}
-            onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
-            onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
-          />
-        </div>
-
-        {/* Color */}
+        {/* Color (collapsible) */}
         <div style={{ marginBottom: 16, flexShrink: 0 }}>
           <label style={labelStyle}>Color</label>
+          <button
+            onClick={() => setColorOpen((o) => !o)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              background: "white",
+              border: "1px solid #e2e8f0",
+              borderRadius: 6,
+              padding: "6px 10px",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            <div style={{ width: 28, height: 28, borderRadius: 6, background: color, border: "1px solid #e2e8f0", flexShrink: 0 }} />
+            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: "#1e293b" }}>{color}</span>
+            <span style={{ marginLeft: "auto", color: "#94a3b8", display: "flex" }}>
+              {colorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </span>
+          </button>
+          {colorOpen && (
+            <div style={{ marginTop: 10 }}>
           <div
             style={{
               display: "grid",
@@ -237,6 +264,28 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
               onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
               placeholder="#hex"
             />
+          </div>
+            </div>
+          )}
+        </div>
+
+        {/* AI Summary */}
+        <div style={{ marginBottom: 16, flexShrink: 0 }}>
+          <label style={labelStyle}>AI Summary</label>
+          <div
+            style={{
+              background: "#f8fafc",
+              border: "1px solid #e2e8f0",
+              borderRadius: 8,
+              padding: 16,
+              minHeight: 80,
+              fontSize: 13,
+              fontStyle: "italic",
+              color: "#94a3b8",
+              fontFamily: "Inter, sans-serif",
+            }}
+          >
+            AI-generated summary of this process step will appear here...
           </div>
         </div>
 
