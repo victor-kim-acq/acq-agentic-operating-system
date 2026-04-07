@@ -276,7 +276,11 @@ function RoleBadge({ role }: { role?: string }) {
   );
 }
 
-function TopicExpertise({ topicAggregation }: { topicAggregation: TopicAggRow[] }) {
+function TopicExpertise({ topicAggregation, selectedTopic, onSelectTopic }: {
+  topicAggregation: TopicAggRow[];
+  selectedTopic: string | null;
+  onSelectTopic: (topic: string | null) => void;
+}) {
   if (topicAggregation.length === 0) return null;
 
   // Aggregate by topic (combine giver/seeker/neutral counts)
@@ -297,10 +301,17 @@ function TopicExpertise({ topicAggregation }: { topicAggregation: TopicAggRow[] 
           const meta = TOPIC_COLORS[topic];
           if (!meta) return null;
           const pct = Math.round((count / totalActivity) * 100);
+          const isActive = selectedTopic === topic;
+          // Active: 200-weight bg + ring; inactive: 100-weight bg
+          const activeCls = meta.cls.replace(/bg-(\w+)-100/, "bg-$1-200") + " ring-2 ring-offset-1 ring-current";
           return (
-            <span key={topic} className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium ${meta.cls}`}>
+            <button
+              key={topic}
+              onClick={() => onSelectTopic(isActive ? null : topic)}
+              className={`inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium cursor-pointer transition-all ${isActive ? activeCls : meta.cls}`}
+            >
               {meta.label} {count} ({pct}%)
-            </span>
+            </button>
           );
         })}
       </div>
@@ -328,6 +339,7 @@ function SkoolProfileCard({
   const [bioExpanded, setBioExpanded] = useState(false);
   const [visibleCount, setVisibleCount] = useState(5);
   const [activityFilter, setActivityFilter] = useState<"all" | "post" | "comment">("all");
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
   const [regenerating, setRegenerating] = useState(false);
 
   const answers = profile.onboarding_answers as Record<string, string> | null;
@@ -444,7 +456,7 @@ function SkoolProfileCard({
         </div>
       )}
 
-      <TopicExpertise topicAggregation={topicAggregation} />
+      <TopicExpertise topicAggregation={topicAggregation} selectedTopic={selectedTopic} onSelectTopic={(t) => { setSelectedTopic(t); setVisibleCount(5); }} />
 
       {(() => {
         type ActivityItem =
@@ -461,14 +473,19 @@ function SkoolProfileCard({
 
         if (allItems.length === 0) return null;
 
+        // Apply both filters: topic + type
+        const topicFiltered = selectedTopic
+          ? allItems.filter((item) => item.semantic_topic === selectedTopic)
+          : allItems;
         const filtered = activityFilter === "all"
-          ? allItems
-          : allItems.filter((item) => item.type === activityFilter);
+          ? topicFiltered
+          : topicFiltered.filter((item) => item.type === activityFilter);
         const items = filtered.slice(0, visibleCount);
         const hasMore = visibleCount < filtered.length;
 
-        const totalPosts = posts.length;
-        const totalComments = comments.length;
+        const totalAll = topicFiltered.length;
+        const totalPosts = topicFiltered.filter((i) => i.type === "post").length;
+        const totalComments = topicFiltered.filter((i) => i.type === "comment").length;
 
         const labelCls = (active: boolean) =>
           `text-[11px] font-semibold uppercase tracking-wider cursor-pointer transition-colors ${
@@ -489,7 +506,7 @@ function SkoolProfileCard({
                 Recent Activity
               </button>
               <span className={badgeCls(activityFilter === "all")}>
-                {totalPosts + totalComments}
+                {totalAll}
               </span>
               <button
                 onClick={() => { setActivityFilter("post"); setVisibleCount(5); }}
@@ -511,6 +528,9 @@ function SkoolProfileCard({
               </span>
             </div>
             <div className="space-y-3">
+              {filtered.length === 0 && (
+                <p className="text-sm text-slate-400 py-3">No matching activity.</p>
+              )}
               {items.map((item) =>
                 item.type === "post" ? (
                   <div
