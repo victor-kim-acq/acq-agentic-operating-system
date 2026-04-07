@@ -1,13 +1,13 @@
 import dagre from "@dagrejs/dagre";
 import type { Node, Edge } from "@xyflow/react";
 
-const NODE_WIDTH = 220;
-const NODE_HEIGHT = 100;
+const NODE_WIDTH = 280;
+const NODE_HEIGHT = 120;
 
 export function getLayoutedNodes(nodes: Node[], edges: Edge[]): Node[] {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: "LR", nodesep: 200, ranksep: 350 });
+  g.setGraph({ rankdir: "LR", nodesep: 180, ranksep: 300 });
 
   for (const node of nodes) {
     g.setNode(node.id, { width: NODE_WIDTH, height: NODE_HEIGHT });

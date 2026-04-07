@@ -44,6 +44,22 @@ function CanvasInner() {
   const [editingNode, setEditingNode] = useState<Node | null>(null);
   const [funnelPanelOpen, setFunnelPanelOpen] = useState(false);
   const [activeFunnel, setActiveFunnel] = useState<string | null>(null);
+  const [shiftHeld, setShiftHeld] = useState(false);
+
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftHeld(true);
+    };
+    const up = (e: KeyboardEvent) => {
+      if (e.key === "Shift") setShiftHeld(false);
+    };
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+    };
+  }, []);
   const { screenToFlowPosition, fitView } = useReactFlow();
 
   const clipboardRef = useRef<Array<{ label: string; category: string; metadata: Record<string, unknown>; position: { x: number; y: number } }> | null>(null);
@@ -83,10 +99,11 @@ function CanvasInner() {
         setError("Failed to load canvas data");
       } finally {
         setLoading(false);
+        setTimeout(() => fitView({ padding: 0.1 }), 50);
       }
     }
     load();
-  }, [setNodes, setEdges]);
+  }, [setNodes, setEdges, fitView]);
 
   const onNodeDragStop = useCallback(
     (_event: React.MouseEvent, node: Node) => {
@@ -212,7 +229,7 @@ function CanvasInner() {
         }),
       }).catch((err) => console.error("Failed to persist layout position:", err));
     }
-    window.requestAnimationFrame(() => fitView({ duration: 300 }));
+    window.requestAnimationFrame(() => fitView({ duration: 300, padding: 0.1 }));
   }, [nodes, edges, setNodes, fitView]);
 
   useEffect(() => {
@@ -383,12 +400,13 @@ function CanvasInner() {
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         fitView
+        fitViewOptions={{ padding: 0.1 }}
         proOptions={{ hideAttribution: true }}
         panOnScroll
         zoomOnScroll={false}
-        selectionOnDrag
+        selectionOnDrag={shiftHeld}
         selectionMode={SelectionMode.Partial}
-        panOnDrag={[1, 2]}
+        panOnDrag={shiftHeld ? [1, 2] : [0, 1, 2]}
         deleteKeyCode={["Delete", "Backspace"]}
       >
         <Background variant={BackgroundVariant.Dots} color="#cbd5e1" gap={20} />
