@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { Node } from "@xyflow/react";
-import { X, Plus, Trash2 } from "lucide-react";
+import { X, Plus, Trash2, GripVertical } from "lucide-react";
 
 interface Stat {
   icon: string;
@@ -21,6 +21,8 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
   const [icon, setIcon] = useState("");
   const [color, setColor] = useState("");
   const [stats, setStats] = useState<Stat[]>([]);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
 
   useEffect(() => {
     if (!node) return;
@@ -33,7 +35,31 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
 
   if (!node) return null;
 
-  const addStat = () => setStats([...stats, { icon: "📊", label: "New metric", value: "0" }]);
+  const addStat = () => setStats([...stats, { icon: "📊", label: "New step", value: "" }]);
+
+  const handleDragStart = (i: number) => setDragIndex(i);
+  const handleDragOver = (e: React.DragEvent, i: number) => {
+    e.preventDefault();
+    if (dragIndex === null || dragIndex === i) return;
+    setDropIndex(i);
+  };
+  const handleDrop = () => {
+    if (dragIndex === null || dropIndex === null || dragIndex === dropIndex) {
+      setDragIndex(null);
+      setDropIndex(null);
+      return;
+    }
+    const next = [...stats];
+    const [moved] = next.splice(dragIndex, 1);
+    next.splice(dropIndex, 0, moved);
+    setStats(next);
+    setDragIndex(null);
+    setDropIndex(null);
+  };
+  const handleDragEnd = () => {
+    setDragIndex(null);
+    setDropIndex(null);
+  };
   const removeStat = (i: number) => setStats(stats.filter((_, idx) => idx !== i));
   const updateStat = (i: number, field: keyof Stat, val: string) => {
     setStats(stats.map((s, idx) => (idx === i ? { ...s, [field]: val } : s)));
@@ -84,8 +110,8 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
           background: "white",
           borderRadius: 12,
           padding: 24,
-          width: 420,
-          maxHeight: "80vh",
+          width: 560,
+          maxHeight: "85vh",
           overflowY: "auto",
           boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
         }}
@@ -180,7 +206,7 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
         {/* Stats */}
         <div style={{ marginBottom: 16 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-            <label style={labelStyle}>Stats</label>
+            <label style={labelStyle}>Steps</label>
             <button
               onClick={addStat}
               style={{
@@ -199,60 +225,77 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
               <Plus size={11} /> Add
             </button>
           </div>
-          {stats.map((s, i) => (
-            <div key={i} style={{ display: "flex", gap: 6, marginBottom: 6, alignItems: "center" }}>
-              <input
-                type="text"
-                value={s.icon}
-                onChange={(e) => updateStat(i, "icon", e.target.value)}
+          {stats.map((s, i) => {
+            const showIndicator = dragIndex !== null && dropIndex === i && dragIndex !== i;
+            return (
+              <div
+                key={i}
+                onDragOver={(e) => handleDragOver(e, i)}
+                onDrop={handleDrop}
                 style={{
-                  width: 36,
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 5,
-                  padding: "6px 4px",
-                  fontSize: 14,
-                  textAlign: "center",
-                  outline: "none",
+                  borderTop: showIndicator ? "2px solid #2563eb" : "2px solid transparent",
+                  opacity: dragIndex === i ? 0.4 : 1,
+                  display: "flex",
+                  gap: 6,
+                  marginBottom: 6,
+                  alignItems: "center",
                 }}
-              />
-              <input
-                type="text"
-                value={s.label}
-                onChange={(e) => updateStat(i, "label", e.target.value)}
-                placeholder="Label"
-                style={{
-                  flex: 1,
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 5,
-                  padding: "6px 8px",
-                  fontSize: 12,
-                  outline: "none",
-                  fontFamily: "Inter, sans-serif",
-                }}
-              />
-              <input
-                type="text"
-                value={s.value}
-                onChange={(e) => updateStat(i, "value", e.target.value)}
-                placeholder="Value"
-                style={{
-                  width: 80,
-                  border: "1px solid #e2e8f0",
-                  borderRadius: 5,
-                  padding: "6px 8px",
-                  fontSize: 12,
-                  outline: "none",
-                  fontFamily: "DM Mono, monospace",
-                }}
-              />
-              <button
-                onClick={() => removeStat(i)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4 }}
               >
-                <Trash2 size={13} />
-              </button>
-            </div>
-          ))}
+                <span
+                  draggable
+                  onDragStart={() => handleDragStart(i)}
+                  onDragEnd={handleDragEnd}
+                  style={{
+                    cursor: "grab",
+                    color: "#94a3b8",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 2px",
+                  }}
+                  title="Drag to reorder"
+                >
+                  <GripVertical size={16} />
+                </span>
+                <input
+                  type="text"
+                  value={s.icon}
+                  onChange={(e) => updateStat(i, "icon", e.target.value)}
+                  style={{
+                    width: 36,
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 5,
+                    padding: "8px 4px",
+                    fontSize: 14,
+                    textAlign: "center",
+                    outline: "none",
+                    flexShrink: 0,
+                  }}
+                />
+                <input
+                  type="text"
+                  value={s.label}
+                  onChange={(e) => updateStat(i, "label", e.target.value)}
+                  placeholder="Step description"
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    border: "1px solid #e2e8f0",
+                    borderRadius: 5,
+                    padding: "8px 10px",
+                    fontSize: 13,
+                    outline: "none",
+                    fontFamily: "Inter, sans-serif",
+                  }}
+                />
+                <button
+                  onClick={() => removeStat(i)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#ef4444", padding: 4, flexShrink: 0 }}
+                >
+                  <Trash2 size={13} />
+                </button>
+              </div>
+            );
+          })}
         </div>
 
         {/* Actions */}

@@ -17,22 +17,27 @@ interface ProcessNodeData {
 function StatRow({ icon, label, value }: { icon: string; label: string; value: string }) {
   return (
     <div className="flow-node-stat">
-      <span style={{ fontSize: 13 }}>{icon}</span>
-      <span style={{ color: "#64748b" }}>{label}</span>
-      <span
-        style={{
-          marginLeft: "auto",
-          fontWeight: 500,
-          color: "#1e293b",
-          fontFamily: "DM Mono, monospace",
-          fontSize: 11,
-        }}
-      >
-        {value}
-      </span>
+      <span style={{ fontSize: 13, flexShrink: 0 }}>{icon}</span>
+      <span className="flow-node-stat-label">{label}</span>
+      {value && (
+        <span
+          style={{
+            marginLeft: "auto",
+            fontWeight: 500,
+            color: "#1e293b",
+            fontFamily: "DM Mono, monospace",
+            fontSize: 11,
+            flexShrink: 0,
+          }}
+        >
+          {value}
+        </span>
+      )}
     </div>
   );
 }
+
+const MAX_VISIBLE_STATS = 3;
 
 function ProcessNode({ data, selected }: NodeProps) {
   const d = data as ProcessNodeData;
@@ -41,6 +46,8 @@ function ProcessNode({ data, selected }: NodeProps) {
   const icon = meta.icon || "📦";
   const label = d.label || "Untitled";
   const stats = meta.stats || [];
+  const visibleStats = stats.slice(0, MAX_VISIBLE_STATS);
+  const overflow = stats.length - visibleStats.length;
 
   return (
     <div
@@ -60,9 +67,12 @@ function ProcessNode({ data, selected }: NodeProps) {
 
       {stats.length > 0 && (
         <div className="flow-node-body">
-          {stats.map((s, i) => (
+          {visibleStats.map((s, i) => (
             <StatRow key={i} icon={s.icon} label={s.label} value={s.value} />
           ))}
+          {overflow > 0 && (
+            <div className="flow-node-stat-more">+{overflow} more</div>
+          )}
         </div>
       )}
 
