@@ -162,14 +162,16 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               style={{
-                width: 36,
+                width: 48,
+                height: 48,
                 border: "1px solid #e2e8f0",
                 borderRadius: 6,
-                padding: "8px 4px",
-                fontSize: 18,
+                padding: "0 4px",
+                fontSize: 24,
                 textAlign: "center",
                 outline: "none",
                 flexShrink: 0,
+                boxSizing: "border-box",
               }}
             />
             <input
@@ -191,18 +193,16 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              gap: 8,
               background: "white",
               border: "1px solid #e2e8f0",
               borderRadius: 6,
               padding: "6px 10px",
               cursor: "pointer",
-              width: "100%",
             }}
           >
             <div style={{ width: 28, height: 28, borderRadius: 6, background: color, border: "1px solid #e2e8f0", flexShrink: 0 }} />
-            <span style={{ fontFamily: "DM Mono, monospace", fontSize: 12, color: "#1e293b" }}>{color}</span>
-            <span style={{ marginLeft: "auto", color: "#94a3b8", display: "flex" }}>
+            <span style={{ color: "#94a3b8", display: "flex" }}>
               {colorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
             </span>
           </button>
@@ -221,7 +221,7 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
               return (
                 <button
                   key={c}
-                  onClick={() => setColor(c)}
+                  onClick={() => { setColor(c); setColorOpen(false); }}
                   title={c}
                   style={{
                     width: 24,
@@ -252,18 +252,6 @@ export default function EditNodeModal({ node, onClose, onSave }: EditNodeModalPr
                 </button>
               );
             })}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 28, height: 28, borderRadius: 6, background: color, border: "1px solid #e2e8f0", flexShrink: 0 }} />
-            <input
-              type="text"
-              value={color}
-              onChange={(e) => setColor(e.target.value)}
-              style={{ ...inputStyle, fontFamily: "DM Mono, monospace", fontSize: 12 }}
-              onFocus={(e) => (e.target.style.borderColor = "#2563eb")}
-              onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
-              placeholder="#hex"
-            />
           </div>
             </div>
           )}
