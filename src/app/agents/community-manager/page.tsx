@@ -40,6 +40,68 @@ export default function CommunityManagerAgentPage() {
   } | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
 
+  const [expandedId, setExpandedId] = useState<string | number | null>(null);
+  const [editingId, setEditingId] = useState<string | number | null>(null);
+  const [editDraft, setEditDraft] = useState<Rule | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+
+  function toggleExpanded(rule: Rule) {
+    setExpandedId((prev) => (prev === rule.id ? null : rule.id));
+  }
+
+  function startEdit(rule: Rule) {
+    setEditingId(rule.id);
+    setEditDraft({ ...rule });
+    setExpandedId(rule.id);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditDraft(null);
+  }
+
+  async function saveEdit() {
+    if (!editDraft) return;
+    setEditSaving(true);
+    try {
+      const res = await fetch("/api/agents/community-manager", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editDraft.id,
+          communication_type: editDraft.communication_type,
+          email_subject: editDraft.email_subject,
+          email_body: editDraft.email_body,
+          from_name: editDraft.from_name,
+          from_email: editDraft.from_email,
+          interval_days: editDraft.interval_days,
+        }),
+      });
+      if (!res.ok) return;
+      await loadRules();
+      setEditingId(null);
+      setEditDraft(null);
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function deleteRule(rule: Rule) {
+    if (!confirm("Are you sure? This cannot be undone.")) return;
+    try {
+      const res = await fetch(`/api/agents/community-manager?id=${rule.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) return;
+      if (expandedId === rule.id) setExpandedId(null);
+      if (editingId === rule.id) cancelEdit();
+      if (previewRuleId === rule.id) closePreview();
+      await loadRules();
+    } catch {
+      // ignore
+    }
+  }
+
   async function openPreview(rule: Rule) {
     setPreviewRuleId(rule.id);
     setPreviewLoading(true);
@@ -136,7 +198,7 @@ export default function CommunityManagerAgentPage() {
 
   return (
     <main className="min-h-screen bg-slate-50">
-      <div className="max-w-2xl mx-auto px-6 py-8">
+      <div className="max-w-4xl mx-auto px-6 py-8">
         <Link
           href="/agents"
           className="text-sm text-slate-500 hover:text-slate-800 transition-colors mb-4 inline-block"
@@ -268,28 +330,33 @@ export default function CommunityManagerAgentPage() {
                 No communication rules yet.
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wide">
-                  <tr>
-                    <th className="text-left px-4 py-2.5">Type</th>
-                    <th className="text-left px-4 py-2.5">Day</th>
-                    <th className="text-left px-4 py-2.5">Subject</th>
-                    <th className="text-left px-4 py-2.5">Status</th>
-                    <th className="text-left px-4 py-2.5">Created</th>
-                    <th className="px-4 py-2.5"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {rules.map((rule) => (
-                    <tr key={rule.id}>
-                      <td className="px-4 py-2.5 font-mono text-xs text-slate-700">
-                        {rule.communication_type}
-                      </td>
-                      <td className="px-4 py-2.5 text-slate-700">{rule.interval_days}</td>
-                      <td className="px-4 py-2.5 text-slate-700 max-w-xs truncate">
-                        {rule.email_subject}
-                      </td>
-                      <td className="px-4 py-2.5">
+              <ul className="divide-y divide-slate-100">
+                {rules.map((rule) => {
+                  const isExpanded = expandedId === rule.id;
+                  const isEditing = editingId === rule.id;
+                  return (
+                    <li
+                      key={rule.id}
+                      className={`transition-opacity ${rule.is_active ? "" : "opacity-50"}`}
+                    >
+                      <div className="flex items-center gap-3 px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleExpanded(rule)}
+                          className="text-slate-400 hover:text-slate-700 text-xs w-4"
+                          aria-label={isExpanded ? "Collapse" : "Expand"}
+                        >
+                          {isExpanded ? "▼" : "▶"}
+                        </button>
+                        <div className="font-mono text-xs text-slate-700 w-40 truncate">
+                          {rule.communication_type}
+                        </div>
+                        <div className="text-xs text-slate-500 w-16">
+                          Day {rule.interval_days}
+                        </div>
+                        <div className="text-sm text-slate-700 flex-1 truncate">
+                          {rule.email_subject}
+                        </div>
                         <span
                           className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
                             rule.is_active
@@ -299,32 +366,160 @@ export default function CommunityManagerAgentPage() {
                         >
                           {rule.is_active ? "Active" : "Inactive"}
                         </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs text-slate-500">
-                        {new Date(rule.created_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-2.5 text-right">
-                        <div className="flex gap-3 justify-end">
+                        <div className="text-xs text-slate-400 w-20 text-right">
+                          {new Date(rule.created_at).toLocaleDateString()}
+                        </div>
+                        <div className="flex gap-2 items-center">
                           <button
                             type="button"
                             onClick={() => openPreview(rule)}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
                           >
                             Preview
                           </button>
                           <button
                             type="button"
+                            onClick={() => startEdit(rule)}
+                            className="text-xs px-2 py-1 rounded border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => toggleActive(rule)}
-                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                            className={`text-xs px-2 py-1 rounded font-medium border ${
+                              rule.is_active
+                                ? "border-amber-200 text-amber-700 hover:bg-amber-50"
+                                : "border-green-200 text-green-700 hover:bg-green-50"
+                            }`}
                           >
                             {rule.is_active ? "Deactivate" : "Activate"}
                           </button>
+                          <button
+                            type="button"
+                            onClick={() => deleteRule(rule)}
+                            className="text-xs px-2 py-1 rounded border border-red-200 text-red-700 hover:bg-red-50 font-medium"
+                          >
+                            Delete
+                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+                      </div>
+
+                      {isExpanded && !isEditing && (
+                        <div className="px-4 pb-4 pl-11 space-y-2 bg-slate-50/50">
+                          <div className="text-xs text-slate-500">
+                            <span className="font-medium">From:</span> {rule.from_name} &lt;{rule.from_email}&gt;
+                          </div>
+                          <div>
+                            <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-1">
+                              Email Body
+                            </div>
+                            <pre className="whitespace-pre-wrap text-sm text-slate-700 font-sans bg-white border border-slate-200 rounded-md p-3">
+                              {rule.email_body}
+                            </pre>
+                          </div>
+                        </div>
+                      )}
+
+                      {isEditing && editDraft && (
+                        <div className="px-4 pb-4 pl-11 space-y-3 bg-slate-50/50">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">
+                                Communication Type
+                              </label>
+                              <input
+                                type="text"
+                                readOnly
+                                value={editDraft.communication_type}
+                                className="w-full px-3 py-2 text-sm border border-slate-200 bg-slate-100 text-slate-500 rounded-md"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">
+                                Interval (days)
+                              </label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={editDraft.interval_days}
+                                onChange={(e) =>
+                                  setEditDraft({ ...editDraft, interval_days: parseInt(e.target.value || "0", 10) })
+                                }
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1">
+                              Email Subject
+                            </label>
+                            <input
+                              type="text"
+                              value={editDraft.email_subject}
+                              onChange={(e) => setEditDraft({ ...editDraft, email_subject: e.target.value })}
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-slate-500 mb-1">
+                              Email Body
+                            </label>
+                            <textarea
+                              rows={9}
+                              value={editDraft.email_body}
+                              onChange={(e) => setEditDraft({ ...editDraft, email_body: e.target.value })}
+                              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">
+                                From Name
+                              </label>
+                              <input
+                                type="text"
+                                value={editDraft.from_name}
+                                onChange={(e) => setEditDraft({ ...editDraft, from_name: e.target.value })}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-slate-500 mb-1">
+                                From Email
+                              </label>
+                              <input
+                                type="text"
+                                value={editDraft.from_email}
+                                onChange={(e) => setEditDraft({ ...editDraft, from_email: e.target.value })}
+                                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              type="button"
+                              onClick={cancelEdit}
+                              disabled={editSaving}
+                              className="text-xs px-3 py-1.5 rounded border border-slate-200 text-slate-700 hover:bg-slate-50 font-medium"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={saveEdit}
+                              disabled={editSaving}
+                              className="text-xs px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-medium"
+                            >
+                              {editSaving ? "Saving..." : "Save"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
 

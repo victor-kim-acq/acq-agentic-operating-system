@@ -55,6 +55,63 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PUT(req: NextRequest) {
+  try {
+    const {
+      id,
+      communication_type,
+      email_subject,
+      email_body,
+      from_name,
+      from_email,
+      interval_days,
+    } = await req.json();
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    const result = await sql`
+      UPDATE scheduled_communications
+      SET communication_type = ${communication_type},
+          email_subject = ${email_subject},
+          email_body = ${email_body},
+          from_name = ${from_name},
+          from_email = ${from_email},
+          reply_to = ${from_email},
+          interval_days = ${parseInt(interval_days)}
+      WHERE id = ${id}
+      RETURNING id, communication_type, email_subject, email_body, from_name, from_email, reply_to, interval_days, is_active, created_at
+    `;
+    return NextResponse.json(result.rows[0]);
+  } catch (error) {
+    console.error("Failed to update scheduled_communication:", error);
+    return NextResponse.json(
+      { error: "Failed to update scheduled communication" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
+
+    await sql`DELETE FROM scheduled_communications WHERE id = ${id}`;
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to delete scheduled_communication:", error);
+    return NextResponse.json(
+      { error: "Failed to delete scheduled communication" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PATCH(req: NextRequest) {
   try {
     const { id, is_active } = await req.json();
