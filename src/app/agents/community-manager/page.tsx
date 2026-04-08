@@ -31,6 +31,40 @@ export default function CommunityManagerAgentPage() {
   const [error, setError] = useState<string | null>(null);
   const [rules, setRules] = useState<Rule[]>([]);
 
+  const [previewRuleId, setPreviewRuleId] = useState<string | number | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewData, setPreviewData] = useState<{
+    members: { full_name: string; email: string; join_date: string; days_since_join: number }[];
+    count: number;
+    rule: { communication_type: string; interval_days: number };
+  } | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+
+  async function openPreview(rule: Rule) {
+    setPreviewRuleId(rule.id);
+    setPreviewLoading(true);
+    setPreviewData(null);
+    setPreviewError(null);
+    try {
+      const res = await fetch(`/api/agents/community-manager/preview?rule_id=${rule.id}&t=${Date.now()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || `Request failed (${res.status})`);
+      }
+      setPreviewData(await res.json());
+    } catch (err) {
+      setPreviewError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setPreviewLoading(false);
+    }
+  }
+
+  function closePreview() {
+    setPreviewRuleId(null);
+    setPreviewData(null);
+    setPreviewError(null);
+  }
+
   const loadRules = useCallback(async () => {
     try {
       const res = await fetch(`/api/agents/community-manager?t=${Date.now()}`);
@@ -270,13 +304,22 @@ export default function CommunityManagerAgentPage() {
                         {new Date(rule.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-2.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => toggleActive(rule)}
-                          className="text-xs text-blue-600 hover:text-blue-800 font-medium"
-                        >
-                          {rule.is_active ? "Deactivate" : "Activate"}
-                        </button>
+                        <div className="flex gap-3 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => openPreview(rule)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            Preview
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => toggleActive(rule)}
+                            className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                          >
+                            {rule.is_active ? "Deactivate" : "Activate"}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -284,6 +327,61 @@ export default function CommunityManagerAgentPage() {
               </table>
             )}
           </div>
+
+          {previewRuleId !== null && (
+            <div className="mt-4 bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 bg-slate-50">
+                <h3 className="text-sm font-semibold text-slate-900">
+                  {previewLoading
+                    ? "Loading preview..."
+                    : previewError
+                    ? "Preview"
+                    : previewData
+                    ? `${previewData.count} member${previewData.count === 1 ? "" : "s"} eligible today for ${previewData.rule.communication_type}`
+                    : "Preview"}
+                </h3>
+                <button
+                  type="button"
+                  onClick={closePreview}
+                  className="text-xs text-slate-500 hover:text-slate-800 font-medium"
+                >
+                  Close
+                </button>
+              </div>
+              {previewError ? (
+                <div className="p-4 text-sm text-red-700">{previewError}</div>
+              ) : previewLoading ? (
+                <div className="p-6 text-sm text-slate-500 text-center">Loading...</div>
+              ) : previewData && previewData.count === 0 ? (
+                <div className="p-6 text-sm text-slate-500 text-center">
+                  No members hitting this milestone today.
+                </div>
+              ) : previewData ? (
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-xs font-medium text-slate-500 uppercase tracking-wide">
+                    <tr>
+                      <th className="text-left px-4 py-2.5">Name</th>
+                      <th className="text-left px-4 py-2.5">Email</th>
+                      <th className="text-left px-4 py-2.5">Join Date</th>
+                      <th className="text-left px-4 py-2.5">Days Since Join</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {previewData.members.map((m) => (
+                      <tr key={m.email}>
+                        <td className="px-4 py-2.5 text-slate-700">{m.full_name}</td>
+                        <td className="px-4 py-2.5 text-slate-700">{m.email}</td>
+                        <td className="px-4 py-2.5 text-xs text-slate-500">
+                          {new Date(m.join_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-2.5 text-slate-700">{m.days_since_join}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : null}
+            </div>
+          )}
         </section>
       </div>
     </main>
