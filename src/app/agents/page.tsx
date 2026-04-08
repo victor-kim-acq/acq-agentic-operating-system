@@ -9,6 +9,12 @@ const agents = [
     name: "Marketing Ops Agent",
     description: "Create email campaigns in HubSpot with AI-generated copy",
   },
+  {
+    href: "/agents/community-manager",
+    icon: "👥",
+    name: "Community Manager Agent",
+    description: "Set up scheduled communications for members based on membership milestones",
+  },
 ];
 
 export default function AgentsPage() {
