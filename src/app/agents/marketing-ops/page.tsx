@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, FormEvent } from "react";
 
 type CampaignResponse = {
@@ -13,7 +14,7 @@ type CampaignResponse = {
   message: string;
 };
 
-export default function CampaignsPage() {
+export default function MarketingOpsAgentPage() {
   const [brief, setBrief] = useState("");
   const [campaignName, setCampaignName] = useState("");
   const [referenceEmails, setReferenceEmails] = useState("");
@@ -33,7 +34,7 @@ export default function CampaignsPage() {
     if (referenceEmails.trim()) payload.reference_emails = referenceEmails.trim();
 
     try {
-      const res = await fetch("/api/campaigns", {
+      const res = await fetch("/api/agents/marketing-ops", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -63,10 +64,16 @@ export default function CampaignsPage() {
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="max-w-2xl mx-auto px-6 py-8">
+        <Link
+          href="/agents"
+          className="text-sm text-slate-500 hover:text-slate-800 transition-colors mb-4 inline-block"
+        >
+          ← Back to Agents
+        </Link>
         <header className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Campaign Manager</h1>
+          <h1 className="text-2xl font-bold text-slate-900">Marketing Ops Agent</h1>
           <p className="text-sm text-slate-500 mt-1">
-            Create email campaigns in HubSpot with AI-generated copy
+            Create email campaigns in HubSpot with our marketing ops agent
           </p>
         </header>
 
@@ -160,7 +167,7 @@ export default function CampaignsPage() {
               </label>
               <textarea
                 id="reference-emails"
-                rows={5}
+                rows={1}
                 disabled={loading}
                 value={referenceEmails}
                 onChange={(e) => setReferenceEmails(e.target.value)}

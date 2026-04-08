@@ -42,10 +42,10 @@ export default function RootLayout({
               Members
             </Link>
             <Link
-              href="/campaigns"
+              href="/agents"
               className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
             >
-              Campaigns
+              Agents
             </Link>
           </div>
           <span className="text-xs text-slate-400">ACQ Agentic OS</span>
