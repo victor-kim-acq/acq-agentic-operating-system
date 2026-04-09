@@ -34,7 +34,7 @@ export default function CommunityManagerAgentPage() {
   const [previewRuleId, setPreviewRuleId] = useState<string | number | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [previewData, setPreviewData] = useState<{
-    members: { full_name: string; email: string; join_date: string; days_since_join: number }[];
+    members: { full_name: string; email: string; join_date: string; days_since_join: number; send_status: string | null; sent_at: string | null }[];
     count: number;
     rule: { communication_type: string; interval_days: number };
   } | null>(null);
@@ -532,7 +532,7 @@ export default function CommunityManagerAgentPage() {
                     : previewError
                     ? "Preview"
                     : previewData
-                    ? `${previewData.count} member${previewData.count === 1 ? "" : "s"} eligible today for ${previewData.rule.communication_type}`
+                    ? `${previewData.count} member${previewData.count === 1 ? "" : "s"} at milestone for ${previewData.rule.communication_type}`
                     : "Preview"}
                 </h3>
                 <button
@@ -559,6 +559,7 @@ export default function CommunityManagerAgentPage() {
                       <th className="text-left px-4 py-2.5">Email</th>
                       <th className="text-left px-4 py-2.5">Join Date</th>
                       <th className="text-left px-4 py-2.5">Days Since Join</th>
+                      <th className="text-left px-4 py-2.5">Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
@@ -570,6 +571,30 @@ export default function CommunityManagerAgentPage() {
                           {new Date(m.join_date).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-2.5 text-slate-700">{m.days_since_join}</td>
+                        <td className="px-4 py-2.5">
+                          {m.send_status === "sent" ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                              Sent
+                              {m.sent_at && (
+                                <span className="text-green-500 font-normal">
+                                  {new Date(m.sent_at).toLocaleDateString()}
+                                </span>
+                              )}
+                            </span>
+                          ) : m.send_status === "error" ? (
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                              Error
+                            </span>
+                          ) : m.send_status === "skipped" ? (
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                              Skipped
+                            </span>
+                          ) : (
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-500">
+                              Pending
+                            </span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

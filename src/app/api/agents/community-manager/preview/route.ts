@@ -31,15 +31,16 @@ export async function GET(req: NextRequest) {
 
     const membersResult = await sql`
       SELECT sm.full_name, sm.email, sm.join_date,
-             (CURRENT_DATE - DATE(sm.join_date)) AS days_since_join
+             (CURRENT_DATE - DATE(sm.join_date)) AS days_since_join,
+             cl.status AS send_status,
+             cl.sent_at
       FROM skool_members sm
+      LEFT JOIN communications_log cl
+        ON cl.contact_email = sm.email
+        AND cl.communication_type = ${rule.communication_type}
+        AND cl.status = 'sent'
       WHERE DATE(sm.join_date) = CURRENT_DATE - INTERVAL '1 day' * ${rule.interval_days}
-        AND NOT EXISTS (
-          SELECT 1 FROM communications_log cl
-          WHERE cl.contact_email = sm.email
-            AND cl.communication_type = ${rule.communication_type}
-            AND cl.status = 'sent'
-        )
+        AND sm.email IS NOT NULL
       ORDER BY sm.full_name
     `;
 
