@@ -35,10 +35,13 @@ export async function GET(req: NextRequest) {
              cl.status AS send_status,
              cl.sent_at
       FROM skool_members sm
-      LEFT JOIN communications_log cl
-        ON cl.contact_email = sm.email
-        AND cl.communication_type = ${rule.communication_type}
-        AND cl.status = 'sent'
+      LEFT JOIN LATERAL (
+        SELECT status, sent_at FROM communications_log
+        WHERE contact_email = sm.email
+          AND communication_type = ${rule.communication_type}
+        ORDER BY sent_at DESC
+        LIMIT 1
+      ) cl ON true
       WHERE DATE(sm.join_date) = CURRENT_DATE - INTERVAL '1 day' * ${rule.interval_days}
         AND sm.email IS NOT NULL
       ORDER BY sm.full_name
