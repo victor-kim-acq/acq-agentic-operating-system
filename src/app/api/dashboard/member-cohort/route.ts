@@ -64,7 +64,7 @@ export async function GET() {
         FROM cancelled_joiners
         WHERE LOWER(email) NOT IN (SELECT email FROM exclude_list)
       ),
-      -- Group by month
+      -- Group by month (March 2026 onwards)
       monthly AS (
         SELECT
           TO_CHAR(DATE_TRUNC('month', joined_at), 'Mon YYYY') AS cohort_month,
@@ -72,6 +72,7 @@ export async function GET() {
           COUNT(*) AS acquired,
           SUM(CASE WHEN source = 'cancelled' THEN 1 ELSE 0 END) AS churned
         FROM all_joiners
+        WHERE joined_at >= '2026-03-01'
         GROUP BY 1, 2
       )
       SELECT
