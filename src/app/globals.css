@@ -6,9 +6,9 @@
 
 :root {
   /* -- Neutral scale -- */
-  --neutral-50: #f8fafc;
+  --neutral-50: #fafaf9;
   --neutral-100: #f1f5f9;
-  --neutral-200: #e2e8f0;
+  --neutral-200: #e5e7eb;
   --neutral-300: #cbd5e1;
   --neutral-400: #94a3b8;
   --neutral-500: #64748b;
@@ -31,11 +31,11 @@
   --color-danger-light: #fef2f2;
 
   /* -- Chart palette -- */
-  --chart-1: #3b82f6;
-  --chart-2: #10b981;
-  --chart-3: #f59e0b;
-  --chart-4: #ef4444;
-  --chart-5: #8b5cf6;
+  --chart-1: #2563eb;
+  --chart-2: #0d9488;
+  --chart-3: #e11d48;
+  --chart-4: #ca8a04;
+  --chart-5: #7c3aed;
 
   /* -- Spacing -- */
   --space-1: 0.25rem;
@@ -53,11 +53,11 @@
   --radius-xl: 1rem;
 
   /* -- Shadows -- */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 1px rgba(0, 0, 0, 0.02);
+  --shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 24px -4px rgba(0, 0, 0, 0.1), 0 4px 8px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 24px 48px -8px rgba(0, 0, 0, 0.12), 0 8px 16px -6px rgba(0, 0, 0, 0.06);
 
   /* -- Typography sizes -- */
   --text-xs: 0.75rem;
@@ -75,8 +75,17 @@
 }
 
 body {
-  color: var(--neutral-800);
+  color: var(--neutral-700);
   background: var(--page-bg);
+}
+
+/* Calmer skeleton pulse for KPI cards */
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ================================================================== */

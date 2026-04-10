@@ -71,20 +71,20 @@ export default function TopCharts({
         ) : (
           <ResponsiveContainer width="100%" height={500}>
             <ComposedChart data={revChurnData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, revChurnView) }))} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-200)" />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} tickFormatter={(v) => fmtShort(v)} width={70} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} width={40} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmtShort(v)} width={70} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={40} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="var(--chart-2)" radius={[3, 3, 0, 0]}>
-                <LabelList dataKey="active_mrr" position="top" fontSize={10} formatter={fmtShortLabel} />
+              <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="var(--chart-2)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="active_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" radius={[3, 3, 0, 0]}>
-                <LabelList dataKey="cancelled_mrr" position="top" fontSize={10} formatter={fmtShortLabel} />
+              <Bar yAxisId="left" dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="cancelled_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
-                <LabelList dataKey="churn_rate_pct" position="top" fontSize={10} formatter={pctLabel} />
+                <LabelList dataKey="churn_rate_pct" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
               </Line>
             </ComposedChart>
           </ResponsiveContainer>
@@ -123,17 +123,17 @@ export default function TopCharts({
         ) : (
           <ResponsiveContainer width="100%" height={500}>
             <ComposedChart data={newDealsData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, newDealsView) }))} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-200)" />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11 }} width={35} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} tickFormatter={(v) => fmtShort(v)} width={70} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
+              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={35} />
+              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmtShort(v)} width={70} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="deal_count" name="Deal Count" fill="var(--chart-1)" radius={[3, 3, 0, 0]}>
-                <LabelList dataKey="deal_count" position="top" fontSize={10} />
+              <Bar yAxisId="left" dataKey="deal_count" name="Deal Count" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="deal_count" position="top" fontSize={10} fill="var(--neutral-500)" />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="sold_mrr" name="Sold MRR" stroke="var(--chart-5)" strokeWidth={2} dot={{ fill: 'var(--chart-5)', r: 3 }}>
-                <LabelList dataKey="sold_mrr" position="top" fontSize={10} formatter={fmtShortLabel} />
+                <LabelList dataKey="sold_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Line>
             </ComposedChart>
           </ResponsiveContainer>
@@ -174,19 +174,19 @@ export default function TopCharts({
         ) : (
           <ResponsiveContainer width="100%" height={500}>
             <BarChart data={soldCollData.map((r) => ({ ...r, label: formatPeriodLabel(r.period, soldCollView) }))} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-200)" />
-              <XAxis dataKey="label" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => fmtShort(v)} width={70} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
+              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmtShort(v)} width={70} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="closed_mrr" name="Closed MRR" fill="var(--chart-1)" radius={[3, 3, 0, 0]}>
-                <LabelList dataKey="closed_mrr" position="top" fontSize={10} formatter={fmtShortLabel} />
+              <Bar dataKey="closed_mrr" name="Closed MRR" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="closed_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
-              <Bar dataKey="collected_mrr" name="Collected MRR" fill="var(--chart-2)" radius={[3, 3, 0, 0]}>
-                <LabelList dataKey="collected_mrr" position="top" fontSize={10} formatter={fmtShortLabel} />
+              <Bar dataKey="collected_mrr" name="Collected MRR" fill="var(--chart-2)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="collected_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
-              <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" radius={[3, 3, 0, 0]}>
-                <LabelList dataKey="cancelled_mrr" position="top" fontSize={10} formatter={fmtShortLabel} />
+              <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="cancelled_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
             </BarChart>
           </ResponsiveContainer>

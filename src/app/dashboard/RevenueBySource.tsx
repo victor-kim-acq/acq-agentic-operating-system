@@ -29,16 +29,16 @@ export default function RevenueBySource({ rows, onViewDetail }: Props) {
       {chartData.length > 0 && (
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={chartData} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-200)" />
-            <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmt(v)} />
             <Tooltip content={<ChartTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Bar dataKey="usd_mrr" name="USD MRR" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
-              <LabelList dataKey="usd_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+              <LabelList dataKey="usd_mrr" position="top" fontSize={11} fill="var(--neutral-500)" formatter={fmtLabel} />
             </Bar>
             <Bar dataKey="non_usd_mrr" name="Non-USD MRR" fill="var(--chart-2)" radius={[4, 4, 0, 0]}>
-              <LabelList dataKey="non_usd_mrr" position="top" fontSize={11} formatter={fmtLabel} />
+              <LabelList dataKey="non_usd_mrr" position="top" fontSize={11} fill="var(--neutral-500)" formatter={fmtLabel} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>

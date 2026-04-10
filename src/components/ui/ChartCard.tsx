@@ -20,11 +20,14 @@ export default function ChartCard({ title, actions, children, height = 350, load
         boxShadow: 'var(--shadow-sm)',
       }}
     >
-      <div className="flex items-center justify-between px-6 pt-5 pb-3">
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--neutral-800)' }}>{title}</h2>
+      <div
+        className="flex items-center justify-between px-6 pt-5 pb-3 border-b"
+        style={{ borderColor: 'var(--neutral-100)' }}
+      >
+        <h2 className="text-sm font-medium" style={{ color: 'var(--neutral-800)' }}>{title}</h2>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
-      <div className="px-6 pb-6" style={{ minHeight: height }}>
+      <div className="px-6 pb-6 pt-4" style={{ minHeight: height }}>
         {loading ? (
           <div className="flex items-center justify-center text-sm" style={{ height, color: 'var(--neutral-400)' }}>
             Loading...

@@ -144,8 +144,8 @@ export default function ChatPanel() {
                 <button
                   key={s}
                   onClick={() => submitQuestion(s)}
-                  className="text-xs rounded-full px-3 py-1.5 transition-colors"
-                  style={{ color: 'var(--neutral-500)', background: 'var(--neutral-100)' }}
+                  className="text-xs rounded-full px-3 py-1.5 transition-colors border"
+                  style={{ color: 'var(--neutral-500)', background: 'var(--neutral-100)', borderColor: 'var(--neutral-200)' }}
                 >
                   {s}
                 </button>
@@ -181,7 +181,7 @@ export default function ChatPanel() {
               type="submit"
               disabled={!chatInput.trim()}
               className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'var(--neutral-900)' }}
+              style={{ background: 'var(--brand-primary)' }}
             >
               <Send className="w-4 h-4" />
             </button>

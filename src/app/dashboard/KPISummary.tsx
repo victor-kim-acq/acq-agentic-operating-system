@@ -15,8 +15,8 @@ function SkeletonStat() {
       className="rounded-xl border p-6 space-y-3"
       style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)', boxShadow: 'var(--shadow-md)' }}
     >
-      <div className="animate-pulse rounded h-4 w-24" style={{ background: 'var(--neutral-200)' }} />
-      <div className="animate-pulse rounded h-9 w-40" style={{ background: 'var(--neutral-200)' }} />
+      <div className="animate-gentle-pulse rounded h-4 w-24" style={{ background: 'var(--neutral-200)' }} />
+      <div className="animate-gentle-pulse rounded h-9 w-40" style={{ background: 'var(--neutral-200)' }} />
     </div>
   );
 }

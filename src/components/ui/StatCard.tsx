@@ -19,14 +19,20 @@ export default function StatCard({ label, value, trend, accentColor }: StatCardP
     >
       {accentColor && (
         <div
-          className="absolute top-0 left-0 right-0 h-1 rounded-t-xl"
-          style={{ background: accentColor }}
+          className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl"
+          style={{ background: `linear-gradient(to right, ${accentColor}, transparent)` }}
         />
       )}
-      <p className="text-xs font-medium uppercase tracking-wider mb-2" style={{ color: 'var(--neutral-400)' }}>
+      <p
+        className="text-xs font-medium uppercase mb-2"
+        style={{ color: 'var(--neutral-400)', letterSpacing: '0.1em' }}
+      >
         {label}
       </p>
-      <p className="text-3xl font-bold tracking-tight" style={{ color: 'var(--neutral-900)' }}>
+      <p
+        className="text-3xl font-extrabold"
+        style={{ color: 'var(--neutral-900)', letterSpacing: '-0.02em' }}
+      >
         {value}
       </p>
       {trend && (

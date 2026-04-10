@@ -41,15 +41,15 @@ export default function MoMRevenue({ rows, onViewDetail }: Props) {
       {pivoted.length > 0 && (
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={pivoted} margin={{ top: 20, right: 20, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-200)" />
-            <XAxis dataKey="month_label" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => fmt(v)} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
+            <XAxis dataKey="month_label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
+            <YAxis tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmt(v)} />
             <Tooltip content={<ChartTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
             <Bar dataKey="Recharge" stackId="a" fill="#84cc16" />
             <Bar dataKey="Skool" stackId="a" fill="var(--chart-3)" />
             <Bar dataKey="ACE" stackId="a" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
-              <LabelList dataKey="Total" position="top" fontSize={11} formatter={fmtLabel} />
+              <LabelList dataKey="Total" position="top" fontSize={11} fill="var(--neutral-500)" formatter={fmtLabel} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
