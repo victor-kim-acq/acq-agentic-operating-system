@@ -92,6 +92,13 @@ export const DETAIL_COLUMNS: Record<string, ColumnDef[]> = {
       colorFn: () => '',
     },
   ],
+  'member-cohort': [
+    { key: 'name', label: 'Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'join_date', label: 'Join Date' },
+    { key: 'cohort_month', label: 'Cohort Month' },
+    { key: 'status', label: 'Status' },
+  ],
   'churn-cohort': [
     { key: 'membership_id', label: 'ID' },
     { key: 'membership_name', label: 'Name' },

@@ -8,7 +8,7 @@ import DateRangeFilter from '@/components/ui/DateRangeFilter';
 
 import {
   Summary, TierRow, SourceRow, MoMRow, SoldRow, ChurnRow,
-  RevenueChurnRow, NewDealsRow, SoldCollectedChartRow,
+  RevenueChurnRow, NewDealsRow, SoldCollectedChartRow, MemberCohortRow,
 } from './types';
 import { today, firstOfMonth } from './helpers';
 
@@ -19,6 +19,7 @@ import RevenueBySource from './RevenueBySource';
 import MoMRevenue from './MoMRevenue';
 import SoldVsCollected from './SoldVsCollected';
 import ChurnCohort from './ChurnCohort';
+import MemberCohort from './MemberCohort';
 import ChatPanel from './ChatPanel';
 import DetailModal from './DetailModal';
 
@@ -34,6 +35,7 @@ export default function DashboardPage() {
   const [momRows, setMoMRows] = useState<MoMRow[]>([]);
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
+  const [memberCohortRows, setMemberCohortRows] = useState<MemberCohortRow[]>([]);
 
   const [detailModal, setDetailModal] = useState<{ title: string; panel: string } | null>(null);
 
@@ -82,16 +84,17 @@ export default function DashboardPage() {
     try {
       const t = Date.now();
       const dp = `&startDate=${startDate}&endDate=${endDate}`;
-      const [summaryRes, tierRes, sourceRes, momRes, soldRes, churnRes] = await Promise.all([
+      const [summaryRes, tierRes, sourceRes, momRes, soldRes, churnRes, memberCohortRes] = await Promise.all([
         fetch(`/api/dashboard/summary?t=${t}${dp}`),
         fetch(`/api/dashboard/revenue-by-tier?t=${t}${dp}`),
         fetch(`/api/dashboard/revenue-by-source?t=${t}${dp}`),
         fetch(`/api/dashboard/mom-revenue?t=${t}${dp}`),
         fetch(`/api/dashboard/sold-vs-collected?t=${t}${dp}`),
         fetch(`/api/dashboard/churn-cohort?t=${t}${dp}`),
+        fetch(`/api/dashboard/member-cohort?t=${t}`),
       ]);
-      const [summaryData, tierData, sourceData, momData, soldData, churnData] = await Promise.all([
-        summaryRes.json(), tierRes.json(), sourceRes.json(), momRes.json(), soldRes.json(), churnRes.json(),
+      const [summaryData, tierData, sourceData, momData, soldData, churnData, memberCohortData] = await Promise.all([
+        summaryRes.json(), tierRes.json(), sourceRes.json(), momRes.json(), soldRes.json(), churnRes.json(), memberCohortRes.json(),
       ]);
 
       setSummary({
@@ -109,6 +112,8 @@ export default function DashboardPage() {
       setSoldRows((soldData.rows ?? []).map((r: any) => ({ ...r, closed_mrr: Number(r.closed_mrr), collected_mrr: Number(r.collected_mrr), cancelled_mrr: Number(r.cancelled_mrr), payment_failed_mrr: Number(r.payment_failed_mrr), no_billing_mrr: Number(r.no_billing_mrr), deal_count: Number(r.deal_count) })));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setChurnRows((churnData.rows ?? []).map((r: any) => ({ ...r, active_mrr: Number(r.active_mrr), cancellation_mrr: Number(r.cancellation_mrr), churn_rate_pct: Number(r.churn_rate_pct) })));
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setMemberCohortRows((memberCohortData.rows ?? []).map((r: any) => ({ ...r, acquired: Number(r.acquired), churned: Number(r.churned), churn_rate_pct: Number(r.churn_rate_pct) })));
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Dashboard fetch error:', err);
@@ -162,6 +167,7 @@ export default function DashboardPage() {
             <MoMRevenue rows={momRows} onViewDetail={() => setDetailModal({ title: 'MoM Revenue \u2014 Detail', panel: 'mom-revenue' })} />
             <SoldVsCollected rows={soldRows} onViewDetail={() => setDetailModal({ title: 'Sold Revenue vs Collected \u2014 Detail', panel: 'sold-vs-collected' })} />
             <ChurnCohort rows={churnRows} onViewDetail={() => setDetailModal({ title: 'Churn Cohort \u2014 Detail', panel: 'churn-cohort' })} />
+            <MemberCohort rows={memberCohortRows} onViewDetail={() => setDetailModal({ title: 'Member Acquisition Cohort \u2014 Detail', panel: 'member-cohort' })} />
           </>
         ) : null}
       </div>

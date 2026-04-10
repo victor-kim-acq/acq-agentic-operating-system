@@ -66,6 +66,14 @@ export interface SoldCollectedChartRow {
   cancelled_mrr: number;
 }
 
+export interface MemberCohortRow {
+  cohort_month: string;
+  sort_month: string;
+  acquired: number;
+  churned: number;
+  churn_rate_pct: number;
+}
+
 export interface ChatMessage {
   id: string;
   question: string;

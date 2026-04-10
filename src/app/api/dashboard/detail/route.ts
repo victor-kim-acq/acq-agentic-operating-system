@@ -128,6 +128,34 @@ export async function GET(req: NextRequest) {
         `;
         break;
 
+      case "member-cohort":
+        result = await sql`
+          WITH active_joiners AS (
+            SELECT email, full_name AS name, join_date AS joined_at, 'Active' AS status
+            FROM skool_members
+            WHERE join_date IS NOT NULL
+          ),
+          cancelled_joiners AS (
+            SELECT email, CONCAT(first_name, ' ', last_name) AS name, approved_at AS joined_at, 'Cancelled' AS status
+            FROM skool_cancellations
+            WHERE approved_at IS NOT NULL
+          ),
+          all_joiners AS (
+            SELECT * FROM active_joiners
+            UNION ALL
+            SELECT * FROM cancelled_joiners
+          )
+          SELECT
+            name,
+            email,
+            TO_CHAR(joined_at, 'YYYY-MM-DD') AS join_date,
+            TO_CHAR(DATE_TRUNC('month', joined_at), 'Mon YYYY') AS cohort_month,
+            status
+          FROM all_joiners
+          ORDER BY joined_at DESC
+        `;
+        break;
+
       case "churn-cohort":
         result = await sql`
           SELECT
