@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, FormEvent } from "react";
+import PageHeader from "@/components/ui/PageHeader";
 
 type CampaignResponse = {
   success: boolean;
@@ -13,6 +14,13 @@ type CampaignResponse = {
   list_created: boolean;
   message: string;
 };
+
+const inputCls = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed resize-y";
+const inputStyle: React.CSSProperties = {
+  borderColor: "var(--neutral-200)",
+  color: "var(--neutral-800)",
+  '--tw-ring-color': "var(--brand-primary)",
+} as React.CSSProperties;
 
 export default function MarketingOpsAgentPage() {
   const [brief, setBrief] = useState("");
@@ -62,50 +70,52 @@ export default function MarketingOpsAgentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50">
+    <main className="min-h-screen" style={{ background: "var(--page-bg)" }}>
       <div className="max-w-2xl mx-auto px-6 py-8">
         <Link
           href="/agents"
-          className="text-sm text-slate-500 hover:text-slate-800 transition-colors mb-4 inline-block"
+          className="text-sm transition-colors mb-4 inline-block"
+          style={{ color: "var(--neutral-500)" }}
         >
-          ← Back to Agents
+          \u2190 Back to Agents
         </Link>
-        <header className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900">Marketing Ops Agent</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Create email campaigns in HubSpot with our marketing ops agent
-          </p>
-        </header>
+        <div className="mb-8">
+          <PageHeader
+            title="Marketing Ops Agent"
+            subtitle="Create email campaigns in HubSpot with our marketing ops agent"
+          />
+        </div>
 
         {result ? (
-          <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+          <div
+            className="rounded-xl border p-6"
+            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
+          >
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--color-success-light)" }}>
+                <svg className="w-5 h-5" style={{ color: "var(--color-success)" }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-slate-900">Campaign created</h2>
+              <h2 className="text-lg font-semibold" style={{ color: "var(--neutral-900)" }}>Campaign created</h2>
             </div>
 
             <dl className="space-y-3 mb-6">
-              <div>
-                <dt className="text-xs font-medium text-slate-500 uppercase tracking-wide">Campaign Name</dt>
-                <dd className="text-sm text-slate-900 mt-0.5">{result.campaign_name}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-slate-500 uppercase tracking-wide">Emails Created</dt>
-                <dd className="text-sm text-slate-900 mt-0.5">{result.email_count}</dd>
-              </div>
-              <div>
-                <dt className="text-xs font-medium text-slate-500 uppercase tracking-wide">Enrollment List</dt>
-                <dd className="text-sm text-slate-900 mt-0.5">{result.list_name}</dd>
-              </div>
+              {[
+                { label: "Campaign Name", value: result.campaign_name },
+                { label: "Emails Created", value: result.email_count },
+                { label: "Enrollment List", value: result.list_name },
+              ].map(({ label, value }) => (
+                <div key={label}>
+                  <dt className="text-xs font-medium uppercase tracking-wide" style={{ color: "var(--neutral-500)" }}>{label}</dt>
+                  <dd className="text-sm mt-0.5" style={{ color: "var(--neutral-900)" }}>{value}</dd>
+                </div>
+              ))}
             </dl>
 
             {!result.list_created && (
-              <div className="mb-4 p-3 rounded-md bg-amber-50 border border-amber-200 text-sm text-amber-800">
-                Enrollment list creation failed — set enrollment manually in HubSpot.
+              <div className="mb-4 p-3 rounded-lg border text-sm" style={{ background: "var(--color-warning-light)", borderColor: "var(--color-warning)", color: "var(--neutral-800)" }}>
+                Enrollment list creation failed \u2014 set enrollment manually in HubSpot.
               </div>
             )}
 
@@ -113,22 +123,28 @@ export default function MarketingOpsAgentPage() {
               href={result.workflow_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2.5 px-4 rounded-md transition-colors"
+              className="block w-full text-center text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors"
+              style={{ background: "var(--brand-primary)" }}
             >
-              Review in HubSpot →
+              Review in HubSpot \u2192
             </a>
             <button
               type="button"
               onClick={reset}
-              className="block w-full text-center mt-2 text-sm text-slate-500 hover:text-slate-800 py-2 transition-colors"
+              className="block w-full text-center mt-2 text-sm py-2 transition-colors"
+              style={{ color: "var(--neutral-500)" }}
             >
               Create Another
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-5">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-xl border p-6 space-y-5"
+            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
+          >
             <div>
-              <label htmlFor="brief" className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label htmlFor="brief" className="block text-sm font-medium mb-1.5" style={{ color: "var(--neutral-700)" }}>
                 Campaign Brief
               </label>
               <textarea
@@ -139,12 +155,13 @@ export default function MarketingOpsAgentPage() {
                 value={brief}
                 onChange={(e) => setBrief(e.target.value)}
                 placeholder={`Describe your campaign. You can include pre-written email templates, or just describe the goal and we'll write the copy for you.\n\nExample: "Write a 3-email sequence announcing a live workshop on hiring, happening April 22nd at 10am PDT. The zoom link is https://zoom.us/j/123456. Email 1 goes out 5 days before, email 2 goes out 1 day before, email 3 goes out the morning of. The speaker is Caio Beleza, President of ACQ Vantage."`}
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 resize-y"
+                className={inputCls}
+                style={inputStyle}
               />
             </div>
 
             <div>
-              <label htmlFor="campaign-name" className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label htmlFor="campaign-name" className="block text-sm font-medium mb-1.5" style={{ color: "var(--neutral-700)" }}>
                 Campaign Name
               </label>
               <input
@@ -154,15 +171,16 @@ export default function MarketingOpsAgentPage() {
                 value={campaignName}
                 onChange={(e) => setCampaignName(e.target.value)}
                 placeholder="e.g. ACQ Vantage - Hiring Workshop (April 2026)"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500"
+                className={inputCls}
+                style={inputStyle}
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs mt-1" style={{ color: "var(--neutral-500)" }}>
                 Optional. If left blank, one will be generated automatically.
               </p>
             </div>
 
             <div>
-              <label htmlFor="reference-emails" className="block text-sm font-medium text-slate-700 mb-1.5">
+              <label htmlFor="reference-emails" className="block text-sm font-medium mb-1.5" style={{ color: "var(--neutral-700)" }}>
                 Reference Emails for Tone/Style
               </label>
               <textarea
@@ -172,15 +190,16 @@ export default function MarketingOpsAgentPage() {
                 value={referenceEmails}
                 onChange={(e) => setReferenceEmails(e.target.value)}
                 placeholder="Paste example emails here if you want to match a specific tone or style..."
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-slate-50 disabled:text-slate-500 resize-y"
+                className={inputCls}
+                style={inputStyle}
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs mt-1" style={{ color: "var(--neutral-500)" }}>
                 Optional. The system already knows Alex&apos;s writing style.
               </p>
             </div>
 
             {error && (
-              <div className="p-3 rounded-md bg-red-50 border border-red-200 text-sm text-red-800">
+              <div className="p-3 rounded-lg border text-sm" style={{ background: "var(--color-danger-light)", borderColor: "var(--color-danger)", color: "var(--neutral-800)" }}>
                 {error}
               </div>
             )}
@@ -189,7 +208,8 @@ export default function MarketingOpsAgentPage() {
               <button
                 type="submit"
                 disabled={loading || !brief.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-sm font-medium py-2.5 px-4 rounded-md transition-colors flex items-center justify-center gap-2"
+                className="w-full text-white text-sm font-medium py-2.5 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: "var(--brand-primary)" }}
               >
                 {loading && (
                   <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
@@ -200,8 +220,8 @@ export default function MarketingOpsAgentPage() {
                 {loading ? "Creating campaign..." : "Create Campaign"}
               </button>
               {loading && (
-                <p className="text-xs text-slate-500 text-center mt-2">
-                  This usually takes 15–30 seconds. Please don&apos;t close this tab.
+                <p className="text-xs text-center mt-2" style={{ color: "var(--neutral-500)" }}>
+                  This usually takes 15\u201330 seconds. Please don&apos;t close this tab.
                 </p>
               )}
             </div>

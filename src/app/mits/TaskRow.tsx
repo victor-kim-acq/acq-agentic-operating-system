@@ -3,13 +3,10 @@
 import { useState, useRef, useEffect } from "react";
 import { CriticalTask, User } from "./page";
 
-const TASK_STATUS_CONFIG: Record<
-  string,
-  { bg: string; text: string; label: string }
-> = {
-  not_started: { bg: "bg-slate-100", text: "text-slate-600", label: "Not Started" },
-  in_progress: { bg: "bg-amber-50", text: "text-amber-700", label: "In Progress" },
-  complete: { bg: "bg-emerald-50", text: "text-emerald-700", label: "Complete" },
+const TASK_STATUS_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  not_started: { bg: "var(--neutral-100)", text: "var(--neutral-600)", label: "Not Started" },
+  in_progress: { bg: "var(--color-warning-light)", text: "var(--color-warning)", label: "In Progress" },
+  complete: { bg: "var(--color-success-light)", text: "var(--color-success)", label: "Complete" },
 };
 
 interface TaskRowProps {
@@ -85,18 +82,30 @@ export default function TaskRow({
   };
 
   const isComplete = task.status === "complete";
-  const sc = TASK_STATUS_CONFIG[task.status || "not_started"] || TASK_STATUS_CONFIG.not_started;
+  const sc = TASK_STATUS_STYLES[task.status || "not_started"] || TASK_STATUS_STYLES.not_started;
+
+  const selectCls = "text-xs border rounded-md px-2 py-1 focus:outline-none focus:ring-1";
+  const selectStyle: React.CSSProperties = {
+    borderColor: "var(--neutral-200)",
+    color: "var(--neutral-600)",
+    background: "var(--card-bg)",
+    '--tw-ring-color': "var(--brand-primary)",
+  } as React.CSSProperties;
 
   return (
-    <div className="flex items-center gap-3 py-3 px-4 border-b border-slate-100 last:border-b-0 hover:bg-slate-50/50 group">
-      {/* Completion circle */}
+    <div
+      className="flex items-center gap-3 py-3 px-4 border-b last:border-b-0 group transition-colors"
+      style={{ borderColor: "var(--neutral-100)" }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "var(--neutral-50)")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+    >
       <button
         onClick={toggleComplete}
-        className={`w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-          isComplete
-            ? "bg-emerald-500 border-emerald-500 text-white"
-            : "border-slate-300 hover:border-emerald-400"
-        }`}
+        className="w-5 h-5 rounded-full border-2 flex-shrink-0 flex items-center justify-center transition-colors"
+        style={isComplete
+          ? { background: "var(--color-success)", borderColor: "var(--color-success)", color: "white" }
+          : { borderColor: "var(--neutral-300)" }
+        }
       >
         {isComplete && (
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -105,7 +114,6 @@ export default function TaskRow({
         )}
       </button>
 
-      {/* Title */}
       <div className="flex-1 min-w-0">
         {editingTitle ? (
           <input
@@ -121,21 +129,23 @@ export default function TaskRow({
                 setEditingTitle(false);
               }
             }}
-            className="w-full text-sm border border-blue-300 rounded px-2 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full text-sm border rounded px-2 py-0.5 focus:outline-none focus:ring-1"
+            style={{ borderColor: "var(--brand-primary)", '--tw-ring-color': "var(--brand-primary)" } as React.CSSProperties}
           />
         ) : (
           <span
             onClick={() => setEditingTitle(true)}
-            className={`text-sm cursor-text ${
-              isComplete ? "line-through text-slate-400" : "text-slate-800"
-            }`}
+            className="text-sm cursor-text"
+            style={{
+              color: isComplete ? "var(--neutral-400)" : "var(--neutral-800)",
+              textDecoration: isComplete ? "line-through" : "none",
+            }}
           >
             {task.title || "Untitled task"}
           </span>
         )}
       </div>
 
-      {/* Owner dropdown */}
       <select
         value={task.owner_id || ""}
         onChange={(e) => {
@@ -143,17 +153,13 @@ export default function TaskRow({
           onUpdate({ ...task, owner_id: newOwnerId });
           putTask({ owner_id: newOwnerId });
         }}
-        className="text-xs border border-slate-200 rounded px-2 py-1 text-slate-600 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 max-w-[120px]"
+        className={`${selectCls} max-w-[120px]`}
+        style={selectStyle}
       >
         <option value="">Unassigned</option>
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>
-            {u.name}
-          </option>
-        ))}
+        {users.map((u) => (<option key={u.id} value={u.id}>{u.name}</option>))}
       </select>
 
-      {/* Due date */}
       <input
         type="date"
         value={task.due_date ? task.due_date.split("T")[0] : ""}
@@ -162,27 +168,30 @@ export default function TaskRow({
           onUpdate({ ...task, due_date: newDate });
           putTask({ due_date: newDate });
         }}
-        className="text-xs border border-slate-200 rounded px-2 py-1 text-slate-600 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className={selectCls}
+        style={selectStyle}
       />
 
-      {/* Status */}
       <select
         value={task.status || "not_started"}
         onChange={(e) => {
           onUpdate({ ...task, status: e.target.value });
           putTask({ status: e.target.value });
         }}
-        className={`text-xs font-medium rounded-full px-2.5 py-1 border-0 focus:outline-none focus:ring-1 focus:ring-blue-500 ${sc.bg} ${sc.text}`}
+        className="text-xs font-medium rounded-full px-2.5 py-1 border-0 focus:outline-none focus:ring-1"
+        style={{ background: sc.bg, color: sc.text, '--tw-ring-color': "var(--brand-primary)" } as React.CSSProperties}
       >
         <option value="not_started">Not Started</option>
         <option value="in_progress">In Progress</option>
         <option value="complete">Complete</option>
       </select>
 
-      {/* Delete */}
       <button
         onClick={handleDelete}
-        className="text-slate-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+        className="opacity-0 group-hover:opacity-100 transition-all flex-shrink-0"
+        style={{ color: "var(--neutral-300)" }}
+        onMouseEnter={(e) => (e.currentTarget.style.color = "var(--color-danger)")}
+        onMouseLeave={(e) => (e.currentTarget.style.color = "var(--neutral-300)")}
         title="Delete task"
       >
         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

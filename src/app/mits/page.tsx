@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import PageHeader from "@/components/ui/PageHeader";
 import MitCard from "./MitCard";
 import MitDetail from "./MitDetail";
 import AddMitModal from "./AddMitModal";
@@ -62,7 +63,6 @@ export default function MitsPage() {
       setMits(mitsData);
       setUsers(usersData);
 
-      // Fetch task counts for each MIT
       const counts: Record<string, { completed: number; total: number }> = {};
       await Promise.all(
         mitsData.map(async (mit) => {
@@ -108,21 +108,17 @@ export default function MitsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen" style={{ background: "var(--page-bg)" }}>
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Header */}
         <div className="flex items-start justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900">
-              Most Important Things
-            </h1>
-            <p className="text-sm text-slate-500 mt-1">
-              Strategic priorities and progress
-            </p>
-          </div>
+          <PageHeader
+            title="Most Important Things"
+            subtitle="Strategic priorities and progress"
+          />
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+            className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+            style={{ background: "var(--brand-primary)", boxShadow: "var(--shadow-xs)" }}
           >
             + Add MIT
           </button>
@@ -130,14 +126,13 @@ export default function MitsPage() {
 
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="text-slate-400 text-sm">Loading...</div>
+            <div className="text-sm" style={{ color: "var(--neutral-400)" }}>Loading...</div>
           </div>
         ) : (
           <>
-            {/* Daily Operations section */}
             {dailyOps.length > 0 && (
               <div className="mb-10">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">
+                <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--neutral-400)" }}>
                   Daily Operations
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -155,10 +150,9 @@ export default function MitsPage() {
               </div>
             )}
 
-            {/* Quarterly MITs */}
             {quarterlyMits.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-4">
+                <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--neutral-400)" }}>
                   Strategic MITs
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -176,7 +170,7 @@ export default function MitsPage() {
             )}
 
             {mits.length === 0 && (
-              <div className="text-center py-20 text-slate-400">
+              <div className="text-center py-20" style={{ color: "var(--neutral-400)" }}>
                 No MITs yet. Create one to get started.
               </div>
             )}

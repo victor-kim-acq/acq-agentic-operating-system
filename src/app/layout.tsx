@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import localFont from "next/font/local";
 import Link from "next/link";
 import "./globals.css";
+
+const geist = localFont({
+  src: "./fonts/GeistVF.woff",
+  variable: "--font-geist",
+  weight: "100 900",
+});
+
+const geistMono = localFont({
+  src: "./fonts/GeistMonoVF.woff",
+  variable: "--font-geist-mono",
+  weight: "100 900",
+});
 
 export const metadata: Metadata = {
   title: "ACQ Agentic Operating System",
@@ -13,42 +26,36 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="antialiased">
-        <nav className="fixed top-0 left-0 right-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-sm px-6 py-3 flex items-center justify-between">
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
+      <body className="antialiased" style={{ fontFamily: "var(--font-geist), system-ui, sans-serif" }}>
+        <nav
+          className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm px-6 py-3 flex items-center justify-between border-b"
+          style={{
+            background: "rgba(255,255,255,0.92)",
+            borderColor: "var(--neutral-200)",
+          }}
+        >
           <div className="flex items-center gap-6">
-            <Link
-              href="/"
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              Canvas
-            </Link>
-            <Link
-              href="/dashboard"
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/mits"
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              MITs
-            </Link>
-            <Link
-              href="/members"
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              Members
-            </Link>
-            <Link
-              href="/agents"
-              className="text-sm text-slate-500 hover:text-slate-800 transition-colors"
-            >
-              Agents
-            </Link>
+            {[
+              { href: "/", label: "Canvas" },
+              { href: "/dashboard", label: "Dashboard" },
+              { href: "/mits", label: "MITs" },
+              { href: "/members", label: "Members" },
+              { href: "/agents", label: "Agents" },
+            ].map(({ href, label }) => (
+              <Link
+                key={href}
+                href={href}
+                className="text-sm transition-colors"
+                style={{ color: "var(--neutral-500)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "var(--neutral-800)")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "var(--neutral-500)")}
+              >
+                {label}
+              </Link>
+            ))}
           </div>
-          <span className="text-xs text-slate-400">ACQ Agentic OS</span>
+          <span className="text-xs" style={{ color: "var(--neutral-400)" }}>ACQ Agentic OS</span>
         </nav>
         <div className="pt-[44px]">{children}</div>
       </body>

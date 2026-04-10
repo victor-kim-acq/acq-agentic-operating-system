@@ -35,78 +35,54 @@ const PIPELINE_NAMES: Record<string, string> = {
 };
 
 const DEAL_COLORS = [
-  {
-    circle: "text-blue-600 ring-2 ring-blue-400",
-    pillBg: "bg-blue-50",
-    cardDeal: "bg-blue-50 border-blue-200",
-    cardMembership: "bg-blue-50/50 border-blue-200/60",
-  },
-  {
-    circle: "text-amber-600 ring-2 ring-amber-400",
-    pillBg: "bg-amber-50",
-    cardDeal: "bg-amber-50 border-amber-200",
-    cardMembership: "bg-amber-50/50 border-amber-200/60",
-  },
-  {
-    circle: "text-violet-600 ring-2 ring-violet-400",
-    pillBg: "bg-violet-50",
-    cardDeal: "bg-violet-50 border-violet-200",
-    cardMembership: "bg-violet-50/50 border-violet-200/60",
-  },
-  {
-    circle: "text-teal-600 ring-2 ring-teal-400",
-    pillBg: "bg-teal-50",
-    cardDeal: "bg-teal-50 border-teal-200",
-    cardMembership: "bg-teal-50/50 border-teal-200/60",
-  },
-  {
-    circle: "text-rose-600 ring-2 ring-rose-400",
-    pillBg: "bg-rose-50",
-    cardDeal: "bg-rose-50 border-rose-200",
-    cardMembership: "bg-rose-50/50 border-rose-200/60",
-  },
+  { accent: "var(--chart-1)", bg: "rgba(59, 130, 246, 0.06)", bgSolid: "rgba(59, 130, 246, 0.1)", border: "rgba(59, 130, 246, 0.3)" },
+  { accent: "var(--chart-3)", bg: "rgba(245, 158, 11, 0.06)", bgSolid: "rgba(245, 158, 11, 0.1)", border: "rgba(245, 158, 11, 0.3)" },
+  { accent: "var(--chart-5)", bg: "rgba(139, 92, 246, 0.06)", bgSolid: "rgba(139, 92, 246, 0.1)", border: "rgba(139, 92, 246, 0.3)" },
+  { accent: "var(--chart-2)", bg: "rgba(16, 185, 129, 0.06)", bgSolid: "rgba(16, 185, 129, 0.1)", border: "rgba(16, 185, 129, 0.3)" },
+  { accent: "var(--chart-4)", bg: "rgba(239, 68, 68, 0.06)", bgSolid: "rgba(239, 68, 68, 0.1)", border: "rgba(239, 68, 68, 0.3)" },
 ];
 
-const DEFAULT_STYLES = {
-  circle: "text-slate-500 ring-2 ring-slate-300",
-  pillBg: "bg-slate-50",
-  card: "bg-white border-slate-200/80",
-};
+const DEFAULT_COLOR = { accent: "var(--neutral-500)", bg: "var(--neutral-50)", bgSolid: "var(--neutral-100)", border: "var(--neutral-200)" };
 
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`;
 }
 
 function EventCard({
   event,
   href,
-  cardClass,
+  colorGroup,
 }: {
   event: TimelineEvent;
   href: string;
-  cardClass: string;
+  colorGroup: typeof DEAL_COLORS[number];
 }) {
   return (
-    <div className={`rounded-lg border-2 p-2.5 shadow-sm ${event.type === "membership" ? "border-dashed" : "border-solid"} ${cardClass}`}>
+    <div
+      className="rounded-lg p-2.5"
+      style={{
+        background: event.type === "deal" ? colorGroup.bgSolid : colorGroup.bg,
+        border: `2px ${event.type === "membership" ? "dashed" : "solid"} ${colorGroup.border}`,
+        boxShadow: "var(--shadow-xs)",
+      }}
+    >
       <a
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="text-xs font-medium text-blue-600 hover:text-blue-800 hover:underline transition-colors leading-tight"
+        className="text-xs font-medium transition-colors leading-tight"
+        style={{ color: "var(--brand-primary)" }}
       >
         {event.label}
       </a>
       {event.detail && (
-        <p className="text-[11px] text-slate-500 mt-0.5 leading-tight">
+        <p className="text-[11px] mt-0.5 leading-tight" style={{ color: "var(--neutral-500)" }}>
           {event.detail}
         </p>
       )}
       {event.sub && (
-        <p className="text-[11px] text-slate-500 capitalize mt-0.5 leading-tight">
+        <p className="text-[11px] capitalize mt-0.5 leading-tight" style={{ color: "var(--neutral-500)" }}>
           {event.sub.replace(/_/g, " ")}
         </p>
       )}
@@ -114,21 +90,21 @@ function EventCard({
   );
 }
 
-function formatShortDate(dateStr: string): string {
-  const d = new Date(dateStr);
-  return `${d.getMonth() + 1}/${d.getDate()}/${String(d.getFullYear()).slice(2)}`;
-}
-
 function DateBadge({
   date,
-  badgeClass,
+  colorGroup,
 }: {
   date: string;
-  badgeClass: string;
+  colorGroup: typeof DEAL_COLORS[number];
 }) {
   return (
     <div
-      className={`px-2 py-1 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 whitespace-nowrap ${badgeClass}`}
+      className="px-2 py-1 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-semibold z-10 whitespace-nowrap"
+      style={{
+        background: colorGroup.bgSolid,
+        color: colorGroup.accent,
+        boxShadow: `0 0 0 2px ${colorGroup.border}`,
+      }}
     >
       {formatShortDate(date)}
     </div>
@@ -141,14 +117,12 @@ export default function MemberTimeline({
 }: MemberTimelineProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to right (most recent) on mount
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
     }
   }, []);
 
-  // Build color map: assign colors to deals in chronological order
   const dealColorMap = new Map<string, (typeof DEAL_COLORS)[number]>();
   const sortedDeals = [...deals].sort((a, b) => {
     const dateA = a.properties.createdate || a.properties.closedate || "";
@@ -159,7 +133,6 @@ export default function MemberTimeline({
     dealColorMap.set(d.id, DEAL_COLORS[i % DEAL_COLORS.length]);
   });
 
-  // Reverse lookup: deal ID → first associated membership record
   const dealMembershipMap = new Map<string, MembershipRecord>();
   for (const rec of membershipRecords) {
     if (rec.associatedDealId && !dealMembershipMap.has(rec.associatedDealId)) {
@@ -217,67 +190,42 @@ export default function MemberTimeline({
 
   if (events.length === 0) {
     return (
-      <p className="text-sm text-slate-400 py-4">No timeline events found.</p>
+      <p className="text-sm py-4" style={{ color: "var(--neutral-400)" }}>No timeline events found.</p>
     );
   }
 
-  function getStyles(event: TimelineEvent) {
-    const colorGroup = event.dealId
-      ? dealColorMap.get(String(event.dealId))
-      : null;
-    if (!colorGroup) {
-      return {
-        circleClass: DEFAULT_STYLES.circle,
-        pillBg: DEFAULT_STYLES.pillBg,
-        cardClass: DEFAULT_STYLES.card,
-      };
-    }
-    return {
-      circleClass: colorGroup.circle,
-      pillBg: colorGroup.pillBg,
-      cardClass:
-        event.type === "deal"
-          ? colorGroup.cardDeal
-          : colorGroup.cardMembership,
-    };
+  function getColorGroup(event: TimelineEvent) {
+    const colorGroup = event.dealId ? dealColorMap.get(String(event.dealId)) : null;
+    return colorGroup ?? DEFAULT_COLOR;
   }
 
   return (
     <div className="relative">
-      {/* Left fade */}
       <div className="absolute left-0 top-0 bottom-0 w-6 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-      {/* Right fade */}
       <div className="absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
 
-      <div
-        ref={scrollRef}
-        className="overflow-x-auto scrollbar-thin min-h-[280px]"
-      >
+      <div ref={scrollRef} className="overflow-x-auto scrollbar-thin min-h-[280px]">
         <div className="relative flex gap-6 px-8 min-h-[280px] min-w-fit">
-          {/* Horizontal connector line — vertically centered */}
-          <div className="absolute left-0 right-0 h-px bg-slate-200 top-1/2 -translate-y-px" />
+          <div className="absolute left-0 right-0 h-px top-1/2 -translate-y-px" style={{ background: "var(--neutral-200)" }} />
 
           {events.map((event, i) => {
             const href =
               event.type === "membership"
                 ? `https://app.hubspot.com/contacts/21368823/record/2-57143627/${event.id}`
                 : `https://app.hubspot.com/contacts/21368823/record/0-3/${event.id}`;
-            const { circleClass, pillBg, cardClass } = getStyles(event);
+            const colorGroup = getColorGroup(event);
             const isAbove = i % 2 === 0;
 
             return (
-              <div
-                key={`${event.type}-${event.id}`}
-                className="min-w-[160px] max-w-[200px] flex-shrink-0 flex flex-col items-center"
-              >
+              <div key={`${event.type}-${event.id}`} className="min-w-[160px] max-w-[200px] flex-shrink-0 flex flex-col items-center">
                 {isAbove ? (
                   <>
                     <div className="w-full flex-1 flex flex-col justify-end">
-                      <EventCard event={event} href={href} cardClass={cardClass} />
+                      <EventCard event={event} href={href} colorGroup={colorGroup} />
                     </div>
-                    <div className="w-px h-4 bg-slate-200" />
+                    <div className="w-px h-4" style={{ background: "var(--neutral-200)" }} />
                     <div className="z-10">
-                      <DateBadge date={event.date} badgeClass={`${circleClass} ${pillBg}`} />
+                      <DateBadge date={event.date} colorGroup={colorGroup} />
                     </div>
                     <div className="flex-1" />
                   </>
@@ -285,11 +233,11 @@ export default function MemberTimeline({
                   <>
                     <div className="flex-1" />
                     <div className="z-10">
-                      <DateBadge date={event.date} badgeClass={`${circleClass} ${pillBg}`} />
+                      <DateBadge date={event.date} colorGroup={colorGroup} />
                     </div>
-                    <div className="w-px h-4 bg-slate-200" />
+                    <div className="w-px h-4" style={{ background: "var(--neutral-200)" }} />
                     <div className="w-full flex-1 flex flex-col justify-start">
-                      <EventCard event={event} href={href} cardClass={cardClass} />
+                      <EventCard event={event} href={href} colorGroup={colorGroup} />
                     </div>
                   </>
                 )}

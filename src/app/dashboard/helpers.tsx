@@ -89,13 +89,7 @@ export const DETAIL_COLUMNS: Record<string, ColumnDef[]> = {
     { key: 'normalized_mrr', label: 'MRR', align: 'right', format: fmt },
     {
       key: 'deal_status', label: 'Status',
-      colorFn: (v: string) => {
-        if (v === 'Collected') return 'text-emerald-600';
-        if (v === 'Cancelled') return 'text-red-500';
-        if (v === 'Payment Failed') return 'text-amber-500';
-        if (v === 'No Billing Yet') return 'text-slate-400';
-        return '';
-      },
+      colorFn: () => '',
     },
   ],
   'churn-cohort': [
@@ -103,7 +97,7 @@ export const DETAIL_COLUMNS: Record<string, ColumnDef[]> = {
     { key: 'membership_name', label: 'Name' },
     {
       key: 'status', label: 'Status',
-      colorFn: (v: string) => v === 'Active' ? 'text-emerald-600' : v === 'Cancellation' ? 'text-red-500' : '',
+      colorFn: () => '',
     },
     { key: 'close_month', label: 'Deal Close Month' },
     { key: 'dealname', label: 'Deal Name' },

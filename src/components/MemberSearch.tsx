@@ -14,21 +14,20 @@ interface MemberResult {
   vtg_billing_source: string | null;
 }
 
-const TIER_COLORS: Record<string, string> = {
-  gold: "bg-amber-50 text-amber-800 ring-1 ring-amber-200",
-  silver: "bg-slate-50 text-slate-700 ring-1 ring-slate-200",
-  bronze: "bg-orange-50 text-orange-800 ring-1 ring-orange-200",
-  platinum: "bg-violet-50 text-violet-800 ring-1 ring-violet-200",
+const TIER_STYLES: Record<string, React.CSSProperties> = {
+  gold: { background: "#fffbeb", color: "#92400e", boxShadow: "inset 0 0 0 1px #fde68a" },
+  silver: { background: "var(--neutral-50)", color: "var(--neutral-700)", boxShadow: "inset 0 0 0 1px var(--neutral-200)" },
+  bronze: { background: "#fff7ed", color: "#9a3412", boxShadow: "inset 0 0 0 1px #fed7aa" },
+  platinum: { background: "#f5f3ff", color: "#5b21b6", boxShadow: "inset 0 0 0 1px #ddd6fe" },
 };
 
 function TierBadge({ tier }: { tier: string | null }) {
   if (!tier) return null;
-  const cls =
-    TIER_COLORS[tier.toLowerCase()] ??
-    "bg-slate-50 text-slate-700 ring-1 ring-slate-200";
+  const style = TIER_STYLES[tier.toLowerCase()] ?? TIER_STYLES.silver;
   return (
     <span
-      className={`px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide ${cls}`}
+      className="px-2 py-0.5 rounded text-xs font-semibold uppercase tracking-wide"
+      style={style}
     >
       {tier}
     </span>
@@ -40,14 +39,12 @@ function StatusDot({ status }: { status: string | null }) {
   const active = status.toLowerCase() === "active";
   return (
     <span
-      className={`inline-flex items-center gap-1 text-xs font-medium ${
-        active ? "text-emerald-700" : "text-slate-400"
-      }`}
+      className="inline-flex items-center gap-1 text-xs font-medium"
+      style={{ color: active ? "var(--color-success)" : "var(--neutral-400)" }}
     >
       <span
-        className={`w-1.5 h-1.5 rounded-full ${
-          active ? "bg-emerald-500" : "bg-slate-300"
-        }`}
+        className="w-1.5 h-1.5 rounded-full"
+        style={{ background: active ? "var(--color-success)" : "var(--neutral-300)" }}
       />
       {status}
     </span>
@@ -56,18 +53,18 @@ function StatusDot({ status }: { status: string | null }) {
 
 function ResultRow({ member }: { member: MemberResult }) {
   const name =
-    [member.firstname, member.lastname].filter(Boolean).join(" ") || "—";
+    [member.firstname, member.lastname].filter(Boolean).join(" ") || "\u2014";
   return (
     <>
       <div>
-        <p className="text-sm font-semibold text-slate-900">{name}</p>
-        <p className="text-xs text-slate-500 mt-0.5">{member.email}</p>
+        <p className="text-sm font-semibold" style={{ color: "var(--neutral-900)" }}>{name}</p>
+        <p className="text-xs mt-0.5" style={{ color: "var(--neutral-500)" }}>{member.email}</p>
       </div>
       <div className="flex items-center gap-3">
         <StatusDot status={member.vtg_current_membership_status} />
         <TierBadge tier={member.vtg_current_membership_tier} />
-        <span className="text-xs text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity">
-          View →
+        <span className="text-xs opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: "var(--brand-primary)" }}>
+          View \u2192
         </span>
       </div>
     </>
@@ -154,19 +151,27 @@ export default function MemberSearch({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
-        placeholder="Search by name or email…"
-        className={`flex-1 border border-slate-200 rounded-lg text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm ${
+        placeholder="Search by name or email\u2026"
+        className={`flex-1 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
           mode === "compact" ? "px-3 py-2" : "px-4 py-2.5"
         }`}
+        style={{
+          borderColor: "var(--neutral-200)",
+          color: "var(--neutral-800)",
+          background: "var(--card-bg)",
+          boxShadow: "var(--shadow-xs)",
+          '--tw-ring-color': "var(--brand-primary)",
+        } as React.CSSProperties}
       />
       <button
         onClick={() => handleSearch(query)}
         disabled={loading || !query.trim()}
-        className={`bg-slate-900 text-white text-sm font-medium rounded-lg hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm ${
+        className={`text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
           mode === "compact" ? "px-4 py-2" : "px-5 py-2.5"
         }`}
+        style={{ background: "var(--neutral-900)", boxShadow: "var(--shadow-xs)" }}
       >
-        {loading ? "Searching…" : "Search"}
+        {loading ? "Searching\u2026" : "Search"}
       </button>
     </div>
   );
@@ -176,9 +181,11 @@ export default function MemberSearch({
       <div ref={containerRef} className="relative mb-4">
         {searchBar}
 
-        {/* Dropdown results */}
         {dropdownOpen && results.length > 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 max-h-80 overflow-y-auto">
+          <div
+            className="absolute left-0 right-0 top-full mt-1 border rounded-xl z-50 max-h-80 overflow-y-auto"
+            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-lg)" }}
+          >
             {results.map((m) => (
               <button
                 key={m.contactId}
@@ -189,7 +196,10 @@ export default function MemberSearch({
                   setSearched(false);
                   router.push(`/members/${m.contactId}`);
                 }}
-                className="w-full flex items-center justify-between px-4 py-3 hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 text-left group"
+                className="w-full flex items-center justify-between px-4 py-3 transition-colors border-b last:border-0 text-left group"
+                style={{ borderColor: "var(--neutral-100)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--neutral-50)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <ResultRow member={m} />
               </button>
@@ -197,10 +207,12 @@ export default function MemberSearch({
           </div>
         )}
 
-        {/* No results in compact mode */}
         {mode === "compact" && searched && results.length === 0 && (
-          <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 px-4 py-3">
-            <p className="text-sm text-slate-500">
+          <div
+            className="absolute left-0 right-0 top-full mt-1 border rounded-xl z-50 px-4 py-3"
+            style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-lg)" }}
+          >
+            <p className="text-sm" style={{ color: "var(--neutral-500)" }}>
               No members found for &ldquo;{query}&rdquo;.
             </p>
           </div>
@@ -209,13 +221,12 @@ export default function MemberSearch({
     );
   }
 
-  // Full mode
   return (
     <div>
       <div className="mb-8">{searchBar}</div>
 
       {searched && results.length === 0 && (
-        <p className="text-sm text-slate-500 text-center py-10">
+        <p className="text-sm text-center py-10" style={{ color: "var(--neutral-500)" }}>
           No members found for &ldquo;{query}&rdquo;.
         </p>
       )}
@@ -226,7 +237,14 @@ export default function MemberSearch({
             <Link
               key={m.contactId}
               href={`/members/${m.contactId}`}
-              className="flex items-center justify-between bg-white border border-slate-200 rounded-xl px-5 py-4 hover:shadow-md transition-all group"
+              className="flex items-center justify-between rounded-xl border px-5 py-4 transition-all group"
+              style={{
+                background: "var(--card-bg)",
+                borderColor: "var(--card-border)",
+                boxShadow: "var(--shadow-xs)",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-md)")}
+              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-xs)")}
             >
               <ResultRow member={m} />
             </Link>
