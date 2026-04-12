@@ -5,6 +5,9 @@ import PageHeader from "@/components/ui/PageHeader";
 import MitCard from "./MitCard";
 import MitDetail from "./MitDetail";
 import AddMitModal from "./AddMitModal";
+import MitCascade from "./MitCascade";
+
+type MitView = "cards" | "cascade";
 
 export interface User {
   id: string;
@@ -51,6 +54,7 @@ export default function MitsPage() {
   const [selectedMitId, setSelectedMitId] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<MitView>("cards");
 
   const fetchData = useCallback(async () => {
     try {
@@ -115,16 +119,44 @@ export default function MitsPage() {
             title="Most Important Things"
             subtitle="Strategic priorities and progress"
           />
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
-            style={{ background: "var(--brand-primary)", boxShadow: "var(--shadow-xs)" }}
-          >
-            + Add MIT
-          </button>
+          <div className="flex items-center gap-3">
+            <div
+              className="flex gap-1 p-0.5 rounded-lg"
+              style={{ background: "var(--neutral-100)" }}
+            >
+              {(["cards", "cascade"] as const).map((v) => (
+                <button
+                  key={v}
+                  className="px-3 py-1 text-xs font-medium rounded-md"
+                  style={{
+                    background:
+                      view === v ? "var(--neutral-800)" : "transparent",
+                    color:
+                      view === v ? "#fff" : "var(--neutral-500)",
+                    transition:
+                      "background-color 150ms ease, color 150ms ease",
+                  }}
+                  onClick={() => setView(v)}
+                >
+                  {v === "cards" ? "Cards" : "Cascade"}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
+              style={{ background: "var(--brand-primary)", boxShadow: "var(--shadow-xs)" }}
+            >
+              + Add MIT
+            </button>
+          </div>
         </div>
 
-        {loading ? (
+        {view === "cascade" ? (
+          <div style={{ overflowX: "auto" }}>
+            <MitCascade />
+          </div>
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-sm" style={{ color: "var(--neutral-400)" }}>Loading...</div>
           </div>
