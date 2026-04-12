@@ -1,7 +1,5 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
-
 // ── Types ──────────────────────────────────────────────────────────────
 
 interface CascadeDeliverable {
@@ -26,6 +24,8 @@ interface CascadeGoal {
   id: string;
   title: string;
   description: string;
+  color: string;
+  tint: string;
 }
 
 // ── Hardcoded Data ─────────────────────────────────────────────────────
@@ -36,20 +36,28 @@ const GOALS: CascadeGoal[] = [
     title: "Product-Led Growth & AHA Activation",
     description:
       "Find the activation point, nail time-to-value, and make the product so good members grow organically",
+    color: "#2563eb",
+    tint: "#eff6ff",
   },
   {
     id: "agents",
     title: "Agents Team Building",
     description:
       "Map every workflow, automate it, and make every team member proficient in building their own agents",
+    color: "#10b981",
+    tint: "#ecfdf5",
   },
   {
     id: "signals",
     title: "Signals to Scale",
     description:
       "Define the scorecard of what needs to be true (CAC, LTV, retention, ascension) before scaling aggressively",
+    color: "#f59e0b",
+    tint: "#fffbeb",
   },
 ];
+
+const GOAL_MAP = Object.fromEntries(GOALS.map((g) => [g.id, g]));
 
 const MITS: CascadeMit[] = [
   {
@@ -123,8 +131,7 @@ const MITS: CascadeMit[] = [
       {
         id: "d-3a",
         title: "Skills Documentation for Data Analysis",
-        description:
-          "Reusable file any team member can give any agent",
+        description: "Reusable file any team member can give any agent",
         owners: [],
       },
       {
@@ -185,107 +192,12 @@ const MITS: CascadeMit[] = [
   },
 ];
 
-// ── Connector SVG ──────────────────────────────────────────────────────
-
-function ConnectorLines({
-  goalRefs,
-  mitRefs,
-  containerRef,
-}: {
-  goalRefs: React.RefObject<Map<string, HTMLDivElement>>;
-  mitRefs: React.RefObject<Map<string, HTMLDivElement>>;
-  containerRef: React.RefObject<HTMLDivElement | null>;
-}) {
-  const [lines, setLines] = useState<
-    { x1: number; y1: number; x2: number; y2: number }[]
-  >([]);
-
-  useEffect(() => {
-    function calc() {
-      const container = containerRef.current;
-      const goals = goalRefs.current;
-      const mits = mitRefs.current;
-      if (!container || !goals || !mits) return;
-
-      const cRect = container.getBoundingClientRect();
-      const newLines: typeof lines = [];
-
-      MITS.forEach((mit) => {
-        const mitEl = mits.get(mit.id);
-        if (!mitEl) return;
-        const mRect = mitEl.getBoundingClientRect();
-        const mx = mRect.left + mRect.width / 2 - cRect.left;
-        const my = mRect.top - cRect.top;
-
-        mit.parentIds.forEach((pid) => {
-          const goalEl = goals.get(pid);
-          if (!goalEl) return;
-          const gRect = goalEl.getBoundingClientRect();
-          const gx = gRect.left + gRect.width / 2 - cRect.left;
-          const gy = gRect.bottom - cRect.top;
-
-          newLines.push({ x1: gx, y1: gy, x2: mx, y2: my });
-        });
-      });
-
-      setLines(newLines);
-    }
-
-    calc();
-    window.addEventListener("resize", calc);
-    return () => window.removeEventListener("resize", calc);
-  }, [goalRefs, mitRefs, containerRef]);
-
-  if (lines.length === 0) return null;
-
-  return (
-    <svg
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-        overflow: "visible",
-      }}
-    >
-      {lines.map((l, i) => {
-        const midY = (l.y1 + l.y2) / 2;
-        return (
-          <path
-            key={i}
-            d={`M ${l.x1} ${l.y1} C ${l.x1} ${midY}, ${l.x2} ${midY}, ${l.x2} ${l.y2}`}
-            fill="none"
-            stroke="var(--neutral-300)"
-            strokeWidth={1.5}
-            strokeLinecap="round"
-          />
-        );
-      })}
-    </svg>
-  );
-}
-
 // ── Main Component ─────────────────────────────────────────────────────
 
 export default function MitCascade() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const goalRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-  const mitRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
   return (
-    <div
-      ref={containerRef}
-      style={{ position: "relative", minWidth: 900, paddingBottom: 24 }}
-    >
-      <ConnectorLines
-        goalRefs={goalRefs}
-        mitRefs={mitRefs}
-        containerRef={containerRef}
-      />
-
-      {/* Tier label */}
+    <div style={{ minWidth: 900, paddingBottom: 24 }}>
+      {/* ── Tier 1 label ── */}
       <p
         className="text-xs font-semibold uppercase tracking-wider mb-3"
         style={{ color: "var(--neutral-400)" }}
@@ -299,20 +211,18 @@ export default function MitCascade() {
           display: "flex",
           justifyContent: "center",
           gap: 20,
-          marginBottom: 56,
+          marginBottom: 24,
         }}
       >
         {GOALS.map((g) => (
           <div
             key={g.id}
-            ref={(el) => {
-              if (el) goalRefs.current.set(g.id, el);
-            }}
             style={{
               flex: "1 1 0",
               maxWidth: 300,
-              background: "var(--brand-light)",
+              background: g.tint,
               border: "1px solid var(--card-border)",
+              borderLeft: `3px solid ${g.color}`,
               borderRadius: "var(--radius-lg)",
               padding: "20px 18px",
               boxShadow: "var(--shadow-sm)",
@@ -341,7 +251,40 @@ export default function MitCascade() {
         ))}
       </div>
 
-      {/* Tier label */}
+      {/* ── Legend row ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 20,
+          marginBottom: 32,
+        }}
+      >
+        {GOALS.map((g) => (
+          <div
+            key={g.id}
+            style={{ display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: "50%",
+                background: g.color,
+                flexShrink: 0,
+              }}
+            />
+            <span
+              className="text-xs"
+              style={{ color: "var(--neutral-500)" }}
+            >
+              {g.title}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Tier 2 label ── */}
       <p
         className="text-xs font-semibold uppercase tracking-wider mb-3"
         style={{ color: "var(--neutral-400)" }}
@@ -356,14 +299,12 @@ export default function MitCascade() {
           justifyContent: "center",
           gap: 16,
           alignItems: "flex-start",
+          marginBottom: 0,
         }}
       >
         {MITS.map((mit) => (
           <div
             key={mit.id}
-            ref={(el) => {
-              if (el) mitRefs.current.set(mit.id, el);
-            }}
             style={{
               flex: "1 1 0",
               maxWidth: 220,
@@ -382,8 +323,34 @@ export default function MitCascade() {
               (e.currentTarget.style.boxShadow = "var(--shadow-sm)")
             }
           >
-            {/* MIT header */}
-            <div style={{ padding: "14px 14px 10px" }}>
+            <div style={{ padding: "14px 14px 12px" }}>
+              {/* Parent indicator dots */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 5,
+                  marginBottom: 8,
+                }}
+              >
+                {mit.parentIds.map((pid) => {
+                  const goal = GOAL_MAP[pid];
+                  return (
+                    <span
+                      key={pid}
+                      title={goal?.title}
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: "50%",
+                        background: goal?.color ?? "var(--neutral-300)",
+                        flexShrink: 0,
+                        cursor: "default",
+                      }}
+                    />
+                  );
+                })}
+              </div>
+
               <div
                 className="text-xs font-semibold mb-1"
                 style={{ color: mit.color }}
@@ -403,35 +370,100 @@ export default function MitCascade() {
                 {mit.subtitle}
               </p>
             </div>
+          </div>
+        ))}
+      </div>
 
-            {/* ── Tier 3: Deliverables ── */}
+      {/* ── Vertical connectors (Tier 2 → Tier 3) ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 16,
+        }}
+      >
+        {MITS.map((mit) => (
+          <div
+            key={mit.id}
+            style={{
+              flex: "1 1 0",
+              maxWidth: 220,
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
             <div
               style={{
-                padding: "0 14px 14px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
+                width: 1.5,
+                height: 32,
+                background: "var(--neutral-300)",
               }}
-            >
-              {mit.deliverables.map((d) => (
-                <div
-                  key={d.id}
-                  title={d.description}
-                  style={{
-                    background: "var(--neutral-100)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "6px 10px",
-                  }}
+            />
+          </div>
+        ))}
+      </div>
+
+      {/* ── Tier 3 label ── */}
+      <p
+        className="text-xs font-semibold uppercase tracking-wider mb-3"
+        style={{ color: "var(--neutral-400)" }}
+      >
+        Key Deliverables
+      </p>
+
+      {/* ── Tier 3: Deliverables ── */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          gap: 16,
+          alignItems: "flex-start",
+        }}
+      >
+        {MITS.map((mit) => (
+          <div
+            key={mit.id}
+            style={{
+              flex: "1 1 0",
+              maxWidth: 220,
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+            }}
+          >
+            {mit.deliverables.map((d) => (
+              <div
+                key={d.id}
+                style={{
+                  background: "var(--card-bg)",
+                  border: "1px solid var(--card-border)",
+                  borderLeft: `4px solid ${mit.color}`,
+                  borderRadius: "var(--radius-md)",
+                  padding: 12,
+                  boxShadow: "var(--shadow-sm)",
+                  transition: "box-shadow 150ms ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.boxShadow = "var(--shadow-md)")
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.boxShadow = "var(--shadow-sm)")
+                }
+              >
+                <p
+                  className="text-xs font-semibold leading-snug mb-0.5"
+                  style={{ color: "var(--neutral-800)" }}
                 >
-                  <span
-                    className="text-xs leading-tight"
-                    style={{ color: "var(--neutral-700)" }}
-                  >
-                    {d.title}
-                  </span>
-                </div>
-              ))}
-            </div>
+                  {d.title}
+                </p>
+                <p
+                  className="text-xs leading-relaxed"
+                  style={{ color: "var(--neutral-500)" }}
+                >
+                  {d.description}
+                </p>
+              </div>
+            ))}
           </div>
         ))}
       </div>
