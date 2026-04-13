@@ -126,7 +126,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen p-6" style={{ background: 'var(--page-bg)' }}>
-      <div className="max-w-[1600px] mx-auto space-y-6">
+      <div className="max-w-[1600px] mx-auto space-y-10">
         <PageHeader
           title="Dashboard"
           actions={
@@ -159,7 +159,7 @@ export default function DashboardPage() {
               soldCollView={soldCollView} soldCollData={soldCollData} onSoldCollViewChange={setSoldCollView}
             />
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
               <RevenueByTier rows={tierRows} onViewDetail={() => setDetailModal({ title: 'Revenue by Tier \u2014 Detail', panel: 'revenue-by-tier' })} />
               <RevenueBySource rows={sourceRows} onViewDetail={() => setDetailModal({ title: 'Revenue by Billing Source \u2014 Detail', panel: 'revenue-by-source' })} />
             </div>

@@ -8,31 +8,21 @@ interface ViewToggleProps {
 }
 
 export default function ViewToggle({ view, onChange }: ViewToggleProps) {
-  const base = 'px-3 py-1 text-xs font-medium rounded-md';
   return (
-    <div className="flex gap-1 p-0.5 rounded-lg" style={{ background: 'var(--neutral-100)' }}>
-      <button
-        className={base}
-        style={{
-          background: view === 'mom' ? 'var(--neutral-800)' : 'transparent',
-          color: view === 'mom' ? '#fff' : 'var(--neutral-500)',
-          transition: 'background-color 150ms ease, color 150ms ease',
-        }}
-        onClick={() => onChange('mom')}
-      >
-        MoM
-      </button>
-      <button
-        className={base}
-        style={{
-          background: view === 'wow' ? 'var(--neutral-800)' : 'transparent',
-          color: view === 'wow' ? '#fff' : 'var(--neutral-500)',
-          transition: 'background-color 150ms ease, color 150ms ease',
-        }}
-        onClick={() => onChange('wow')}
-      >
-        WoW
-      </button>
+    <div className="flex gap-0.5 p-0.5 rounded-full border" style={{ borderColor: 'var(--neutral-200)' }}>
+      {(['mom', 'wow'] as const).map((v) => (
+        <button
+          key={v}
+          className="px-2.5 py-0.5 text-[11px] font-semibold rounded-full transition-all"
+          style={{
+            background: view === v ? 'var(--neutral-900)' : 'transparent',
+            color: view === v ? '#fff' : 'var(--neutral-400)',
+          }}
+          onClick={() => onChange(v)}
+        >
+          {v === 'mom' ? 'MoM' : 'WoW'}
+        </button>
+      ))}
     </div>
   );
 }

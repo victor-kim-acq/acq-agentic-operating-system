@@ -18,7 +18,7 @@ export default function MembersPage() {
           <Link
             href="/members/login"
             className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
-            style={{ background: "var(--neutral-900)" }}
+            style={{ background: "var(--brand-primary)" }}
           >
             Sign in
           </Link>
@@ -30,7 +30,7 @@ export default function MembersPage() {
   return (
     <div className="min-h-[calc(100vh-44px)]" style={{ background: "var(--page-bg)" }}>
       <div className="max-w-3xl mx-auto px-6 py-10">
-        <div className="mb-8">
+        <div className="mb-10">
           <PageHeader
             title="Members"
             subtitle="Search HubSpot contacts by name or email."

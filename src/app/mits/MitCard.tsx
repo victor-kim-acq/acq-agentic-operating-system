@@ -41,20 +41,20 @@ export default function MitCard({
 
   return (
     <div
-      className="rounded-xl border p-5 transition-all cursor-pointer group"
+      className="rounded-2xl border p-5 transition-all cursor-pointer group"
       style={{
         background: "var(--card-bg)",
         borderColor: isDailyOps ? "var(--brand-primary)" : "var(--card-border)",
-        boxShadow: isDailyOps ? "0 0 0 1px var(--brand-light)" : "var(--shadow-sm)",
+        boxShadow: "var(--shadow-sm)",
       }}
       onClick={onSelect}
-      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-md)")}
-      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = isDailyOps ? "0 0 0 1px var(--brand-light)" : "var(--shadow-sm)")}
+      onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-lg)")}
+      onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-sm)")}
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <div
-            className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
             style={{ background: sc.dot }}
           >
             {mit.sort_order ?? 0}

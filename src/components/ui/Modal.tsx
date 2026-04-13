@@ -28,7 +28,7 @@ export default function Modal({ open, onClose, title, subtitle, children }: Moda
       onClick={onClose}
     >
       <div
-        className="rounded-xl max-w-6xl w-full mx-4 max-h-[85vh] flex flex-col"
+        className="rounded-2xl max-w-6xl w-full mx-4 max-h-[85vh] flex flex-col"
         style={{
           background: 'var(--card-bg)',
           boxShadow: 'var(--shadow-xl)',

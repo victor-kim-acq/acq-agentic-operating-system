@@ -152,7 +152,7 @@ export default function MemberSearch({
         onChange={(e) => setQuery(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && handleSearch(query)}
         placeholder="Search by name or email\u2026"
-        className={`flex-1 border rounded-lg text-sm focus:outline-none focus:ring-2 ${
+        className={`flex-1 border rounded-xl text-sm focus:outline-none focus:ring-2 ${
           mode === "compact" ? "px-3 py-2" : "px-4 py-2.5"
         }`}
         style={{
@@ -166,10 +166,10 @@ export default function MemberSearch({
       <button
         onClick={() => handleSearch(query)}
         disabled={loading || !query.trim()}
-        className={`text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
+        className={`text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
           mode === "compact" ? "px-4 py-2" : "px-5 py-2.5"
         }`}
-        style={{ background: "var(--neutral-900)", boxShadow: "var(--shadow-xs)" }}
+        style={{ background: "var(--brand-primary)", boxShadow: "var(--shadow-xs)" }}
       >
         {loading ? "Searching\u2026" : "Search"}
       </button>
@@ -237,14 +237,14 @@ export default function MemberSearch({
             <Link
               key={m.contactId}
               href={`/members/${m.contactId}`}
-              className="flex items-center justify-between rounded-xl border px-5 py-4 transition-all group"
+              className="flex items-center justify-between rounded-2xl border px-5 py-4 transition-all group"
               style={{
                 background: "var(--card-bg)",
                 borderColor: "var(--card-border)",
                 boxShadow: "var(--shadow-xs)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-md)")}
-              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-xs)")}
+              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-md)"; e.currentTarget.style.borderColor = "var(--neutral-300)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "var(--shadow-xs)"; e.currentTarget.style.borderColor = "var(--card-border)"; }}
             >
               <ResultRow member={m} />
             </Link>

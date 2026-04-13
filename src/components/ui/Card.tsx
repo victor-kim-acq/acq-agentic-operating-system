@@ -14,7 +14,7 @@ interface CardProps {
 export default function Card({ children, title, subtitle, actions, className = '', noPadding }: CardProps) {
   return (
     <div
-      className={`rounded-xl border ${className}`}
+      className={`rounded-2xl border ${className}`}
       style={{
         background: 'var(--card-bg)',
         borderColor: 'var(--card-border)',

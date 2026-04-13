@@ -114,7 +114,7 @@ export default function MitsPage() {
   return (
     <div className="min-h-screen" style={{ background: "var(--page-bg)" }}>
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="flex items-start justify-between mb-8">
+        <div className="flex items-start justify-between mb-12">
           <PageHeader
             title="Most Important Things"
             subtitle="Strategic priorities and progress"
@@ -144,8 +144,10 @@ export default function MitsPage() {
             </div>
             <button
               onClick={() => setShowAddModal(true)}
-              className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors"
-              style={{ background: "var(--brand-primary)", boxShadow: "var(--shadow-xs)" }}
+              className="px-4 py-2 text-white text-sm font-semibold rounded-xl transition-all"
+              style={{ background: "var(--brand-primary)", boxShadow: "var(--shadow-sm)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-md)")}
+              onMouseLeave={(e) => (e.currentTarget.style.boxShadow = "var(--shadow-sm)")}
             >
               + Add MIT
             </button>
@@ -163,8 +165,8 @@ export default function MitsPage() {
         ) : (
           <>
             {dailyOps.length > 0 && (
-              <div className="mb-10">
-                <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--neutral-400)" }}>
+              <div className="mb-12">
+                <h2 className="text-xs font-bold uppercase tracking-wider mb-5" style={{ color: 'var(--neutral-400)', letterSpacing: '0.08em' }}>
                   Daily Operations
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -184,7 +186,7 @@ export default function MitsPage() {
 
             {quarterlyMits.length > 0 && (
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: "var(--neutral-400)" }}>
+                <h2 className="text-xs font-bold uppercase tracking-wider mb-5" style={{ color: 'var(--neutral-400)', letterSpacing: '0.08em' }}>
                   Strategic MITs
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

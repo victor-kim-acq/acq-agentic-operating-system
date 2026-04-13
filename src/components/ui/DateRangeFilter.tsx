@@ -11,7 +11,7 @@ interface DateRangeFilterProps {
 export default function DateRangeFilter({ startDate, endDate, onStartChange, onEndChange, onReset }: DateRangeFilterProps) {
   return (
     <div
-      className="flex items-center gap-3 rounded-xl border px-4 py-3"
+      className="flex items-center gap-3 rounded-2xl border px-4 py-3"
       style={{
         background: 'var(--card-bg)',
         borderColor: 'var(--card-border)',
@@ -23,7 +23,7 @@ export default function DateRangeFilter({ startDate, endDate, onStartChange, onE
         type="date"
         value={startDate}
         onChange={(e) => onStartChange(e.target.value)}
-        className="border rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]"
+        className="border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]"
         style={{ borderColor: 'var(--neutral-200)' }}
       />
       <span className="text-sm" style={{ color: 'var(--neutral-400)' }}>to</span>
@@ -31,7 +31,7 @@ export default function DateRangeFilter({ startDate, endDate, onStartChange, onE
         type="date"
         value={endDate}
         onChange={(e) => onEndChange(e.target.value)}
-        className="border rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]"
+        className="border rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]"
         style={{ borderColor: 'var(--neutral-200)' }}
       />
       <button

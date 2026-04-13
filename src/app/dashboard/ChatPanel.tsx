@@ -90,7 +90,7 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
 export default function ChatPanel() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
-  const [chatOpen, setChatOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -122,14 +122,14 @@ export default function ChatPanel() {
 
   return (
     <div
-      className="rounded-xl border"
+      className="rounded-2xl border"
       style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)', boxShadow: 'var(--shadow-sm)' }}
     >
       <button
         onClick={() => setChatOpen(!chatOpen)}
-        className="w-full flex items-center justify-between p-4 transition-colors rounded-xl hover:bg-[var(--neutral-50)]"
+        className="w-full flex items-center justify-between p-4 transition-colors rounded-2xl hover:bg-[var(--neutral-50)]"
       >
-        <h2 className="text-sm font-semibold" style={{ color: 'var(--neutral-800)' }}>Ask a question about your data</h2>
+        <h2 className="text-sm font-medium" style={{ color: 'var(--neutral-400)' }}>Ask a question about your data</h2>
         {chatOpen
           ? <ChevronDown className="w-5 h-5" style={{ color: 'var(--neutral-400)' }} />
           : <ChevronRight className="w-5 h-5" style={{ color: 'var(--neutral-400)' }} />
@@ -144,8 +144,8 @@ export default function ChatPanel() {
                 <button
                   key={s}
                   onClick={() => submitQuestion(s)}
-                  className="text-xs rounded-full px-3 py-1.5 transition-colors border"
-                  style={{ color: 'var(--neutral-500)', background: 'var(--neutral-100)', borderColor: 'var(--neutral-200)' }}
+                  className="text-xs rounded-full px-4 py-2 transition-all border font-medium"
+                  style={{ color: 'var(--neutral-600)', background: 'var(--card-bg)', borderColor: 'var(--neutral-200)', boxShadow: 'var(--shadow-xs)' }}
                 >
                   {s}
                 </button>
@@ -174,14 +174,14 @@ export default function ChatPanel() {
               value={chatInput}
               onChange={(e) => setChatInput(e.target.value)}
               placeholder="Ask about revenue, members, deals, churn..."
-              className="flex-1 border rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]"
+              className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)]"
               style={{ borderColor: 'var(--neutral-200)' }}
             />
             <button
               type="submit"
               disabled={!chatInput.trim()}
-              className="px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ background: 'var(--brand-primary)' }}
+              className="px-4 py-2 text-white rounded-xl transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{ background: 'var(--brand-primary)', boxShadow: 'var(--shadow-xs)' }}
             >
               <Send className="w-4 h-4" />
             </button>

@@ -12,11 +12,11 @@ interface KPISummaryProps {
 function SkeletonStat() {
   return (
     <div
-      className="rounded-xl border p-6 space-y-3"
-      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)', boxShadow: 'var(--shadow-xs)' }}
+      className="rounded-2xl border p-6 space-y-3"
+      style={{ background: 'var(--card-bg)', borderColor: 'var(--card-border)', boxShadow: 'var(--shadow-sm)' }}
     >
       <div className="animate-gentle-pulse rounded h-4 w-24" style={{ background: 'var(--neutral-200)' }} />
-      <div className="animate-gentle-pulse rounded h-9 w-40" style={{ background: 'var(--neutral-200)' }} />
+      <div className="animate-gentle-pulse rounded h-10 w-40" style={{ background: 'var(--neutral-200)' }} />
     </div>
   );
 }

@@ -15,7 +15,7 @@ type CampaignResponse = {
   message: string;
 };
 
-const inputCls = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed resize-y";
+const inputCls = "w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed resize-y";
 const inputStyle: React.CSSProperties = {
   borderColor: "var(--neutral-200)",
   color: "var(--neutral-800)",
@@ -88,7 +88,7 @@ export default function MarketingOpsAgentPage() {
 
         {result ? (
           <div
-            className="rounded-xl border p-6"
+            className="rounded-2xl border p-6"
             style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
           >
             <div className="flex items-center gap-2 mb-4">
@@ -140,7 +140,7 @@ export default function MarketingOpsAgentPage() {
         ) : (
           <form
             onSubmit={handleSubmit}
-            className="rounded-xl border p-6 space-y-5"
+            className="rounded-2xl border p-6 space-y-5"
             style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
           >
             <div>

@@ -173,11 +173,11 @@ export default function MitDetail({ mitId, users, onBack }: MitDetailProps) {
 
         {/* MIT Header Card */}
         <div
-          className="rounded-xl border p-6 mb-6"
+          className="rounded-2xl border p-6 mb-6"
           style={{
             background: "var(--card-bg)",
             borderColor: isDailyOps ? "var(--brand-primary)" : "var(--card-border)",
-            boxShadow: isDailyOps ? "0 0 0 1px var(--brand-light)" : "var(--shadow-sm)",
+            boxShadow: "var(--shadow-sm)",
           }}
         >
           <div className="flex items-start justify-between mb-4">
@@ -219,7 +219,7 @@ export default function MitDetail({ mitId, users, onBack }: MitDetailProps) {
         </div>
 
         {/* Problem Statement */}
-        <div className="rounded-xl border p-6 mb-4" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}>
+        <div className="rounded-2xl border p-6 mb-4" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}>
           <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--brand-primary)" }}>Problem Statement</h2>
           {editingProblem ? (
             <textarea value={problemValue} onChange={(e) => setProblemValue(e.target.value)} onBlur={saveProblem} onKeyDown={(e) => { if (e.key === "Escape") { setProblemValue(mit.problem_statement || ""); setEditingProblem(false); } }} autoFocus rows={4} className={textAreaCls} style={textAreaStyle} />
@@ -237,7 +237,7 @@ export default function MitDetail({ mitId, users, onBack }: MitDetailProps) {
         </div>
 
         {/* Hypothesis */}
-        <div className="rounded-xl border p-6 mb-6" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}>
+        <div className="rounded-2xl border p-6 mb-6" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}>
           <h2 className="text-xs font-bold uppercase tracking-wider mb-3" style={{ color: "var(--brand-primary)" }}>Hypothesis</h2>
           {editingHypothesis ? (
             <textarea value={hypothesisValue} onChange={(e) => setHypothesisValue(e.target.value)} onBlur={saveHypothesis} onKeyDown={(e) => { if (e.key === "Escape") { setHypothesisValue(mit.hypothesis || ""); setEditingHypothesis(false); } }} autoFocus rows={4} className={textAreaCls} style={textAreaStyle} />
@@ -255,7 +255,7 @@ export default function MitDetail({ mitId, users, onBack }: MitDetailProps) {
         </div>
 
         {/* Tasks */}
-        <div className="rounded-xl border overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}>
+        <div className="rounded-2xl border overflow-hidden" style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}>
           <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--neutral-100)" }}>
             <h2 className="text-sm font-bold" style={{ color: "var(--neutral-900)" }}>Tasks</h2>
             <button onClick={addTask} className="px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors" style={{ background: "var(--brand-primary)" }}>

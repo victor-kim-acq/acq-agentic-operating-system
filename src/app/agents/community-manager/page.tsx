@@ -20,7 +20,7 @@ type Rule = {
 const DEFAULT_FROM_NAME = "Saulo Medeiros";
 const DEFAULT_FROM_EMAIL = "vantage@acquisition.com";
 
-const inputCls = "w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed resize-y";
+const inputCls = "w-full px-3 py-2 text-sm border rounded-xl focus:outline-none focus:ring-2 disabled:opacity-60 disabled:cursor-not-allowed resize-y";
 const inputStyle: React.CSSProperties = {
   borderColor: "var(--neutral-200)",
   color: "var(--neutral-800)",
@@ -225,7 +225,7 @@ export default function CommunityManagerAgentPage() {
 
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border p-6 space-y-5"
+          className="rounded-2xl border p-6 space-y-5"
           style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
         >
           <div className="grid grid-cols-2 gap-4">
@@ -283,7 +283,7 @@ export default function CommunityManagerAgentPage() {
         <section className="mt-10">
           <h2 className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--neutral-400)" }}>Active Rules</h2>
           <div
-            className="rounded-xl border overflow-hidden"
+            className="rounded-2xl border overflow-hidden"
             style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
           >
             {rules.length === 0 ? (
@@ -403,7 +403,7 @@ export default function CommunityManagerAgentPage() {
 
           {previewRuleId !== null && (
             <div
-              className="mt-4 rounded-xl border overflow-hidden"
+              className="mt-4 rounded-2xl border overflow-hidden"
               style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-sm)" }}
             >
               <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--neutral-200)", background: "var(--neutral-50)" }}>
