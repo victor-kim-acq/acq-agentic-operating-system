@@ -55,9 +55,16 @@ function ProcessNode({ data, selected }: NodeProps) {
       style={{ borderTopColor: color, borderTopWidth: 3 }}
     >
       <Handle
+        id="left"
         type="target"
         position={Position.Left}
         style={{ background: color, borderColor: "white" }}
+      />
+      <Handle
+        id="top"
+        type="target"
+        position={Position.Top}
+        style={{ background: color, borderColor: "white", width: 6, height: 6 }}
       />
 
       <div className="flow-node-header">
@@ -77,9 +84,16 @@ function ProcessNode({ data, selected }: NodeProps) {
       )}
 
       <Handle
+        id="right"
         type="source"
         position={Position.Right}
         style={{ background: color, borderColor: "white" }}
+      />
+      <Handle
+        id="bottom"
+        type="source"
+        position={Position.Bottom}
+        style={{ background: color, borderColor: "white", width: 6, height: 6 }}
       />
     </div>
   );
