@@ -17,4 +17,6 @@ export interface ProcessConnection {
   source_id: string;
   target_id: string;
   label: string | null;
+  source_handle: string | null;
+  target_handle: string | null;
 }
