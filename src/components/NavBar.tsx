@@ -1,9 +1,10 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-const NAV_LINKS = [
+const NAV_ITEMS = [
   { href: '/', label: 'Canvas' },
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/mits', label: 'MITs' },
@@ -13,43 +14,63 @@ const NAV_LINKS = [
 
 export default function NavBar() {
   const pathname = usePathname();
+  const [mounted, setMounted] = useState(false);
 
-  function isActive(href: string) {
-    if (href === '/') return pathname === '/';
-    return pathname.startsWith(href);
-  }
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <nav
-      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md px-6 py-0 flex items-center justify-between"
       style={{
-        background: 'rgba(255,255,255,0.85)',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 50,
+        background: '#fff',
         borderBottom: '1px solid var(--card-border)',
+        height: 48,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '0 24px',
       }}
     >
-      <div className="flex items-center gap-1">
-        {NAV_LINKS.map(({ href, label }) => {
-          const active = isActive(href);
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0 }}>
+        {NAV_ITEMS.map((item) => {
+          const isActive = mounted
+            ? item.href === '/'
+              ? pathname === '/'
+              : pathname.startsWith(item.href)
+            : false;
+
           return (
             <Link
-              key={href}
-              href={href}
-              className="relative text-sm font-medium px-3 py-3 transition-colors"
+              key={item.href}
+              href={item.href}
               style={{
-                color: active ? 'var(--neutral-900)' : 'var(--neutral-400)',
-              }}
-              onMouseEnter={(e) => {
-                if (!active) e.currentTarget.style.color = 'var(--neutral-700)';
-              }}
-              onMouseLeave={(e) => {
-                if (!active) e.currentTarget.style.color = 'var(--neutral-400)';
+                position: 'relative',
+                fontSize: '13px',
+                fontWeight: isActive ? 600 : 500,
+                color: isActive ? 'var(--neutral-900)' : 'var(--neutral-400)',
+                padding: '14px 16px',
+                textDecoration: 'none',
+                transition: 'color 0.15s',
               }}
             >
-              {label}
-              {active && (
+              {item.label}
+              {isActive && (
                 <span
-                  className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full"
-                  style={{ background: 'var(--neutral-900)' }}
+                  style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 16,
+                    right: 16,
+                    height: 2,
+                    background: 'var(--neutral-900)',
+                    borderRadius: 1,
+                  }}
                 />
               )}
             </Link>
@@ -57,8 +78,13 @@ export default function NavBar() {
         })}
       </div>
       <span
-        className="text-xs font-semibold tracking-wide uppercase"
-        style={{ color: 'var(--neutral-300)', letterSpacing: '0.08em' }}
+        style={{
+          fontSize: '11px',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: 'var(--neutral-300)',
+        }}
       >
         ACQ Agentic OS
       </span>

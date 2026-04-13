@@ -4,29 +4,75 @@ import { ReactNode } from 'react';
 
 interface ChartCardProps {
   title: string;
+  subtitle?: string;
   actions?: ReactNode;
   children: ReactNode;
   height?: number;
   loading?: boolean;
 }
 
-export default function ChartCard({ title, actions, children, height = 350, loading }: ChartCardProps) {
+export default function ChartCard({ title, subtitle, actions, children, height = 350, loading }: ChartCardProps) {
   return (
     <div
-      className="rounded-2xl border"
       style={{
         background: 'var(--card-bg)',
-        borderColor: 'var(--card-border)',
+        border: '1px solid var(--card-border)',
+        borderRadius: 'var(--radius-lg)',
         boxShadow: 'var(--shadow-sm)',
+        overflow: 'hidden',
       }}
     >
-      <div className="flex items-center justify-between px-6 pt-5 pb-3">
-        <h2 className="text-sm font-medium" style={{ color: 'var(--neutral-400)' }}>{title}</h2>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          padding: '20px 24px 16px',
+        }}
+      >
+        <div>
+          <h2
+            style={{
+              fontSize: '15px',
+              fontWeight: 600,
+              color: 'var(--neutral-900)',
+              margin: 0,
+              lineHeight: 1.3,
+            }}
+          >
+            {title}
+          </h2>
+          {subtitle && (
+            <p
+              style={{
+                fontSize: '12px',
+                color: 'var(--neutral-400)',
+                margin: '4px 0 0',
+                lineHeight: 1.4,
+              }}
+            >
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {actions && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+            {actions}
+          </div>
+        )}
       </div>
-      <div className="px-6 pb-6 pt-2" style={{ minHeight: height }}>
+      <div style={{ padding: '0 24px 24px', minHeight: height }}>
         {loading ? (
-          <div className="flex items-center justify-center text-sm" style={{ height, color: 'var(--neutral-400)' }}>
+          <div
+            style={{
+              height,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--neutral-300)',
+              fontSize: '13px',
+            }}
+          >
             Loading...
           </div>
         ) : (

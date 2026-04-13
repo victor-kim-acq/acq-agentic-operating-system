@@ -10,19 +10,27 @@ interface PageHeaderProps {
 
 export default function PageHeader({ title, subtitle, actions }: PageHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
+    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
       <div>
         <h1
-          className="text-2xl font-black tracking-tight"
-          style={{ color: 'var(--neutral-900)', letterSpacing: '-0.02em' }}
+          style={{
+            fontSize: '24px',
+            fontWeight: 700,
+            color: 'var(--neutral-900)',
+            letterSpacing: '-0.02em',
+            margin: 0,
+            lineHeight: 1.2,
+          }}
         >
           {title}
         </h1>
         {subtitle && (
-          <p className="text-sm mt-1" style={{ color: 'var(--neutral-400)' }}>{subtitle}</p>
+          <p style={{ fontSize: '13px', color: 'var(--neutral-400)', margin: '4px 0 0' }}>
+            {subtitle}
+          </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-3">{actions}</div>}
+      {actions && <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>{actions}</div>}
     </div>
   );
 }
