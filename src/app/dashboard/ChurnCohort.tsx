@@ -3,6 +3,7 @@
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
+import GradientBar from '@/components/ui/GradientBar';
 import { ChurnRow } from './types';
 import { fmt, fmtLabel, pctLabel, ChartTooltip } from './helpers';
 
@@ -31,10 +32,10 @@ export default function ChurnCohort({ rows, onViewDetail }: Props) {
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} />
             <Tooltip content={<ChartTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
+            <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="var(--chart-1)" shape={<GradientBar />}>
               <LabelList dataKey="active_mrr" position="top" fontSize={11} fill="var(--neutral-500)" formatter={fmtLabel} />
             </Bar>
-            <Bar yAxisId="left" dataKey="cancellation_mrr" name="Cancellation MRR" fill="var(--chart-4)" radius={[4, 4, 0, 0]}>
+            <Bar yAxisId="left" dataKey="cancellation_mrr" name="Cancellation MRR" fill="var(--chart-4)" shape={<GradientBar />}>
               <LabelList dataKey="cancellation_mrr" position="top" fontSize={11} fill="var(--neutral-500)" formatter={fmtLabel} />
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 4 }}>

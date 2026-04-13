@@ -7,6 +7,7 @@ import {
 } from 'recharts';
 import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
+import GradientBar from '@/components/ui/GradientBar';
 import ViewToggle, { ChartView } from '@/components/ui/ViewToggle';
 import { RevenueChurnRow, NewDealsRow, SoldCollectedChartRow } from './types';
 import { fmt, fmtShort, fmtShortLabel, pctLabel, formatPeriodLabel, ChartTooltip } from './helpers';
@@ -77,10 +78,10 @@ export default function TopCharts({
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={40} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="var(--chart-2)" radius={[4, 4, 0, 0]}>
+              <Bar yAxisId="left" dataKey="active_mrr" name="Active MRR" fill="var(--chart-2)" shape={<GradientBar />}>
                 <LabelList dataKey="active_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" radius={[4, 4, 0, 0]}>
+              <Bar yAxisId="left" dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" shape={<GradientBar />}>
                 <LabelList dataKey="cancelled_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
@@ -129,7 +130,7 @@ export default function TopCharts({
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmtShort(v)} width={70} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="deal_count" name="Deal Count" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
+              <Bar yAxisId="left" dataKey="deal_count" name="Deal Count" fill="var(--chart-1)" shape={<GradientBar />}>
                 <LabelList dataKey="deal_count" position="top" fontSize={10} fill="var(--neutral-500)" />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="sold_mrr" name="Sold MRR" stroke="var(--chart-5)" strokeWidth={2} dot={{ fill: 'var(--chart-5)', r: 3 }}>
@@ -179,13 +180,13 @@ export default function TopCharts({
               <YAxis tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => fmtShort(v)} width={70} />
               <Tooltip content={<ChartTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar dataKey="closed_mrr" name="Closed MRR" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="closed_mrr" name="Closed MRR" fill="var(--chart-1)" shape={<GradientBar />}>
                 <LabelList dataKey="closed_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
-              <Bar dataKey="collected_mrr" name="Collected MRR" fill="var(--chart-2)" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="collected_mrr" name="Collected MRR" fill="var(--chart-2)" shape={<GradientBar />}>
                 <LabelList dataKey="collected_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
-              <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="cancelled_mrr" name="Cancelled MRR" fill="var(--chart-4)" shape={<GradientBar />}>
                 <LabelList dataKey="cancelled_mrr" position="top" fontSize={10} fill="var(--neutral-500)" formatter={fmtShortLabel} />
               </Bar>
             </BarChart>
