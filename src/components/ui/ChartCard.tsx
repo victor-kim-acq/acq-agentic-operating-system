@@ -22,7 +22,7 @@ export default function ChartCard({ title, actions, children, height = 350, load
     >
       <div
         className="flex items-center justify-between px-6 pt-5 pb-3 border-b"
-        style={{ borderColor: 'var(--neutral-100)' }}
+        style={{ borderColor: 'var(--card-border)' }}
       >
         <h2 className="text-sm font-medium" style={{ color: 'var(--neutral-800)' }}>{title}</h2>
         {actions && <div className="flex items-center gap-2">{actions}</div>}

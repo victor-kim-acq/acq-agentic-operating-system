@@ -10,19 +10,13 @@ interface StatCardProps {
 export default function StatCard({ label, value, trend, accentColor }: StatCardProps) {
   return (
     <div
-      className="rounded-xl border p-6 relative overflow-hidden"
+      className="rounded-xl border p-6"
       style={{
         background: 'var(--card-bg)',
         borderColor: 'var(--card-border)',
-        boxShadow: 'var(--shadow-md)',
+        boxShadow: 'var(--shadow-xs)',
       }}
     >
-      {accentColor && (
-        <div
-          className="absolute top-0 left-0 right-0 h-0.5 rounded-t-xl"
-          style={{ background: `linear-gradient(to right, ${accentColor}, transparent)` }}
-        />
-      )}
       <p
         className="text-xs font-medium uppercase mb-2"
         style={{ color: 'var(--neutral-400)', letterSpacing: '0.1em' }}
@@ -30,7 +24,7 @@ export default function StatCard({ label, value, trend, accentColor }: StatCardP
         {label}
       </p>
       <p
-        className="text-3xl font-extrabold"
+        className="text-2xl font-semibold"
         style={{ color: 'var(--neutral-900)', letterSpacing: '-0.02em' }}
       >
         {value}
