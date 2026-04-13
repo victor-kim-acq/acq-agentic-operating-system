@@ -328,3 +328,20 @@ CRUD for MITs and CTs. Assign owners. Independent from canvas.
 - Authentication
 - AI transcript parsing
 - Live data connections to n8n/HubSpot
+
+## Frontend Design
+
+Always invoke the frontend-design skill before writing any frontend code.
+When using the frontend-design skill, target clean/professional ops dashboard
+aesthetic (Linear, Vercel, Raycast). Prioritize scannability, clarity, and
+typographic hierarchy over novelty and visual impact. Do NOT use bold/unusual
+fonts or unexpected layouts — this is an internal ops tool, not a landing page.
+
+## Screenshot Workflow
+
+After any frontend visual change, run `node scripts/screenshot.mjs` to capture
+the current state. When given a reference screenshot in `brand_assets/`, compare
+your screenshot against it section by section. Do at least 2 passes: build →
+screenshot → compare → fix mismatches → screenshot → verify. Save all
+screenshots to `tmp_screenshots/` (gitignored). If working with animations or
+dynamic elements, skip screenshot comparison and ask for manual review instead.
