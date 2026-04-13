@@ -251,39 +251,6 @@ export default function MitCascade() {
         ))}
       </div>
 
-      {/* ── Legend row ── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 20,
-          marginBottom: 32,
-        }}
-      >
-        {GOALS.map((g) => (
-          <div
-            key={g.id}
-            style={{ display: "flex", alignItems: "center", gap: 6 }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: g.color,
-                flexShrink: 0,
-              }}
-            />
-            <span
-              className="text-xs"
-              style={{ color: "var(--neutral-500)" }}
-            >
-              {g.title}
-            </span>
-          </div>
-        ))}
-      </div>
-
       {/* ── Tier 2 label ── */}
       <p
         className="text-xs font-semibold uppercase tracking-wider mb-3"
@@ -310,7 +277,6 @@ export default function MitCascade() {
               maxWidth: 220,
               background: "var(--card-bg)",
               border: "1px solid var(--card-border)",
-              borderLeft: `4px solid ${mit.color}`,
               borderRadius: "var(--radius-lg)",
               boxShadow: "var(--shadow-sm)",
               transition: "box-shadow 150ms ease",
@@ -374,35 +340,6 @@ export default function MitCascade() {
         ))}
       </div>
 
-      {/* ── Vertical connectors (Tier 2 → Tier 3) ── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          gap: 16,
-        }}
-      >
-        {MITS.map((mit) => (
-          <div
-            key={mit.id}
-            style={{
-              flex: "1 1 0",
-              maxWidth: 220,
-              display: "flex",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 1.5,
-                height: 32,
-                background: "var(--neutral-300)",
-              }}
-            />
-          </div>
-        ))}
-      </div>
-
       {/* ── Tier 3 label ── */}
       <p
         className="text-xs font-semibold uppercase tracking-wider mb-3"
@@ -437,7 +374,6 @@ export default function MitCascade() {
                 style={{
                   background: "var(--card-bg)",
                   border: "1px solid var(--card-border)",
-                  borderLeft: `4px solid ${mit.color}`,
                   borderRadius: "var(--radius-md)",
                   padding: 12,
                   boxShadow: "var(--shadow-sm)",
