@@ -3,6 +3,7 @@
 import { ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
+import GradientBar from '@/components/ui/GradientBar';
 import { MemberCohortRow } from './types';
 import { pctLabel, ChartTooltip } from './helpers';
 
@@ -34,10 +35,10 @@ export default function MemberCohort({ rows, onViewDetail }: Props) {
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} />
             <Tooltip content={<MemberCohortTooltip />} />
             <Legend wrapperStyle={{ fontSize: 12 }} />
-            <Bar yAxisId="left" dataKey="acquired" name="Acquired" fill="var(--chart-1)" radius={[4, 4, 0, 0]}>
+            <Bar yAxisId="left" dataKey="acquired" name="Acquired" fill="var(--chart-1)" shape={<GradientBar />}>
               <LabelList dataKey="acquired" position="top" fontSize={11} fill="var(--neutral-500)" formatter={countLabel} />
             </Bar>
-            <Bar yAxisId="left" dataKey="churned" name="Churned" fill="var(--chart-4)" radius={[4, 4, 0, 0]}>
+            <Bar yAxisId="left" dataKey="churned" name="Churned" fill="var(--chart-4)" shape={<GradientBar />}>
               <LabelList dataKey="churned" position="top" fontSize={11} fill="var(--neutral-500)" formatter={countLabel} />
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey="churn_rate_pct" name="Churn Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 4 }}>

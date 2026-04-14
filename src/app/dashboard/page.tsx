@@ -11,7 +11,7 @@ import {
   RevenueChurnRow, NewDealsRow, SoldCollectedChartRow, MemberCohortRow,
 } from './types';
 import { today, sixWeeksAgo } from './helpers';
-import type { ActivationData } from './ActivationKPIs';
+import type { ActivationRow } from './ActivationKPIs';
 
 import KPISummary from './KPISummary';
 import ActivationKPIs from './ActivationKPIs';
@@ -38,7 +38,8 @@ export default function DashboardPage() {
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
   const [memberCohortRows, setMemberCohortRows] = useState<MemberCohortRow[]>([]);
-  const [activationData, setActivationData] = useState<ActivationData | null>(null);
+  const [activationView, setActivationView] = useState<ChartView>('mom');
+  const [activationRows, setActivationRows] = useState<ActivationRow[]>([]);
 
   const [detailModal, setDetailModal] = useState<{ title: string; panel: string } | null>(null);
 
@@ -82,12 +83,37 @@ export default function DashboardPage() {
     );
   }, [soldCollView, startDate, endDate, fetchChart]);
 
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    fetchChart('activation-kpis', activationView, startDate, endDate).then((rows: any[]) =>
+      setActivationRows(rows.map((r: any) => ({
+        ...r,
+        acquired: Number(r.acquired) || 0,
+        churned: Number(r.churned) || 0,
+        ai_activated: Number(r.ai_activated) || 0,
+        ai_not_activated: Number(r.ai_not_activated) || 0,
+        ai_activation_rate: Number(r.ai_activation_rate) || 0,
+        community_engaged: Number(r.community_engaged) || 0,
+        community_not_engaged: Number(r.community_not_engaged) || 0,
+        community_engagement_rate: Number(r.community_engagement_rate) || 0,
+        at_risk_vip: Number(r.at_risk_vip) || 0,
+        total_vip: Number(r.total_vip) || 0,
+        fully_activated: Number(r.fully_activated) || 0,
+        fully_activated_rate: Number(r.fully_activated_rate) || 0,
+        ace_rech_fully_activated: Number(r.ace_rech_fully_activated) || 0,
+        ace_rech_total: Number(r.ace_rech_total) || 0,
+        ace_rech_fully_activated_rate: Number(r.ace_rech_fully_activated_rate) || 0,
+        ace_rech_not_activated: (Number(r.ace_rech_total) || 0) - (Number(r.ace_rech_fully_activated) || 0),
+      })))
+    );
+  }, [activationView, startDate, endDate, fetchChart]);
+
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
       const t = Date.now();
       const dp = `&startDate=${startDate}&endDate=${endDate}`;
-      const [summaryRes, tierRes, sourceRes, momRes, soldRes, churnRes, memberCohortRes, activationRes] = await Promise.all([
+      const [summaryRes, tierRes, sourceRes, momRes, soldRes, churnRes, memberCohortRes] = await Promise.all([
         fetch(`/api/dashboard/summary?t=${t}${dp}`),
         fetch(`/api/dashboard/revenue-by-tier?t=${t}${dp}`),
         fetch(`/api/dashboard/revenue-by-source?t=${t}${dp}`),
@@ -95,10 +121,9 @@ export default function DashboardPage() {
         fetch(`/api/dashboard/sold-vs-collected?t=${t}${dp}`),
         fetch(`/api/dashboard/churn-cohort?t=${t}${dp}`),
         fetch(`/api/dashboard/member-cohort?t=${t}`),
-        fetch(`/api/dashboard/activation-kpis?t=${t}${dp}`),
       ]);
-      const [summaryData, tierData, sourceData, momData, soldData, churnData, memberCohortData, activationRaw] = await Promise.all([
-        summaryRes.json(), tierRes.json(), sourceRes.json(), momRes.json(), soldRes.json(), churnRes.json(), memberCohortRes.json(), activationRes.json(),
+      const [summaryData, tierData, sourceData, momData, soldData, churnData, memberCohortData] = await Promise.all([
+        summaryRes.json(), tierRes.json(), sourceRes.json(), momRes.json(), soldRes.json(), churnRes.json(), memberCohortRes.json(),
       ]);
 
       setSummary({
@@ -118,7 +143,6 @@ export default function DashboardPage() {
       setChurnRows((churnData.rows ?? []).map((r: any) => ({ ...r, active_mrr: Number(r.active_mrr), cancellation_mrr: Number(r.cancellation_mrr), churn_rate_pct: Number(r.churn_rate_pct) })));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setMemberCohortRows((memberCohortData.rows ?? []).map((r: any) => ({ ...r, acquired: Number(r.acquired), churned: Number(r.churned), churn_rate_pct: Number(r.churn_rate_pct) })));
-      if (!activationRaw.error) setActivationData(activationRaw);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Dashboard fetch error:', err);
@@ -156,7 +180,7 @@ export default function DashboardPage() {
 
         <KPISummary summary={summary} loading={loading} />
 
-        <ActivationKPIs data={activationData} loading={loading} />
+        <ActivationKPIs rows={activationRows} view={activationView} onViewChange={setActivationView} />
 
         {!loading || summary ? (
           <>

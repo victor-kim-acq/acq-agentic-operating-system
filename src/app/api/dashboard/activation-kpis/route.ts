@@ -26,20 +26,33 @@ export async function GET(req: NextRequest) {
   const startDate =
     req.nextUrl.searchParams.get("startDate") ?? "2026-03-01";
   const endDate =
-    req.nextUrl.searchParams.get("endDate") ?? new Date().toISOString().slice(0, 10);
+    req.nextUrl.searchParams.get("endDate") ??
+    new Date().toISOString().slice(0, 10);
+  const view = req.nextUrl.searchParams.get("view") ?? "mom"; // mom | wow
 
   try {
     const excludeEmails = loadExcludeEmails();
     const excludeValues =
       excludeEmails.length > 0
-        ? excludeEmails.map((e) => `('${e.replace(/'/g, "''")}')`).join(",")
+        ? excludeEmails
+            .map((e) => `('${e.replace(/'/g, "''")}')`)
+            .join(",")
         : "('__none__')";
+
+    const truncExpr =
+      view === "wow"
+        ? "DATE_TRUNC('week', aj.joined_at)"
+        : "DATE_TRUNC('month', aj.joined_at)";
+
+    const periodFormat =
+      view === "wow"
+        ? "TO_CHAR(DATE_TRUNC('week', aj.joined_at), 'YYYY-MM-DD')"
+        : "TO_CHAR(DATE_TRUNC('month', aj.joined_at), 'Mon YYYY')";
 
     const result = await sql.query(`
       WITH exclude_list AS (
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
-      /* ── Base: all Skool joiners in the date range ── */
       all_joiners AS (
         SELECT LOWER(email) AS email, join_date AS joined_at, 'active' AS status, user_id
         FROM skool_members
@@ -51,10 +64,11 @@ export async function GET(req: NextRequest) {
         WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
           AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
       ),
-      /* ── Enrich with contact_id, tier, billing_source ── */
       enriched AS (
         SELECT
-          aj.email, aj.joined_at, aj.status, aj.user_id,
+          aj.*,
+          ${truncExpr} AS period_key,
+          ${periodFormat} AS period_label,
           (SELECT ce.contact_id FROM contact_emails ce WHERE LOWER(ce.email) = aj.email LIMIT 1) AS contact_id,
           COALESCE(
             (SELECT c.membership_tier FROM contacts c
@@ -70,7 +84,6 @@ export async function GET(req: NextRequest) {
           ) AS billing_source
         FROM all_joiners aj
       ),
-      /* ── AI activation: 2+ active days in week 1 ── */
       with_ai AS (
         SELECT e.*,
           CASE WHEN (
@@ -83,7 +96,6 @@ export async function GET(req: NextRequest) {
           ) >= 2) THEN true ELSE false END AS ai_activated
         FROM enriched e
       ),
-      /* ── Community engagement: 3+ posts/comments in first 15 days ── */
       with_all AS (
         SELECT wa.*,
           (SELECT COUNT(*) FROM skool_posts sp
@@ -97,28 +109,35 @@ export async function GET(req: NextRequest) {
         FROM with_ai wa
       )
       SELECT
-        /* 1. AI Activation Rate */
-        COUNT(*) AS total_acquired,
-        SUM(CASE WHEN ai_activated THEN 1 ELSE 0 END) AS ai_activated_count,
+        period_label,
+        period_key,
+
+        /* Totals */
+        COUNT(*) AS acquired,
+        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS churned,
+
+        /* 1. AI Activation */
+        SUM(CASE WHEN ai_activated THEN 1 ELSE 0 END) AS ai_activated,
+        SUM(CASE WHEN NOT ai_activated THEN 1 ELSE 0 END) AS ai_not_activated,
         ROUND(SUM(CASE WHEN ai_activated THEN 1 ELSE 0 END)::numeric
               / NULLIF(COUNT(*), 0) * 100, 1) AS ai_activation_rate,
 
-        /* 2. Community Engagement Gap */
-        SUM(CASE WHEN engagement_15d >= 3 THEN 1 ELSE 0 END) AS community_engaged_count,
-        SUM(CASE WHEN engagement_15d < 3 THEN 1 ELSE 0 END) AS community_gap_count,
-        ROUND(SUM(CASE WHEN engagement_15d < 3 THEN 1 ELSE 0 END)::numeric
-              / NULLIF(COUNT(*), 0) * 100, 1) AS community_gap_pct,
+        /* 2. Community Engagement */
+        SUM(CASE WHEN engagement_15d >= 3 THEN 1 ELSE 0 END) AS community_engaged,
+        SUM(CASE WHEN engagement_15d < 3 THEN 1 ELSE 0 END) AS community_not_engaged,
+        ROUND(SUM(CASE WHEN engagement_15d >= 3 THEN 1 ELSE 0 END)::numeric
+              / NULLIF(COUNT(*), 0) * 100, 1) AS community_engagement_rate,
 
-        /* 3. At-Risk VIP Count */
-        SUM(CASE WHEN tier = 'VIP' AND NOT ai_activated THEN 1 ELSE 0 END) AS at_risk_vip_count,
-        SUM(CASE WHEN tier = 'VIP' THEN 1 ELSE 0 END) AS total_vip_count,
+        /* 3. At-Risk VIPs */
+        SUM(CASE WHEN tier = 'VIP' AND NOT ai_activated THEN 1 ELSE 0 END) AS at_risk_vip,
+        SUM(CASE WHEN tier = 'VIP' THEN 1 ELSE 0 END) AS total_vip,
 
-        /* 4. Fully Activated Rate (both signals) */
-        SUM(CASE WHEN ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END) AS fully_activated_count,
+        /* 4. Fully Activated (both signals) */
+        SUM(CASE WHEN ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END) AS fully_activated,
         ROUND(SUM(CASE WHEN ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END)::numeric
               / NULLIF(COUNT(*), 0) * 100, 1) AS fully_activated_rate,
 
-        /* 5. ACE/Recharge fully activated rate */
+        /* 5. ACE/Recharge fully activated */
         SUM(CASE WHEN billing_source IN ('ACE','Recharge')
                   AND ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END) AS ace_rech_fully_activated,
         SUM(CASE WHEN billing_source IN ('ACE','Recharge') THEN 1 ELSE 0 END) AS ace_rech_total,
@@ -126,35 +145,36 @@ export async function GET(req: NextRequest) {
           SUM(CASE WHEN billing_source IN ('ACE','Recharge')
                     AND ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END)::numeric
           / NULLIF(SUM(CASE WHEN billing_source IN ('ACE','Recharge') THEN 1 ELSE 0 END), 0) * 100, 1
-        ) AS ace_rech_fully_activated_rate,
+        ) AS ace_rech_fully_activated_rate
 
-        /* Churn context */
-        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS total_churned,
-        ROUND(SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)::numeric
-              / NULLIF(COUNT(*), 0) * 100, 1) AS churn_rate
       FROM with_all
+      GROUP BY period_label, period_key
+      ORDER BY period_key
     `);
 
-    const row = result.rows[0];
+    const rows = result.rows.map((r) => ({
+      period: r.period_label,
+      period_key: r.period_key,
+      acquired: Number(r.acquired),
+      churned: Number(r.churned),
+      ai_activated: Number(r.ai_activated),
+      ai_not_activated: Number(r.ai_not_activated),
+      ai_activation_rate: Number(r.ai_activation_rate) || 0,
+      community_engaged: Number(r.community_engaged),
+      community_not_engaged: Number(r.community_not_engaged),
+      community_engagement_rate: Number(r.community_engagement_rate) || 0,
+      at_risk_vip: Number(r.at_risk_vip),
+      total_vip: Number(r.total_vip),
+      fully_activated: Number(r.fully_activated),
+      fully_activated_rate: Number(r.fully_activated_rate) || 0,
+      ace_rech_fully_activated: Number(r.ace_rech_fully_activated),
+      ace_rech_total: Number(r.ace_rech_total),
+      ace_rech_fully_activated_rate:
+        Number(r.ace_rech_fully_activated_rate) || 0,
+    }));
 
     return NextResponse.json(
-      {
-        total_acquired: Number(row.total_acquired),
-        ai_activation_rate: Number(row.ai_activation_rate) || 0,
-        ai_activated_count: Number(row.ai_activated_count),
-        community_engaged_count: Number(row.community_engaged_count),
-        community_gap_count: Number(row.community_gap_count),
-        community_gap_pct: Number(row.community_gap_pct) || 0,
-        at_risk_vip_count: Number(row.at_risk_vip_count),
-        total_vip_count: Number(row.total_vip_count),
-        fully_activated_rate: Number(row.fully_activated_rate) || 0,
-        fully_activated_count: Number(row.fully_activated_count),
-        ace_rech_fully_activated_rate: Number(row.ace_rech_fully_activated_rate) || 0,
-        ace_rech_fully_activated: Number(row.ace_rech_fully_activated),
-        ace_rech_total: Number(row.ace_rech_total),
-        total_churned: Number(row.total_churned),
-        churn_rate: Number(row.churn_rate) || 0,
-      },
+      { rows },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
