@@ -184,11 +184,11 @@ export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsPro
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
               <Tooltip content={<ActivationTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="ai_activated" name="Activated" stackId="a" fill="var(--chart-2)" shape={<GradientBar />}>
-                <LabelList dataKey="ai_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="ai_activated" name="Activated"fill="var(--chart-2)" shape={<GradientBar />}>
+                <LabelList dataKey="ai_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated" stackId="a" fill={NOT_ACTIVATED_COLOR} radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="ai_not_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated"fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
+                <LabelList dataKey="ai_not_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="ai_activation_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
                 <LabelList dataKey="ai_activation_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
@@ -240,11 +240,11 @@ export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsPro
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
               <Tooltip content={<ActivationTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="community_engaged" name="Engaged 3+" stackId="a" fill="var(--chart-1)" shape={<GradientBar />}>
-                <LabelList dataKey="community_engaged" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="community_engaged" name="Engaged 3+"fill="var(--chart-1)" shape={<GradientBar />}>
+                <LabelList dataKey="community_engaged" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="community_not_engaged" name="Not Engaged" stackId="a" fill={NOT_ACTIVATED_COLOR} radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="community_not_engaged" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="community_not_engaged" name="Not Engaged"fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
+                <LabelList dataKey="community_not_engaged" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="community_engagement_rate" name="Engagement Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
                 <LabelList dataKey="community_engagement_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
@@ -350,11 +350,11 @@ export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsPro
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
               <Tooltip content={<ActivationTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="ace_rech_fully_activated" name="Fully Activated" stackId="a" fill="var(--chart-5)" shape={<GradientBar />}>
-                <LabelList dataKey="ace_rech_fully_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="ace_rech_fully_activated" name="Fully Activated"fill="var(--chart-5)" shape={<GradientBar />}>
+                <LabelList dataKey="ace_rech_fully_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="ace_rech_not_activated" name="Not Fully Activated" stackId="a" fill={NOT_ACTIVATED_COLOR} radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="ace_rech_not_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="ace_rech_not_activated" name="Not Fully Activated"fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
+                <LabelList dataKey="ace_rech_not_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="ace_rech_fully_activated_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
                 <LabelList dataKey="ace_rech_fully_activated_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
