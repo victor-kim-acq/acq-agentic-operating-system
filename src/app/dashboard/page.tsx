@@ -11,7 +11,6 @@ import {
   RevenueChurnRow, NewDealsRow, SoldCollectedChartRow, MemberCohortRow,
 } from './types';
 import { today, sixWeeksAgo } from './helpers';
-import type { ActivationRow } from './ActivationKPIs';
 
 import KPISummary from './KPISummary';
 import ActivationKPIs from './ActivationKPIs';
@@ -38,8 +37,6 @@ export default function DashboardPage() {
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
   const [memberCohortRows, setMemberCohortRows] = useState<MemberCohortRow[]>([]);
-  const [activationView, setActivationView] = useState<ChartView>('mom');
-  const [activationRows, setActivationRows] = useState<ActivationRow[]>([]);
 
   const [detailModal, setDetailModal] = useState<{ title: string; panel: string } | null>(null);
 
@@ -82,31 +79,6 @@ export default function DashboardPage() {
       setSoldCollData(rows.map((r: any) => ({ period: r.period, closed_mrr: Number(r.closed_mrr) || 0, collected_mrr: Number(r.collected_mrr) || 0, cancelled_mrr: Number(r.cancelled_mrr) || 0 })))
     );
   }, [soldCollView, startDate, endDate, fetchChart]);
-
-  useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    fetchChart('activation-kpis', activationView, startDate, endDate).then((rows: any[]) =>
-      setActivationRows(rows.map((r: any) => ({
-        ...r,
-        acquired: Number(r.acquired) || 0,
-        churned: Number(r.churned) || 0,
-        ai_activated: Number(r.ai_activated) || 0,
-        ai_not_activated: Number(r.ai_not_activated) || 0,
-        ai_activation_rate: Number(r.ai_activation_rate) || 0,
-        community_engaged: Number(r.community_engaged) || 0,
-        community_not_engaged: Number(r.community_not_engaged) || 0,
-        community_engagement_rate: Number(r.community_engagement_rate) || 0,
-        at_risk_vip: Number(r.at_risk_vip) || 0,
-        total_vip: Number(r.total_vip) || 0,
-        fully_activated: Number(r.fully_activated) || 0,
-        fully_activated_rate: Number(r.fully_activated_rate) || 0,
-        ace_rech_fully_activated: Number(r.ace_rech_fully_activated) || 0,
-        ace_rech_total: Number(r.ace_rech_total) || 0,
-        ace_rech_fully_activated_rate: Number(r.ace_rech_fully_activated_rate) || 0,
-        ace_rech_not_activated: (Number(r.ace_rech_total) || 0) - (Number(r.ace_rech_fully_activated) || 0),
-      })))
-    );
-  }, [activationView, startDate, endDate, fetchChart]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -180,7 +152,7 @@ export default function DashboardPage() {
 
         <KPISummary summary={summary} loading={loading} />
 
-        <ActivationKPIs rows={activationRows} view={activationView} onViewChange={setActivationView} />
+        <ActivationKPIs startDate={startDate} endDate={endDate} />
 
         {!loading || summary ? (
           <>

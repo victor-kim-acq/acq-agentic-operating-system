@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, LabelList,
@@ -9,7 +9,7 @@ import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import GradientBar from '@/components/ui/GradientBar';
 import ViewToggle, { ChartView } from '@/components/ui/ViewToggle';
-import { pctLabel, ChartTooltip, formatPeriodLabel } from './helpers';
+import { pctLabel } from './helpers';
 
 export interface ActivationRow {
   period: string;
@@ -29,6 +29,7 @@ export interface ActivationRow {
   ace_rech_fully_activated: number;
   ace_rech_total: number;
   ace_rech_fully_activated_rate: number;
+  ace_rech_not_activated: number;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,33 +38,96 @@ const countLabel: any = (v: unknown) => {
   return n > 0 ? n.toLocaleString() : '';
 };
 
-interface ActivationKPIsProps {
-  rows: ActivationRow[];
-  view: ChartView;
-  onViewChange: (v: ChartView) => void;
+/** Format week label as M/D */
+function formatWeekLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
 }
 
 const CHART_HEIGHT = 380;
+const NOT_ACTIVATED_COLOR = '#f59e0b'; // amber-500
 
 const thClass = 'text-left text-xs font-medium uppercase tracking-wider pb-2 border-b';
 const tdClass = 'py-2 border-b';
 const thStyle = { color: 'var(--neutral-400)', borderColor: 'var(--neutral-200)' };
 const tdStyle = { borderColor: 'var(--neutral-100)' };
 
-export default function ActivationKPIs({ rows, view, onViewChange }: ActivationKPIsProps) {
+interface ActivationKPIsProps {
+  startDate: string;
+  endDate: string;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseRows(raw: any[]): ActivationRow[] {
+  return raw.map((r) => ({
+    ...r,
+    acquired: Number(r.acquired) || 0,
+    churned: Number(r.churned) || 0,
+    ai_activated: Number(r.ai_activated) || 0,
+    ai_not_activated: Number(r.ai_not_activated) || 0,
+    ai_activation_rate: Number(r.ai_activation_rate) || 0,
+    community_engaged: Number(r.community_engaged) || 0,
+    community_not_engaged: Number(r.community_not_engaged) || 0,
+    community_engagement_rate: Number(r.community_engagement_rate) || 0,
+    at_risk_vip: Number(r.at_risk_vip) || 0,
+    total_vip: Number(r.total_vip) || 0,
+    fully_activated: Number(r.fully_activated) || 0,
+    fully_activated_rate: Number(r.fully_activated_rate) || 0,
+    ace_rech_fully_activated: Number(r.ace_rech_fully_activated) || 0,
+    ace_rech_total: Number(r.ace_rech_total) || 0,
+    ace_rech_fully_activated_rate: Number(r.ace_rech_fully_activated_rate) || 0,
+    ace_rech_not_activated: (Number(r.ace_rech_total) || 0) - (Number(r.ace_rech_fully_activated) || 0),
+  }));
+}
+
+function useActivationData(view: ChartView, startDate: string, endDate: string) {
+  const [rows, setRows] = useState<ActivationRow[]>([]);
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(
+        `/api/dashboard/activation-kpis?view=${view}&startDate=${startDate}&endDate=${endDate}&t=${Date.now()}`
+      );
+      const data = await res.json();
+      setRows(parseRows(data.rows ?? []));
+    } catch (err) {
+      console.error('Failed to fetch activation-kpis:', err);
+    }
+  }, [view, startDate, endDate]);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+  return rows;
+}
+
+function prepareData(rows: ActivationRow[], view: ChartView) {
+  return rows.map((r) => ({
+    ...r,
+    label: view === 'wow' ? formatWeekLabel(r.period_key ?? r.period) : r.period,
+  }));
+}
+
+export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsProps) {
+  const [aiView, setAiView] = useState<ChartView>('mom');
+  const [commView, setCommView] = useState<ChartView>('mom');
+  const [vipView, setVipView] = useState<ChartView>('mom');
+  const [aceView, setAceView] = useState<ChartView>('mom');
+
   const [aiTable, setAiTable] = useState(false);
   const [commTable, setCommTable] = useState(false);
   const [vipTable, setVipTable] = useState(false);
   const [aceTable, setAceTable] = useState(false);
 
-  const data = rows.map((r) => ({
-    ...r,
-    label: view === 'wow' ? formatPeriodLabel(r.period_key ?? r.period, 'wow') : r.period,
-  }));
+  const aiRows = useActivationData(aiView, startDate, endDate);
+  const commRows = useActivationData(commView, startDate, endDate);
+  const vipRows = useActivationData(vipView, startDate, endDate);
+  const aceRows = useActivationData(aceView, startDate, endDate);
 
-  const loading = rows.length === 0;
+  const aiData = prepareData(aiRows, aiView);
+  const commData = prepareData(commRows, commView);
+  const vipData = prepareData(vipRows, vipView);
+  const aceData = prepareData(aceRows, aceView);
 
-  const chartActions = (showTable: boolean, toggleTable: () => void) => (
+  const actions = (showTable: boolean, toggleTable: () => void, view: ChartView, onViewChange: (v: ChartView) => void) => (
     <>
       <button
         onClick={toggleTable}
@@ -83,8 +147,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
         title="ACQ AI Activation Rate"
         subtitle="Members with 2+ active days in first 7 days"
         height={CHART_HEIGHT}
-        loading={loading}
-        actions={chartActions(aiTable, () => setAiTable(!aiTable))}
+        loading={aiData.length === 0}
+        actions={actions(aiTable, () => setAiTable(!aiTable), aiView, setAiView)}
       >
         {aiTable ? (
           <div className="overflow-x-auto">
@@ -99,8 +163,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
                 </tr>
               </thead>
               <tbody>
-                {data.map((r) => (
-                  <tr key={r.period} className="hover:bg-[var(--neutral-50)]">
+                {aiData.map((r) => (
+                  <tr key={r.period_key} className="hover:bg-[var(--neutral-50)]">
                     <td className={tdClass} style={tdStyle}>{r.label}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.acquired}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.ai_activated}</td>
@@ -113,7 +177,7 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-            <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+            <ComposedChart data={aiData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
@@ -123,8 +187,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
               <Bar yAxisId="left" dataKey="ai_activated" name="Activated" stackId="a" fill="var(--chart-2)" shape={<GradientBar />}>
                 <LabelList dataKey="ai_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated" stackId="a" fill="var(--neutral-200)" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="ai_not_activated" position="inside" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated" stackId="a" fill={NOT_ACTIVATED_COLOR} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="ai_not_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="ai_activation_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
                 <LabelList dataKey="ai_activation_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
@@ -139,8 +203,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
         title="Community Engagement Rate"
         subtitle="Members with 3+ posts/comments in first 15 days"
         height={CHART_HEIGHT}
-        loading={loading}
-        actions={chartActions(commTable, () => setCommTable(!commTable))}
+        loading={commData.length === 0}
+        actions={actions(commTable, () => setCommTable(!commTable), commView, setCommView)}
       >
         {commTable ? (
           <div className="overflow-x-auto">
@@ -155,8 +219,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
                 </tr>
               </thead>
               <tbody>
-                {data.map((r) => (
-                  <tr key={r.period} className="hover:bg-[var(--neutral-50)]">
+                {commData.map((r) => (
+                  <tr key={r.period_key} className="hover:bg-[var(--neutral-50)]">
                     <td className={tdClass} style={tdStyle}>{r.label}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.acquired}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.community_engaged}</td>
@@ -169,7 +233,7 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-            <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+            <ComposedChart data={commData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
@@ -179,8 +243,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
               <Bar yAxisId="left" dataKey="community_engaged" name="Engaged 3+" stackId="a" fill="var(--chart-1)" shape={<GradientBar />}>
                 <LabelList dataKey="community_engaged" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="community_not_engaged" name="Not Engaged" stackId="a" fill="var(--neutral-200)" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="community_not_engaged" position="inside" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="community_not_engaged" name="Not Engaged" stackId="a" fill={NOT_ACTIVATED_COLOR} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="community_not_engaged" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="community_engagement_rate" name="Engagement Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
                 <LabelList dataKey="community_engagement_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
@@ -195,8 +259,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
         title="At-Risk VIPs"
         subtitle="VIP members not activated on ACQ AI"
         height={CHART_HEIGHT}
-        loading={loading}
-        actions={chartActions(vipTable, () => setVipTable(!vipTable))}
+        loading={vipData.length === 0}
+        actions={actions(vipTable, () => setVipTable(!vipTable), vipView, setVipView)}
       >
         {vipTable ? (
           <div className="overflow-x-auto">
@@ -211,8 +275,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
                 </tr>
               </thead>
               <tbody>
-                {data.map((r) => (
-                  <tr key={r.period} className="hover:bg-[var(--neutral-50)]">
+                {vipData.map((r) => (
+                  <tr key={r.period_key} className="hover:bg-[var(--neutral-50)]">
                     <td className={tdClass} style={tdStyle}>{r.label}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.total_vip}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.at_risk_vip}</td>
@@ -225,14 +289,14 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-            <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+            <ComposedChart data={vipData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
               <Tooltip content={<ActivationTooltip />} />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="at_risk_vip" name="At-Risk VIPs" fill="var(--chart-4)" shape={<GradientBar />}>
+              <Bar yAxisId="left" dataKey="at_risk_vip" name="At-Risk VIPs" fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
                 <LabelList dataKey="at_risk_vip" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
               </Bar>
               <Bar yAxisId="left" dataKey="fully_activated" name="Fully Activated" fill="var(--chart-2)" shape={<GradientBar />}>
@@ -251,8 +315,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
         title="ACE/Recharge Activation"
         subtitle="Fully activated (AI + community) for ACE & Recharge sources"
         height={CHART_HEIGHT}
-        loading={loading}
-        actions={chartActions(aceTable, () => setAceTable(!aceTable))}
+        loading={aceData.length === 0}
+        actions={actions(aceTable, () => setAceTable(!aceTable), aceView, setAceView)}
       >
         {aceTable ? (
           <div className="overflow-x-auto">
@@ -266,8 +330,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
                 </tr>
               </thead>
               <tbody>
-                {data.map((r) => (
-                  <tr key={r.period} className="hover:bg-[var(--neutral-50)]">
+                {aceData.map((r) => (
+                  <tr key={r.period_key} className="hover:bg-[var(--neutral-50)]">
                     <td className={tdClass} style={tdStyle}>{r.label}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.ace_rech_total}</td>
                     <td className={`${tdClass} text-right`} style={tdStyle}>{r.ace_rech_fully_activated}</td>
@@ -279,7 +343,7 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-            <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+            <ComposedChart data={aceData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
               <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
@@ -289,8 +353,8 @@ export default function ActivationKPIs({ rows, view, onViewChange }: ActivationK
               <Bar yAxisId="left" dataKey="ace_rech_fully_activated" name="Fully Activated" stackId="a" fill="var(--chart-5)" shape={<GradientBar />}>
                 <LabelList dataKey="ace_rech_fully_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
               </Bar>
-              <Bar yAxisId="left" dataKey="ace_rech_not_activated" name="Not Fully Activated" stackId="a" fill="var(--neutral-200)" radius={[4, 4, 0, 0]}>
-                <LabelList dataKey="ace_rech_not_activated" position="inside" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+              <Bar yAxisId="left" dataKey="ace_rech_not_activated" name="Not Fully Activated" stackId="a" fill={NOT_ACTIVATED_COLOR} radius={[4, 4, 0, 0]}>
+                <LabelList dataKey="ace_rech_not_activated" position="inside" fontSize={10} fill="var(--neutral-700)" formatter={countLabel} />
               </Bar>
               <Line yAxisId="right" type="monotone" dataKey="ace_rech_fully_activated_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
                 <LabelList dataKey="ace_rech_fully_activated_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
