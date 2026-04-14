@@ -137,15 +137,14 @@ export async function GET(req: NextRequest) {
         ROUND(SUM(CASE WHEN ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END)::numeric
               / NULLIF(COUNT(*), 0) * 100, 1) AS fully_activated_rate,
 
-        /* 5. ACE/Recharge fully activated */
-        SUM(CASE WHEN billing_source IN ('ACE','Recharge')
-                  AND ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END) AS ace_rech_fully_activated,
+        /* 5. ACE/Recharge AI activation (AI only, not both signals) */
+        SUM(CASE WHEN billing_source IN ('ACE','Recharge') AND ai_activated THEN 1 ELSE 0 END) AS ace_rech_ai_activated,
+        SUM(CASE WHEN billing_source IN ('ACE','Recharge') AND NOT ai_activated THEN 1 ELSE 0 END) AS ace_rech_ai_not_activated,
         SUM(CASE WHEN billing_source IN ('ACE','Recharge') THEN 1 ELSE 0 END) AS ace_rech_total,
         ROUND(
-          SUM(CASE WHEN billing_source IN ('ACE','Recharge')
-                    AND ai_activated AND engagement_15d >= 3 THEN 1 ELSE 0 END)::numeric
+          SUM(CASE WHEN billing_source IN ('ACE','Recharge') AND ai_activated THEN 1 ELSE 0 END)::numeric
           / NULLIF(SUM(CASE WHEN billing_source IN ('ACE','Recharge') THEN 1 ELSE 0 END), 0) * 100, 1
-        ) AS ace_rech_fully_activated_rate
+        ) AS ace_rech_ai_activation_rate
 
       FROM with_all
       GROUP BY period_label, period_key
@@ -167,10 +166,10 @@ export async function GET(req: NextRequest) {
       total_vip: Number(r.total_vip),
       fully_activated: Number(r.fully_activated),
       fully_activated_rate: Number(r.fully_activated_rate) || 0,
-      ace_rech_fully_activated: Number(r.ace_rech_fully_activated),
+      ace_rech_ai_activated: Number(r.ace_rech_ai_activated),
+      ace_rech_ai_not_activated: Number(r.ace_rech_ai_not_activated),
       ace_rech_total: Number(r.ace_rech_total),
-      ace_rech_fully_activated_rate:
-        Number(r.ace_rech_fully_activated_rate) || 0,
+      ace_rech_ai_activation_rate: Number(r.ace_rech_ai_activation_rate) || 0,
     }));
 
     return NextResponse.json(
