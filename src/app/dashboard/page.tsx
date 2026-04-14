@@ -10,9 +10,11 @@ import {
   Summary, TierRow, SourceRow, MoMRow, SoldRow, ChurnRow,
   RevenueChurnRow, NewDealsRow, SoldCollectedChartRow, MemberCohortRow,
 } from './types';
-import { today, firstOfMonth } from './helpers';
+import { today, sixWeeksAgo } from './helpers';
+import type { ActivationData } from './ActivationKPIs';
 
 import KPISummary from './KPISummary';
+import ActivationKPIs from './ActivationKPIs';
 import TopCharts from './TopCharts';
 import RevenueByTier from './RevenueByTier';
 import RevenueBySource from './RevenueBySource';
@@ -26,7 +28,7 @@ import DetailModal from './DetailModal';
 export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState(firstOfMonth);
+  const [startDate, setStartDate] = useState(sixWeeksAgo);
   const [endDate, setEndDate] = useState(today);
 
   const [summary, setSummary] = useState<Summary | null>(null);
@@ -36,6 +38,7 @@ export default function DashboardPage() {
   const [soldRows, setSoldRows] = useState<SoldRow[]>([]);
   const [churnRows, setChurnRows] = useState<ChurnRow[]>([]);
   const [memberCohortRows, setMemberCohortRows] = useState<MemberCohortRow[]>([]);
+  const [activationData, setActivationData] = useState<ActivationData | null>(null);
 
   const [detailModal, setDetailModal] = useState<{ title: string; panel: string } | null>(null);
 
@@ -84,7 +87,7 @@ export default function DashboardPage() {
     try {
       const t = Date.now();
       const dp = `&startDate=${startDate}&endDate=${endDate}`;
-      const [summaryRes, tierRes, sourceRes, momRes, soldRes, churnRes, memberCohortRes] = await Promise.all([
+      const [summaryRes, tierRes, sourceRes, momRes, soldRes, churnRes, memberCohortRes, activationRes] = await Promise.all([
         fetch(`/api/dashboard/summary?t=${t}${dp}`),
         fetch(`/api/dashboard/revenue-by-tier?t=${t}${dp}`),
         fetch(`/api/dashboard/revenue-by-source?t=${t}${dp}`),
@@ -92,9 +95,10 @@ export default function DashboardPage() {
         fetch(`/api/dashboard/sold-vs-collected?t=${t}${dp}`),
         fetch(`/api/dashboard/churn-cohort?t=${t}${dp}`),
         fetch(`/api/dashboard/member-cohort?t=${t}`),
+        fetch(`/api/dashboard/activation-kpis?t=${t}${dp}`),
       ]);
-      const [summaryData, tierData, sourceData, momData, soldData, churnData, memberCohortData] = await Promise.all([
-        summaryRes.json(), tierRes.json(), sourceRes.json(), momRes.json(), soldRes.json(), churnRes.json(), memberCohortRes.json(),
+      const [summaryData, tierData, sourceData, momData, soldData, churnData, memberCohortData, activationRaw] = await Promise.all([
+        summaryRes.json(), tierRes.json(), sourceRes.json(), momRes.json(), soldRes.json(), churnRes.json(), memberCohortRes.json(), activationRes.json(),
       ]);
 
       setSummary({
@@ -114,6 +118,7 @@ export default function DashboardPage() {
       setChurnRows((churnData.rows ?? []).map((r: any) => ({ ...r, active_mrr: Number(r.active_mrr), cancellation_mrr: Number(r.cancellation_mrr), churn_rate_pct: Number(r.churn_rate_pct) })));
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setMemberCohortRows((memberCohortData.rows ?? []).map((r: any) => ({ ...r, acquired: Number(r.acquired), churned: Number(r.churned), churn_rate_pct: Number(r.churn_rate_pct) })));
+      if (!activationRaw.error) setActivationData(activationRaw);
       setLastUpdated(new Date().toLocaleTimeString());
     } catch (err) {
       console.error('Dashboard fetch error:', err);
@@ -144,12 +149,14 @@ export default function DashboardPage() {
           endDate={endDate}
           onStartChange={setStartDate}
           onEndChange={setEndDate}
-          onReset={() => { setStartDate(firstOfMonth()); setEndDate(today()); }}
+          onReset={() => { setStartDate(sixWeeksAgo()); setEndDate(today()); }}
         />
 
         <ChatPanel />
 
         <KPISummary summary={summary} loading={loading} />
+
+        <ActivationKPIs data={activationData} loading={loading} />
 
         {!loading || summary ? (
           <>

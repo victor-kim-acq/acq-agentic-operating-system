@@ -28,6 +28,15 @@ export const firstOfMonth = () => {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
 };
+export const sixWeeksAgo = () => {
+  const d = new Date();
+  d.setDate(d.getDate() - 42);
+  // Snap to Monday of that week
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  return d.toISOString().slice(0, 10);
+};
 
 const sourceLabel: Record<string, string> = {
   recharge: 'Recharge',
