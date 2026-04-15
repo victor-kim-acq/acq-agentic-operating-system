@@ -169,6 +169,13 @@ interface MemberTableProps {
   signalKey: 'ai_activated' | 'community_engaged' | 'fully_activated';
 }
 
+function daysSince(dateStr: string): number {
+  const joined = new Date(dateStr + 'T00:00:00Z');
+  const now = new Date();
+  const diffMs = now.getTime() - joined.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24)));
+}
+
 function MemberTable({ members, signalLabel, signalKey }: MemberTableProps) {
   if (members.length === 0) {
     return (
@@ -184,6 +191,7 @@ function MemberTable({ members, signalLabel, signalKey }: MemberTableProps) {
           <tr>
             <th className={thClass} style={thStyle}>Email</th>
             <th className={thClass} style={thStyle}>Joined</th>
+            <th className={`${thClass} text-right`} style={thStyle}>Days since</th>
             <th className={thClass} style={thStyle}>Tier</th>
             <th className={`${thClass} text-right`} style={thStyle}>MRR</th>
             <th className={`${thClass} text-center`} style={thStyle}>{signalLabel}</th>
@@ -199,6 +207,7 @@ function MemberTable({ members, signalLabel, signalKey }: MemberTableProps) {
                 )}
               </td>
               <td className={tdClass} style={tdStyle}>{m.joined_at}</td>
+              <td className={`${tdClass} text-right`} style={{ ...tdStyle, color: 'var(--neutral-500)' }}>{daysSince(m.joined_at)}d</td>
               <td className={tdClass} style={tdStyle}>{m.tier}</td>
               <td className={`${tdClass} text-right`} style={tdStyle}>{m.mrr > 0 ? fmt(m.mrr) : '—'}</td>
               <td className={`${tdClass} text-center`} style={tdStyle}>
