@@ -184,33 +184,52 @@ function MemberTable({ members, signalLabel, signalKey }: MemberTableProps) {
       </div>
     );
   }
+  const thBase: React.CSSProperties = {
+    fontSize: 11,
+    fontWeight: 500,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+    color: 'var(--neutral-400)',
+    borderBottom: '1px solid var(--neutral-200)',
+    padding: '8px 12px',
+    whiteSpace: 'nowrap',
+    background: 'var(--card-bg)',
+    position: 'sticky',
+    top: 0,
+  };
+  const tdBase: React.CSSProperties = {
+    padding: '8px 12px',
+    borderBottom: '1px solid var(--neutral-100)',
+    fontSize: 13,
+    whiteSpace: 'nowrap',
+  };
   return (
-    <div className="overflow-x-auto" style={{ maxHeight: 400 }}>
-      <table className="w-full text-sm">
+    <div className="overflow-auto" style={{ maxHeight: 400, border: '1px solid var(--neutral-100)', borderRadius: 6 }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr>
-            <th className={thClass} style={thStyle}>Email</th>
-            <th className={thClass} style={thStyle}>Joined</th>
-            <th className={`${thClass} text-right`} style={thStyle}>Days since</th>
-            <th className={thClass} style={thStyle}>Tier</th>
-            <th className={`${thClass} text-right`} style={thStyle}>MRR</th>
-            <th className={`${thClass} text-center`} style={thStyle}>{signalLabel}</th>
+            <th style={{ ...thBase, textAlign: 'left', minWidth: 220 }}>Email</th>
+            <th style={{ ...thBase, textAlign: 'left' }}>Joined</th>
+            <th style={{ ...thBase, textAlign: 'right' }}>Days since</th>
+            <th style={{ ...thBase, textAlign: 'left' }}>Tier</th>
+            <th style={{ ...thBase, textAlign: 'right' }}>MRR</th>
+            <th style={{ ...thBase, textAlign: 'center' }}>{signalLabel}</th>
           </tr>
         </thead>
         <tbody>
           {members.map((m) => (
             <tr key={`${m.email}-${m.status}-${m.joined_at}`} className="hover:bg-[var(--neutral-50)]">
-              <td className={tdClass} style={{ ...tdStyle, color: 'var(--neutral-700)' }}>
+              <td style={{ ...tdBase, textAlign: 'left', color: 'var(--neutral-700)' }}>
                 {m.email}
                 {m.status === 'cancelled' && (
                   <span style={{ fontSize: 10, marginLeft: 6, color: 'var(--color-danger)' }}>churned</span>
                 )}
               </td>
-              <td className={tdClass} style={tdStyle}>{m.joined_at}</td>
-              <td className={`${tdClass} text-right`} style={{ ...tdStyle, color: 'var(--neutral-500)' }}>{daysSince(m.joined_at)}d</td>
-              <td className={tdClass} style={tdStyle}>{m.tier}</td>
-              <td className={`${tdClass} text-right`} style={tdStyle}>{m.mrr > 0 ? fmt(m.mrr) : '—'}</td>
-              <td className={`${tdClass} text-center`} style={tdStyle}>
+              <td style={{ ...tdBase, textAlign: 'left' }}>{m.joined_at}</td>
+              <td style={{ ...tdBase, textAlign: 'right', color: 'var(--neutral-500)' }}>{daysSince(m.joined_at)}d</td>
+              <td style={{ ...tdBase, textAlign: 'left' }}>{m.tier}</td>
+              <td style={{ ...tdBase, textAlign: 'right' }}>{m.mrr > 0 ? fmt(m.mrr) : '—'}</td>
+              <td style={{ ...tdBase, textAlign: 'center' }}>
                 <YesNo yes={m[signalKey]} />
               </td>
             </tr>
