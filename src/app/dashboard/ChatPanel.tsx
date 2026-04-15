@@ -23,6 +23,13 @@ function formatCellValue(key: string, val: unknown): string {
     }).format(new Date(val));
   }
 
+  if (typeof val === 'string' && /^-?\d+(\.\d+)?$/.test(val.trim())) {
+    const num = parseFloat(val);
+    const formatted = new Intl.NumberFormat('en-US').format(num);
+    const isMoney = /mrr|revenue|amount|price/i.test(key);
+    return isMoney ? `$${formatted}` : formatted;
+  }
+
   if (typeof val === 'number') {
     const formatted = new Intl.NumberFormat('en-US').format(val);
     const isMoney = /mrr|revenue|amount|price/i.test(key);
