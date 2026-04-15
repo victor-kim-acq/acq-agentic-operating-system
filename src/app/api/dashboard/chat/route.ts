@@ -41,13 +41,16 @@ CASE WHEN LOWER(currency) = 'usd' THEN mrr ELSE CASE WHEN tier = 'Standard' THEN
 export async function POST(req: NextRequest) {
   let generatedSql: string | undefined;
   try {
-    const { question } = await req.json();
+    const { question, history: rawHistory } = await req.json();
     if (!question || typeof question !== "string") {
       return NextResponse.json(
         { error: "Question is required" },
         { status: 400 }
       );
     }
+
+    const history: Array<{ question: string; answer: string | null }> =
+      Array.isArray(rawHistory) ? rawHistory : [];
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -73,7 +76,16 @@ export async function POST(req: NextRequest) {
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
         system: systemPrompt,
-        messages: [{ role: "user", content: question }],
+        messages: [
+          ...history.flatMap((h) => [
+            { role: "user", content: h.question },
+            {
+              role: "assistant",
+              content: "Understood. [answered with SQL query]",
+            },
+          ]),
+          { role: "user", content: question },
+        ],
       }),
     });
 
@@ -147,6 +159,13 @@ export async function POST(req: NextRequest) {
         model: "claude-sonnet-4-20250514",
         max_tokens: 512,
         messages: [
+          ...history.flatMap((h) => [
+            { role: "user", content: h.question },
+            {
+              role: "assistant",
+              content: h.answer ?? "(no summary available)",
+            },
+          ]),
           {
             role: "user",
             content: `The user asked: "${question}"\n\nThe SQL query returned ${result.rows.length} rows:\n${JSON.stringify(result.rows.slice(0, 20), null, 2)}\n\nGive a 1-2 sentence insight about what this data means — the pattern, the takeaway, or the "so what." Do NOT restate individual row values — the user already sees them in a table. Focus on trends, comparisons, outliers, or what stands out. Use dollar formatting ($XX,XXX) only if referencing a total or aggregate not already in the table. If the data is empty, say so clearly.`,

@@ -128,6 +128,10 @@ export default function ChatPanel() {
   const submitQuestion = useCallback(async (question: string) => {
     const id = crypto.randomUUID();
     const msg: ChatMessage = { id, question, summary: null, sql: null, rows: null, row_count: 0, error: null, loading: true };
+    const history = chatMessages.slice(-8).map((m) => ({
+      question: m.question,
+      answer: m.summary || null,
+    }));
     setChatMessages((prev) => [...prev, msg]);
     setChatInput('');
 
@@ -135,7 +139,7 @@ export default function ChatPanel() {
       const res = await fetch('/api/dashboard/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, history }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -146,7 +150,7 @@ export default function ChatPanel() {
     } catch {
       setChatMessages((prev) => prev.map((m) => m.id === id ? { ...m, loading: false, error: 'Network error' } : m));
     }
-  }, []);
+  }, [chatMessages]);
 
   return (
     <div
