@@ -13,22 +13,22 @@ const SUGGESTIONS = [
 
 function formatCellValue(key: string, val: unknown): string {
   if (val == null) return '\u2014';
-  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
-    const d = new Date(val);
-    if (!isNaN(d.getTime())) {
-      return new Intl.DateTimeFormat('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        timeZone: 'America/Los_Angeles',
-      }).format(d);
-    }
+
+  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(val)) {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'America/Los_Angeles',
+    }).format(new Date(val));
   }
+
   if (typeof val === 'number') {
     const formatted = new Intl.NumberFormat('en-US').format(val);
-    if (/mrr|revenue|amount/i.test(key)) return `$${formatted}`;
-    return formatted;
+    const isMoney = /mrr|revenue|amount|price/i.test(key);
+    return isMoney ? `$${formatted}` : formatted;
   }
+
   return String(val);
 }
 
@@ -92,8 +92,8 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
             <tbody>
               {msg.rows.slice(0, MAX_DISPLAY_ROWS).map((row, i) => (
                 <tr key={i}>
-                  {Object.entries(row).map(([key, val], j) => (
-                    <td key={j} className={tdClass} style={{ borderColor: 'var(--neutral-100)' }}>{formatCellValue(key, val)}</td>
+                  {Object.entries(row).map(([key, val]) => (
+                    <td key={key} className={tdClass} style={{ borderColor: 'var(--neutral-100)' }}>{formatCellValue(key, val)}</td>
                   ))}
                 </tr>
               ))}
