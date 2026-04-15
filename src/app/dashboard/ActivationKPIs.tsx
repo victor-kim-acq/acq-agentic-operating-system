@@ -241,11 +241,11 @@ function MemberTable({ members, signalLabel, signalKey }: MemberTableProps) {
 }
 
 export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsProps) {
-  const [aiView, setAiView] = useState<ChartView>('mom');
-  const [commView, setCommView] = useState<ChartView>('mom');
-  const [vipView, setVipView] = useState<ChartView>('mom');
-  const [aceView, setAceView] = useState<ChartView>('mom');
-  const [bothView, setBothView] = useState<ChartView>('mom');
+  const [aiView, setAiView] = useState<ChartView>('wow');
+  const [commView, setCommView] = useState<ChartView>('wow');
+  const [vipView, setVipView] = useState<ChartView>('wow');
+  const [aceView, setAceView] = useState<ChartView>('wow');
+  const [bothView, setBothView] = useState<ChartView>('wow');
 
   const [aiTable, setAiTable] = useState(false);
   const [commTable, setCommTable] = useState(false);
