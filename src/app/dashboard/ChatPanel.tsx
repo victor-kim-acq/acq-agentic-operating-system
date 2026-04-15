@@ -11,6 +11,27 @@ const SUGGESTIONS = [
   'Which billing source has the highest churn rate?',
 ];
 
+function formatCellValue(key: string, val: unknown): string {
+  if (val == null) return '\u2014';
+  if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(val)) {
+    const d = new Date(val);
+    if (!isNaN(d.getTime())) {
+      return new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'America/Los_Angeles',
+      }).format(d);
+    }
+  }
+  if (typeof val === 'number') {
+    const formatted = new Intl.NumberFormat('en-US').format(val);
+    if (/mrr|revenue|amount/i.test(key)) return `$${formatted}`;
+    return formatted;
+  }
+  return String(val);
+}
+
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   const [sqlOpen, setSqlOpen] = useState(false);
   const MAX_DISPLAY_ROWS = 20;
@@ -71,8 +92,8 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
             <tbody>
               {msg.rows.slice(0, MAX_DISPLAY_ROWS).map((row, i) => (
                 <tr key={i}>
-                  {Object.values(row).map((val, j) => (
-                    <td key={j} className={tdClass} style={{ borderColor: 'var(--neutral-100)' }}>{val == null ? '\u2014' : String(val)}</td>
+                  {Object.entries(row).map(([key, val], j) => (
+                    <td key={j} className={tdClass} style={{ borderColor: 'var(--neutral-100)' }}>{formatCellValue(key, val)}</td>
                   ))}
                 </tr>
               ))}
