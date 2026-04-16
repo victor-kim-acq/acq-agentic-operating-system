@@ -15,12 +15,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const clean = (s: string | null) =>
+      s ? s.replace(/\0/g, "") : s;
+
     let upserted = 0;
 
     for (const msg of messages) {
+      const contentText = clean(msg.content_text);
       await sql`
         INSERT INTO acq_ai_messages (message_id, chat_id, email, content_text, created_at)
-        VALUES (${msg.message_id}, ${msg.chat_id}, ${msg.email}, ${msg.content_text}, ${msg.created_at}::timestamptz)
+        VALUES (${msg.message_id}, ${msg.chat_id}, ${msg.email}, ${contentText}, ${msg.created_at}::timestamptz)
         ON CONFLICT (message_id) DO UPDATE SET
           content_text = EXCLUDED.content_text
       `;
