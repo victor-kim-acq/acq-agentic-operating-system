@@ -39,6 +39,18 @@ function formatCellValue(key: string, val: unknown): string {
   return String(val);
 }
 
+function formatColumnName(col: string): string {
+  return col
+    .split('_')
+    .map(word => {
+      if (/^(mrr|arr|id|sql|ltv|cac|url|api|ai)$/i.test(word)) {
+        return word.toUpperCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join(' ');
+}
+
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   const [sqlOpen, setSqlOpen] = useState(false);
   const MAX_DISPLAY_ROWS = 20;
@@ -92,7 +104,7 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
             <thead>
               <tr>
                 {Object.keys(msg.rows[0]).map((col) => (
-                  <th key={col} className={thClass} style={{ color: 'var(--neutral-400)', borderColor: 'var(--neutral-200)' }}>{col}</th>
+                  <th key={col} className={thClass} style={{ color: 'var(--neutral-400)', borderColor: 'var(--neutral-200)' }}>{formatColumnName(col)}</th>
                 ))}
               </tr>
             </thead>

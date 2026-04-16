@@ -168,7 +168,7 @@ export async function POST(req: NextRequest) {
           ]),
           {
             role: "user",
-            content: `The user asked: "${question}"\n\nThe SQL query returned ${result.rows.length} rows:\n${JSON.stringify(result.rows.slice(0, 20), null, 2)}\n\nGive a 1-2 sentence insight about what this data means — the pattern, the takeaway, or the "so what." Do NOT restate individual row values — the user already sees them in a table. Focus on trends, comparisons, outliers, or what stands out. Use dollar formatting ($XX,XXX) only if referencing a total or aggregate not already in the table. If the data is empty, say so clearly.`,
+            content: `The user asked: "${question}"\n\nThe SQL query returned ${result.rows.length} rows:\n${JSON.stringify(result.rows.slice(0, 20), null, 2)}\n\nGive ONE sentence (max two if genuinely needed) with the key insight — the pattern, outlier, or takeaway. Do NOT restate row values the user can see in the table. Do NOT hedge with phrases like "it's worth noting" or "this suggests." Be direct. Use dollar formatting ($XX,XXX) only for aggregates not shown in the table. If empty, say "No results."`,
           },
         ],
       }),
