@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import RetentionArtifact, { CohortResponse } from './RetentionArtifact';
+import ChatPanel from './ChatPanel';
 
 const METRIC_DEFINITIONS: { label: string; description: string }[] = [
   {
@@ -273,29 +274,8 @@ export default function RetentionAgentPage() {
           )}
         </section>
 
-        {/* Chat placeholder */}
-        <section className="rounded-2xl border p-5" style={cardStyle}>
-          <div
-            style={{
-              fontSize: 13,
-              color: 'var(--neutral-500)',
-              marginBottom: 10,
-            }}
-          >
-            Ask questions about this cohort →
-          </div>
-          <input
-            type="text"
-            disabled
-            placeholder="Chat coming soon…"
-            className="w-full px-4 py-2.5 text-sm border rounded-xl disabled:opacity-60 disabled:cursor-not-allowed"
-            style={{
-              borderColor: 'var(--neutral-200)',
-              background: 'var(--neutral-50)',
-              color: 'var(--neutral-500)',
-            }}
-          />
-        </section>
+        {/* Chat */}
+        <ChatPanel cohort={data} />
       </div>
     </main>
   );
