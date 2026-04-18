@@ -98,6 +98,7 @@ const SEGMENT_COLORS: Record<string, string> = {
 };
 
 const VISIBLE_SOURCES = ['Skool', 'ACE', 'Recharge'] as const;
+const MATRIX_SOURCES = ['Skool', 'ACE', 'Recharge', 'Unknown'] as const;
 const VISIBLE_TIERS = ['Standard', 'VIP', 'Premium'] as const;
 const SEGMENT_ORDER: Array<keyof typeof SEGMENT_COLORS> = [
   'ai_and_community',
@@ -234,16 +235,37 @@ function ThRow({ cells }: { cells: string[] }) {
   );
 }
 
+function SmallSampleFootnote() {
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        color: 'var(--neutral-400)',
+        marginTop: 8,
+        lineHeight: 1.5,
+      }}
+    >
+      † n&lt;5 — directional only.
+    </div>
+  );
+}
+
 function TableWrap({ children }: { children: React.ReactNode }) {
   return (
     <div
       style={{
         border: '1px solid var(--card-border)',
         borderRadius: 12,
-        overflow: 'hidden',
+        overflow: 'auto',
       }}
     >
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <table
+        style={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          minWidth: 560,
+        }}
+      >
         {children}
       </table>
     </div>
@@ -411,7 +433,7 @@ function ChurnTooltip({ active, payload }: any) {
 
 function HorizontalChurnChart({
   data,
-  height = 130,
+  height = 200,
   domainMax,
   yWidth = 200,
 }: {
@@ -681,6 +703,7 @@ function Signal1({
           })}
         </tbody>
       </TableWrap>
+      <SmallSampleFootnote />
     </Section>
   );
 }
@@ -762,6 +785,7 @@ function Signal2({
           })}
         </tbody>
       </TableWrap>
+      <SmallSampleFootnote />
     </Section>
   );
 }
@@ -788,7 +812,7 @@ function Signal3({ by_tier }: { by_tier: TierRow[] }) {
           label: `${r.tier} (n=${r.total})`,
         }))}
       />
-      <HorizontalChurnChart data={chartData} height={150} />
+      <HorizontalChurnChart data={chartData} height={210} />
     </Section>
   );
 }
@@ -828,16 +852,16 @@ function CombinedRetention({
           { color: SEGMENT_COLORS.neither, label: 'Neither' },
         ]}
       />
-      <HorizontalChurnChart data={chartData} height={170} />
+      <HorizontalChurnChart data={chartData} height={240} />
 
       <TableCaption>Churn % by segment × billing source</TableCaption>
       <TableWrap>
-        <ThRow cells={['Segment', ...VISIBLE_SOURCES]} />
+        <ThRow cells={['Segment', ...MATRIX_SOURCES]} />
         <tbody>
           {SEGMENT_ORDER.map((seg) => (
             <tr key={seg}>
               <LabelTd main={SEGMENT_LABELS[seg]} />
-              {VISIBLE_SOURCES.map((source) => {
+              {MATRIX_SOURCES.map((source) => {
                 const cell = source_segment_matrix.find(
                   (c) => c.source === source && c.segment === seg
                 );
@@ -856,6 +880,7 @@ function CombinedRetention({
           ))}
         </tbody>
       </TableWrap>
+      <SmallSampleFootnote />
     </Section>
   );
 }
