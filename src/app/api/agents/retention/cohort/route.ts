@@ -250,6 +250,27 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // --- Source × tier matrix (full cross-product including Unknown tier) ---
+    const source_tier_matrix: Array<{
+      source: string;
+      tier: string;
+      total: number;
+      churned: number;
+      churn_pct: number;
+    }> = [];
+    for (const source of sourceNames) {
+      for (const tier of tiers) {
+        const bucket = rows.filter(
+          (r) => r.source === source && r.tier === tier
+        );
+        source_tier_matrix.push({
+          source,
+          tier,
+          ...agg(bucket),
+        });
+      }
+    }
+
     const total_churned = rows.filter((r) => r.status === "cancelled").length;
     const meta = {
       start_date: startDate,
@@ -269,6 +290,7 @@ export async function GET(req: NextRequest) {
         by_tier,
         combined_matrix,
         source_segment_matrix,
+        source_tier_matrix,
       },
       { headers: { "Cache-Control": "no-store" } }
     );

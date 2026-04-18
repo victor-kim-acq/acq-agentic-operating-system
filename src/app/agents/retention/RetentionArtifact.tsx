@@ -72,6 +72,14 @@ export interface SourceSegmentCell {
   churn_pct: number;
 }
 
+export interface SourceTierCell {
+  source: string;
+  tier: string;
+  total: number;
+  churned: number;
+  churn_pct: number;
+}
+
 export interface CohortResponse {
   meta: CohortMeta;
   headline: CohortHeadline;
@@ -79,6 +87,7 @@ export interface CohortResponse {
   by_tier: TierRow[];
   combined_matrix: SegmentRow[];
   source_segment_matrix: SourceSegmentCell[];
+  source_tier_matrix: SourceTierCell[];
 }
 
 // ---- Constants ----
@@ -790,7 +799,13 @@ function Signal2({
   );
 }
 
-function Signal3({ by_tier }: { by_tier: TierRow[] }) {
+function Signal3({
+  by_tier,
+  source_tier_matrix,
+}: {
+  by_tier: TierRow[];
+  source_tier_matrix: SourceTierCell[];
+}) {
   const rows = VISIBLE_TIERS.map(
     (t) => by_tier.find((r) => r.tier === t) ?? null
   ).filter(Boolean) as TierRow[];
@@ -813,6 +828,46 @@ function Signal3({ by_tier }: { by_tier: TierRow[] }) {
         }))}
       />
       <HorizontalChurnChart data={chartData} height={210} />
+
+      <TableCaption>Churn % by tier × billing source</TableCaption>
+      <TableWrap>
+        <ThRow cells={['Tier', ...VISIBLE_SOURCES]} />
+        <tbody>
+          {VISIBLE_TIERS.map((tier) => (
+            <tr key={tier}>
+              <LabelTd main={tier} />
+              {VISIBLE_SOURCES.map((source) => {
+                const cell = source_tier_matrix.find(
+                  (c) => c.source === source && c.tier === tier
+                );
+                if (!cell)
+                  return (
+                    <ChurnCell key={source} pct={0} churned={0} total={0} />
+                  );
+                return (
+                  <ChurnCell
+                    key={source}
+                    pct={cell.churn_pct}
+                    churned={cell.churned}
+                    total={cell.total}
+                  />
+                );
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </TableWrap>
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--neutral-400)',
+          marginTop: 8,
+          lineHeight: 1.5,
+        }}
+      >
+        ACE has no VIP members in this cohort. Cells with n&lt;5 are
+        directional only.
+      </div>
     </Section>
   );
 }
@@ -888,7 +943,15 @@ function CombinedRetention({
 // ---- Top-level component ----
 
 export default function RetentionArtifact({ data }: { data: CohortResponse }) {
-  const { meta, headline, by_source, by_tier, combined_matrix, source_segment_matrix } = data;
+  const {
+    meta,
+    headline,
+    by_source,
+    by_tier,
+    combined_matrix,
+    source_segment_matrix,
+    source_tier_matrix,
+  } = data;
   return (
     <div>
       <PartHead>Cohort overview</PartHead>
@@ -906,7 +969,7 @@ export default function RetentionArtifact({ data }: { data: CohortResponse }) {
         combined_matrix={combined_matrix}
         source_segment_matrix={source_segment_matrix}
       />
-      <Signal3 by_tier={by_tier} />
+      <Signal3 by_tier={by_tier} source_tier_matrix={source_tier_matrix} />
 
       <PartHead>Combined retention</PartHead>
       <CombinedRetention
