@@ -177,9 +177,12 @@ export default function RetentionAgentPage() {
     fetchCohort(draftStart, draftEnd, draftLocked);
   };
 
-  const queriedDisplay = data
-    ? formatFullDate(data.meta.queried_at.slice(0, 10))
+  const snapshotDisplay = data
+    ? formatFullDate(
+        (data.meta.locked_date ?? data.meta.queried_at).slice(0, 10)
+      )
     : null;
+  const snapshotLabel = data?.meta.locked_date ? 'locked as of' : 'queried';
 
   return (
     <main className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
@@ -251,7 +254,7 @@ export default function RetentionAgentPage() {
                   className="underline hover:opacity-80 decoration-dotted underline-offset-2"
                   style={{ color: 'var(--neutral-500)' }}
                 >
-                  queried {queriedDisplay ?? 'today'}
+                  {snapshotLabel} {snapshotDisplay ?? 'today'}
                 </button>
               </>
             )}
