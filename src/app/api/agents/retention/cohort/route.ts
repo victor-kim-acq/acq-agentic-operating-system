@@ -62,6 +62,11 @@ export async function GET(req: NextRequest) {
   const endDate =
     req.nextUrl.searchParams.get("endDate") ?? "2026-03-31";
   const lockedDate = req.nextUrl.searchParams.get("lockedDate");
+  // Effective cutoff for "as of" cancellation visibility.
+  // When no lockedDate is provided, today's date is used so all known
+  // cancellations count — matching the previous behaviour.
+  const effectiveLockedDate =
+    lockedDate ?? new Date().toISOString().slice(0, 10);
 
   try {
     const excludeEmails = loadExcludeEmails();
@@ -77,14 +82,24 @@ export async function GET(req: NextRequest) {
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
       all_joiners AS (
+        -- Active members in skool_members are always active in the cohort.
         SELECT LOWER(email) AS email, join_date AS joined_at, 'active' AS status, user_id
         FROM skool_members
         WHERE join_date >= '${startDate}' AND join_date < ('${endDate}'::date + INTERVAL '1 day')
           AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
         UNION ALL
-        SELECT LOWER(email), approved_at, 'cancelled', skool_user_id
+        -- Cancelled members whose cancellation happened on/before the locked date → 'cancelled'.
+        SELECT LOWER(email), approved_at, 'cancelled' AS status, skool_user_id
         FROM skool_cancellations
         WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
+          AND cancelled_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
+          AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+        UNION ALL
+        -- Cancelled members whose cancellation happened AFTER the locked date → still 'active' as of that date.
+        SELECT LOWER(email), approved_at, 'active' AS status, skool_user_id
+        FROM skool_cancellations
+        WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
+          AND cancelled_at >= ('${effectiveLockedDate}'::date + INTERVAL '1 day')
           AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
       ),
       enriched AS (
