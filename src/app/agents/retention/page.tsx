@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
+import RetentionArtifact, { CohortResponse } from './RetentionArtifact';
 
 const METRIC_DEFINITIONS: { label: string; description: string }[] = [
   {
@@ -40,21 +41,121 @@ const cardStyle: React.CSSProperties = {
   boxShadow: 'var(--shadow-sm)',
 };
 
-export default function RetentionAgentPage() {
-  const [lastUpdated, setLastUpdated] = useState<string>(
-    new Date().toLocaleTimeString()
-  );
-  const [refreshing, setRefreshing] = useState(false);
-  const [definitionsOpen, setDefinitionsOpen] = useState(true);
+const COHORT_START = '2026-03-01';
+const COHORT_END = '2026-03-31';
+const COHORT_LOCKED = '2026-04-18';
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    // Placeholder — real refresh wires up in Prompt 3
-    setTimeout(() => {
+function formatLockedDate(iso: string | null): string | null {
+  if (!iso) return null;
+  const d = new Date(iso + (iso.length === 10 ? 'T00:00:00Z' : ''));
+  if (isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+function SkeletonArtifact() {
+  return (
+    <section
+      className="rounded-2xl border p-8 mb-4 relative overflow-hidden"
+      style={{ ...cardStyle, minHeight: 480 }}
+    >
+      <div
+        className="animate-gentle-pulse rounded-lg"
+        style={{
+          height: 16,
+          width: 160,
+          background: 'var(--neutral-100)',
+          marginBottom: 20,
+        }}
+      />
+      <div
+        className="animate-gentle-pulse rounded-lg"
+        style={{
+          height: 32,
+          width: 280,
+          background: 'var(--neutral-100)',
+          marginBottom: 28,
+        }}
+      />
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(5, 1fr)',
+          gap: 12,
+          marginBottom: 32,
+        }}
+      >
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="animate-gentle-pulse rounded-lg"
+            style={{ height: 96, background: 'var(--neutral-100)' }}
+          />
+        ))}
+      </div>
+      <div
+        className="animate-gentle-pulse rounded-lg"
+        style={{
+          height: 220,
+          background: 'var(--neutral-100)',
+          marginBottom: 16,
+        }}
+      />
+      <p
+        style={{
+          fontSize: 13,
+          color: 'var(--neutral-400)',
+          textAlign: 'center',
+          marginTop: 24,
+        }}
+      >
+        Loading cohort analysis…
+      </p>
+    </section>
+  );
+}
+
+export default function RetentionAgentPage() {
+  const [data, setData] = useState<CohortResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [definitionsOpen, setDefinitionsOpen] = useState(false);
+
+  const fetchCohort = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/agents/retention/cohort?startDate=${COHORT_START}&endDate=${COHORT_END}&lockedDate=${COHORT_LOCKED}&t=${Date.now()}`
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Request failed (${res.status})`);
+      }
+      const json = (await res.json()) as CohortResponse;
+      setData(json);
       setLastUpdated(new Date().toLocaleTimeString());
-      setRefreshing(false);
-    }, 600);
-  };
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchCohort();
+  }, [fetchCohort]);
+
+  const subtitle = data
+    ? `March 2026 cohort · n=${data.meta.total_members} · queried ${
+        formatLockedDate(data.meta.locked_date) ?? 'today'
+      }`
+    : 'Loading cohort…';
 
   return (
     <main className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
@@ -67,26 +168,28 @@ export default function RetentionAgentPage() {
           ← Back to Agents
         </Link>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <PageHeader
             title="Retention & Activation"
-            subtitle="March 2026 cohort · n=232 · queried April 18, 2026"
+            subtitle={subtitle}
             actions={
               <>
-                <span
-                  className="text-xs"
-                  style={{ color: 'var(--neutral-400)' }}
-                >
-                  Last updated: {lastUpdated}
-                </span>
+                {lastUpdated && (
+                  <span
+                    className="text-xs"
+                    style={{ color: 'var(--neutral-400)' }}
+                  >
+                    Last updated: {lastUpdated}
+                  </span>
+                )}
                 <button
-                  onClick={handleRefresh}
+                  onClick={fetchCohort}
                   className="p-2 rounded-lg transition-colors hover:bg-[var(--neutral-100)]"
                   title="Refresh"
-                  disabled={refreshing}
+                  disabled={loading}
                 >
                   <RefreshCw
-                    className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
+                    className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
                     style={{ color: 'var(--neutral-600)' }}
                   />
                 </button>
@@ -96,70 +199,32 @@ export default function RetentionAgentPage() {
         </div>
 
         {/* Artifact area */}
-        <section
-          className="rounded-2xl border p-8 mb-8 relative overflow-hidden"
-          style={{ ...cardStyle, minHeight: 480 }}
-        >
-          <div
-            className="animate-gentle-pulse rounded-lg"
+        {error ? (
+          <section
+            className="rounded-2xl border p-6 mb-8"
             style={{
-              height: 16,
-              width: 160,
-              background: 'var(--neutral-100)',
-              marginBottom: 20,
-            }}
-          />
-          <div
-            className="animate-gentle-pulse rounded-lg"
-            style={{
-              height: 32,
-              width: 280,
-              background: 'var(--neutral-100)',
-              marginBottom: 28,
-            }}
-          />
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: 16,
-              marginBottom: 32,
+              ...cardStyle,
+              borderColor: 'var(--color-danger, #ef4444)',
             }}
           >
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="animate-gentle-pulse rounded-lg"
-                style={{ height: 96, background: 'var(--neutral-100)' }}
-              />
-            ))}
+            <div style={{ fontSize: 13, color: 'var(--color-danger, #ef4444)' }}>
+              Failed to load cohort: {error}
+            </div>
+          </section>
+        ) : loading && !data ? (
+          <SkeletonArtifact />
+        ) : data ? (
+          <div style={{ marginBottom: 24 }}>
+            <RetentionArtifact data={data} />
           </div>
-          <div
-            className="animate-gentle-pulse rounded-lg"
-            style={{
-              height: 220,
-              background: 'var(--neutral-100)',
-              marginBottom: 16,
-            }}
-          />
-          <p
-            style={{
-              fontSize: 13,
-              color: 'var(--neutral-400)',
-              textAlign: 'center',
-              marginTop: 24,
-            }}
-          >
-            Cohort analysis renders here
-          </p>
-        </section>
+        ) : null}
 
         {/* Metric definitions */}
-        <section className="mb-8">
+        <section style={{ marginBottom: 24 }}>
           <button
             type="button"
             onClick={() => setDefinitionsOpen(!definitionsOpen)}
-            className="flex items-center gap-2 mb-4 text-sm font-semibold transition-colors"
+            className="flex items-center gap-2 mb-3 text-sm font-semibold transition-colors"
             style={{ color: 'var(--neutral-700)' }}
           >
             {definitionsOpen ? (
@@ -209,10 +274,7 @@ export default function RetentionAgentPage() {
         </section>
 
         {/* Chat placeholder */}
-        <section
-          className="rounded-2xl border p-5"
-          style={cardStyle}
-        >
+        <section className="rounded-2xl border p-5" style={cardStyle}>
           <div
             style={{
               fontSize: 13,

@@ -214,6 +214,27 @@ export async function GET(req: NextRequest) {
       ...agg(rows.filter((r) => segmentOf(r) === segment)),
     }));
 
+    // --- Source × segment matrix (up to 4×4 = 16 cells) ---
+    const source_segment_matrix: Array<{
+      source: string;
+      segment: string;
+      total: number;
+      churned: number;
+      churn_pct: number;
+    }> = [];
+    for (const source of sourceNames) {
+      for (const segment of segments) {
+        const bucket = rows.filter(
+          (r) => r.source === source && segmentOf(r) === segment
+        );
+        source_segment_matrix.push({
+          source,
+          segment,
+          ...agg(bucket),
+        });
+      }
+    }
+
     const total_churned = rows.filter((r) => r.status === "cancelled").length;
     const meta = {
       start_date: startDate,
@@ -226,7 +247,14 @@ export async function GET(req: NextRequest) {
     };
 
     return NextResponse.json(
-      { meta, headline, by_source, by_tier, combined_matrix },
+      {
+        meta,
+        headline,
+        by_source,
+        by_tier,
+        combined_matrix,
+        source_segment_matrix,
+      },
       { headers: { "Cache-Control": "no-store" } }
     );
   } catch (error) {
