@@ -1,0 +1,296 @@
+{
+  "cohort": {
+    "start_date": "2026-03-01",
+    "end_date_exclusive": "2026-04-01",
+    "total_members": 232,
+    "total_churned": 47
+  },
+  "signal_2_community": [
+    {
+      "source": "ACE",
+      "segment": "engaged",
+      "total": 5,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "ACE",
+      "segment": "not_engaged",
+      "total": 58,
+      "churned": 8,
+      "churn_pct": 13.8
+    },
+    {
+      "source": "Recharge",
+      "segment": "engaged",
+      "total": 10,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Recharge",
+      "segment": "not_engaged",
+      "total": 34,
+      "churned": 6,
+      "churn_pct": 17.6
+    },
+    {
+      "source": "Skool",
+      "segment": "engaged",
+      "total": 12,
+      "churned": 3,
+      "churn_pct": 25
+    },
+    {
+      "source": "Skool",
+      "segment": "not_engaged",
+      "total": 97,
+      "churned": 24,
+      "churn_pct": 24.7
+    },
+    {
+      "source": "Unknown",
+      "segment": "engaged",
+      "total": 1,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Unknown",
+      "segment": "not_engaged",
+      "total": 15,
+      "churned": 6,
+      "churn_pct": 40
+    }
+  ],
+  "signal_3_tier": [
+    {
+      "source": "ACE",
+      "segment": "Premium",
+      "total": 1,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "ACE",
+      "segment": "Standard",
+      "total": 62,
+      "churned": 8,
+      "churn_pct": 12.9
+    },
+    {
+      "source": "Recharge",
+      "segment": "Premium",
+      "total": 4,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Recharge",
+      "segment": "Standard",
+      "total": 10,
+      "churned": 3,
+      "churn_pct": 30
+    },
+    {
+      "source": "Recharge",
+      "segment": "VIP",
+      "total": 27,
+      "churned": 3,
+      "churn_pct": 11.1
+    },
+    {
+      "source": "Recharge",
+      "segment": "VIP (Yearly)",
+      "total": 3,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Skool",
+      "segment": "Premium",
+      "total": 14,
+      "churned": 1,
+      "churn_pct": 7.1
+    },
+    {
+      "source": "Skool",
+      "segment": "Standard",
+      "total": 74,
+      "churned": 21,
+      "churn_pct": 28.4
+    },
+    {
+      "source": "Skool",
+      "segment": "VIP",
+      "total": 21,
+      "churned": 5,
+      "churn_pct": 23.8
+    },
+    {
+      "source": "Unknown",
+      "segment": "Standard",
+      "total": 2,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Unknown",
+      "segment": "VIP",
+      "total": 1,
+      "churned": 0,
+      "churn_pct": 0
+    }
+  ],
+  "combined_matrix": [
+    {
+      "source": "ACE",
+      "segment": "ai_and_community",
+      "total": 3,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "ACE",
+      "segment": "ai_only",
+      "total": 42,
+      "churned": 5,
+      "churn_pct": 11.9
+    },
+    {
+      "source": "ACE",
+      "segment": "community_only",
+      "total": 2,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "ACE",
+      "segment": "neither",
+      "total": 16,
+      "churned": 3,
+      "churn_pct": 18.8
+    },
+    {
+      "source": "Recharge",
+      "segment": "ai_and_community",
+      "total": 7,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Recharge",
+      "segment": "ai_only",
+      "total": 23,
+      "churned": 3,
+      "churn_pct": 13
+    },
+    {
+      "source": "Recharge",
+      "segment": "community_only",
+      "total": 3,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Recharge",
+      "segment": "neither",
+      "total": 11,
+      "churned": 3,
+      "churn_pct": 27.3
+    },
+    {
+      "source": "Skool",
+      "segment": "ai_and_community",
+      "total": 12,
+      "churned": 3,
+      "churn_pct": 25
+    },
+    {
+      "source": "Skool",
+      "segment": "ai_only",
+      "total": 65,
+      "churned": 16,
+      "churn_pct": 24.6
+    },
+    {
+      "source": "Skool",
+      "segment": "neither",
+      "total": 32,
+      "churned": 8,
+      "churn_pct": 25
+    },
+    {
+      "source": "Unknown",
+      "segment": "ai_only",
+      "total": 2,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Unknown",
+      "segment": "community_only",
+      "total": 1,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Unknown",
+      "segment": "neither",
+      "total": 13,
+      "churned": 6,
+      "churn_pct": 46.2
+    }
+  ],
+  "verified_revenue_by_source": [
+    {
+      "source": "ACE",
+      "segment": "not_verified",
+      "total": 46,
+      "churned": 8,
+      "churn_pct": 17.4
+    },
+    {
+      "source": "ACE",
+      "segment": "verified",
+      "total": 17,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Recharge",
+      "segment": "not_verified",
+      "total": 38,
+      "churned": 6,
+      "churn_pct": 15.8
+    },
+    {
+      "source": "Recharge",
+      "segment": "verified",
+      "total": 6,
+      "churned": 0,
+      "churn_pct": 0
+    },
+    {
+      "source": "Skool",
+      "segment": "not_verified",
+      "total": 92,
+      "churned": 23,
+      "churn_pct": 25
+    },
+    {
+      "source": "Skool",
+      "segment": "verified",
+      "total": 17,
+      "churned": 4,
+      "churn_pct": 23.5
+    },
+    {
+      "source": "Unknown",
+      "segment": "not_verified",
+      "total": 16,
+      "churned": 6,
+      "churn_pct": 37.5
+    }
+  ]
+}

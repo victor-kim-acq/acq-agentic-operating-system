@@ -18,6 +18,13 @@ const agents = [
     description: "Set up scheduled communications for members based on membership milestones",
     color: "var(--chart-2)",
   },
+  {
+    href: "/agents/retention",
+    icon: "\ud83d\udcc8",
+    name: "Retention & Activation",
+    description: "Analyze member activation signals, churn drivers, and cohort retention",
+    color: "var(--chart-3)",
+  },
 ];
 
 export default function AgentsPage() {
