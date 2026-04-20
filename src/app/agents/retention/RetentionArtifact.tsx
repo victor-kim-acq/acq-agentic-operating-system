@@ -33,6 +33,14 @@ export interface CohortHeadline {
   community_engagement_rate: number;
   fully_activated: number;
   fully_activated_rate: number;
+  verified_revenue: number;
+  verified_revenue_rate: number;
+  onboarding_booked: number;
+  onboarding_booked_rate: number;
+  onboarding_completed: number;
+  onboarding_completed_rate: number;
+  onboarding_no_show: number;
+  onboarding_no_show_rate: number;
 }
 
 export interface SourceRow {
@@ -48,6 +56,14 @@ export interface SourceRow {
   ai_only: number;
   community_only: number;
   neither: number;
+  verified_revenue: number;
+  verified_revenue_rate: number;
+  onboarding_booked: number;
+  onboarding_booked_rate: number;
+  onboarding_completed: number;
+  onboarding_completed_rate: number;
+  onboarding_no_show: number;
+  onboarding_no_show_rate: number;
 }
 
 export interface TierRow {
@@ -86,6 +102,8 @@ export interface CohortResponse {
   by_source: SourceRow[];
   by_tier: TierRow[];
   combined_matrix: SegmentRow[];
+  verified_revenue_matrix: SegmentRow[];
+  onboarding_matrix: SegmentRow[];
   source_segment_matrix: SourceSegmentCell[];
   source_tier_matrix: SourceTierCell[];
 }
@@ -185,6 +203,54 @@ function ChurnCell({ pct, churned, total }: ChurnCellProps) {
         }}
       >
         {churned}/{total}
+      </div>
+    </td>
+  );
+}
+
+/** Cell for attach-rate columns (not churn). No heatmap — higher is neutral/good. */
+function AttachCell({ count, total }: { count: number; total: number }) {
+  if (total === 0) {
+    return (
+      <td
+        style={{
+          padding: '9px 14px',
+          borderBottom: '1px solid var(--neutral-100)',
+          textAlign: 'center',
+          color: 'var(--neutral-400)',
+          fontSize: 13,
+        }}
+      >
+        —
+      </td>
+    );
+  }
+  const pct = (count / total) * 100;
+  const lowSample = total < 5;
+  return (
+    <td
+      style={{
+        padding: '9px 14px',
+        borderBottom: '1px solid var(--neutral-100)',
+        textAlign: 'center',
+        fontSize: 13,
+        fontWeight: 600,
+        color: 'var(--neutral-700)',
+      }}
+    >
+      <div>
+        {pctFmt(pct)}
+        {lowSample && <span title="n < 5, directional only"> †</span>}
+      </div>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 400,
+          opacity: 0.6,
+          marginTop: 1,
+        }}
+      >
+        {count}/{total}
       </div>
     </td>
   );
@@ -940,6 +1006,164 @@ function CombinedRetention({
   );
 }
 
+// ---- Rescue signals ----
+
+const ONBOARDING_SEGMENT_LABELS: Record<string, string> = {
+  completed: 'Completed',
+  no_show: 'No-show',
+  never_booked: 'Never booked',
+};
+const ONBOARDING_SEGMENT_COLORS: Record<string, string> = {
+  completed: '#0d9488',
+  no_show: '#f59e0b',
+  never_booked: '#ef4444',
+};
+const ONBOARDING_SEGMENT_ORDER = ['completed', 'no_show', 'never_booked'] as const;
+
+function OnboardingCard({
+  meta,
+  onboarding_matrix,
+  by_source,
+}: {
+  meta: CohortMeta;
+  onboarding_matrix: SegmentRow[];
+  by_source: SourceRow[];
+}) {
+  const chartData: ChurnBarRow[] = ONBOARDING_SEGMENT_ORDER.map((seg) => {
+    const row = onboarding_matrix.find((s) => s.segment === seg);
+    const total = row?.total ?? 0;
+    return {
+      label: `${ONBOARDING_SEGMENT_LABELS[seg]} (n=${total})`,
+      value: row ? Math.round(row.churn_pct * 10) / 10 : 0,
+      fill: ONBOARDING_SEGMENT_COLORS[seg],
+    };
+  });
+
+  const completed = onboarding_matrix.find((s) => s.segment === 'completed');
+  const neverBooked = onboarding_matrix.find((s) => s.segment === 'never_booked');
+  const gapPp =
+    completed && neverBooked
+      ? Math.round((neverBooked.churn_pct - completed.churn_pct) * 10) / 10
+      : null;
+
+  return (
+    <Section
+      eyebrow="Rescue signal 1"
+      title="Onboarding call completion drives the biggest retention gap"
+    >
+      <p style={{ fontSize: 12, color: 'var(--neutral-400)', marginBottom: 14 }}>
+        n={meta.total_members}. Completed = attended an onboarding call; No-show =
+        booked but didn&rsquo;t attend; Never booked = no onboarding meeting.
+        {gapPp !== null && ` ${gapPp}pp churn gap between completers and never-booked.`}
+      </p>
+      <Legend
+        items={ONBOARDING_SEGMENT_ORDER.map((seg) => ({
+          color: ONBOARDING_SEGMENT_COLORS[seg],
+          label: ONBOARDING_SEGMENT_LABELS[seg],
+        }))}
+      />
+      <HorizontalChurnChart data={chartData} height={210} />
+
+      <TableCaption>Onboarding attach rate by billing source</TableCaption>
+      <TableWrap>
+        <ThRow cells={['Source', 'Completed', 'No-show', 'Never booked']} />
+        <tbody>
+          {VISIBLE_SOURCES.map((source) => {
+            const row = by_source.find((r) => r.source === source);
+            if (!row || row.total === 0) return null;
+            const neverBookedCount = row.total - row.onboarding_booked;
+            return (
+              <tr key={source}>
+                <LabelTd main={source} sub={`n=${row.total}`} />
+                <AttachCell
+                  count={row.onboarding_completed}
+                  total={row.total}
+                />
+                <AttachCell
+                  count={row.onboarding_no_show}
+                  total={row.total}
+                />
+                <AttachCell count={neverBookedCount} total={row.total} />
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableWrap>
+      <SmallSampleFootnote />
+    </Section>
+  );
+}
+
+function VerifiedRevenueCard({
+  meta,
+  verified_revenue_matrix,
+  by_source,
+  headline,
+}: {
+  meta: CohortMeta;
+  verified_revenue_matrix: SegmentRow[];
+  by_source: SourceRow[];
+  headline: CohortHeadline;
+}) {
+  const verified = verified_revenue_matrix.find((s) => s.segment === 'verified');
+  const notVerified = verified_revenue_matrix.find(
+    (s) => s.segment === 'not_verified'
+  );
+
+  const chartData: ChurnBarRow[] = [
+    verified && {
+      label: `Verified (n=${verified.total})`,
+      value: Math.round(verified.churn_pct * 10) / 10,
+      fill: '#0d9488',
+    },
+    notVerified && {
+      label: `Not verified (n=${notVerified.total})`,
+      value: Math.round(notVerified.churn_pct * 10) / 10,
+      fill: '#f59e0b',
+    },
+  ].filter(Boolean) as ChurnBarRow[];
+
+  return (
+    <Section
+      eyebrow="Rescue signal 2"
+      title="Verified revenue — strong signal, small population"
+    >
+      <p style={{ fontSize: 12, color: 'var(--neutral-400)', marginBottom: 14 }}>
+        n={meta.total_members} · verified = {headline.verified_revenue} (
+        {pctFmt(headline.verified_revenue_rate)}). Verification Successful flag
+        in HubSpot.
+      </p>
+      <Legend
+        items={[
+          { color: '#0d9488', label: 'Verified' },
+          { color: '#f59e0b', label: 'Not verified' },
+        ]}
+      />
+      <HorizontalChurnChart data={chartData} />
+
+      <TableCaption>Verified-revenue attach rate by billing source</TableCaption>
+      <TableWrap>
+        <ThRow cells={['Source', 'Verified', 'Not verified']} />
+        <tbody>
+          {VISIBLE_SOURCES.map((source) => {
+            const row = by_source.find((r) => r.source === source);
+            if (!row || row.total === 0) return null;
+            const notVer = row.total - row.verified_revenue;
+            return (
+              <tr key={source}>
+                <LabelTd main={source} sub={`n=${row.total}`} />
+                <AttachCell count={row.verified_revenue} total={row.total} />
+                <AttachCell count={notVer} total={row.total} />
+              </tr>
+            );
+          })}
+        </tbody>
+      </TableWrap>
+      <SmallSampleFootnote />
+    </Section>
+  );
+}
+
 // ---- Top-level component ----
 
 export default function RetentionArtifact({ data }: { data: CohortResponse }) {
@@ -949,6 +1173,8 @@ export default function RetentionArtifact({ data }: { data: CohortResponse }) {
     by_source,
     by_tier,
     combined_matrix,
+    verified_revenue_matrix,
+    onboarding_matrix,
     source_segment_matrix,
     source_tier_matrix,
   } = data;
@@ -976,6 +1202,19 @@ export default function RetentionArtifact({ data }: { data: CohortResponse }) {
         combined_matrix={combined_matrix}
         source_segment_matrix={source_segment_matrix}
         meta={meta}
+      />
+
+      <PartHead>The rescue signals</PartHead>
+      <OnboardingCard
+        meta={meta}
+        onboarding_matrix={onboarding_matrix}
+        by_source={by_source}
+      />
+      <VerifiedRevenueCard
+        meta={meta}
+        verified_revenue_matrix={verified_revenue_matrix}
+        by_source={by_source}
+        headline={headline}
       />
     </div>
   );

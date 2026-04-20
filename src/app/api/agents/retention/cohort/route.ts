@@ -357,6 +357,57 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // --- Source × onboarding state matrix (4 sources × 3 states = 12 cells) ---
+    const onboardingStates = ["completed", "no_show", "never_booked"] as const;
+    const matchesOnboardingState = (r: MemberRow, state: string) => {
+      if (state === "completed") return r.onboarding_completed;
+      if (state === "no_show") return r.onboarding_no_show;
+      return !r.onboarding_booked; // never_booked
+    };
+    const source_onboarding_matrix: Array<{
+      source: string;
+      state: string;
+      total: number;
+      churned: number;
+      churn_pct: number;
+    }> = [];
+    for (const source of sourceNames) {
+      for (const state of onboardingStates) {
+        const bucket = rows.filter(
+          (r) => r.source === source && matchesOnboardingState(r, state)
+        );
+        source_onboarding_matrix.push({
+          source,
+          state,
+          ...agg(bucket),
+        });
+      }
+    }
+
+    // --- Source × verified revenue matrix (4 sources × 2 states = 8 cells) ---
+    const verifiedStates = ["verified", "not_verified"] as const;
+    const source_verified_matrix: Array<{
+      source: string;
+      state: string;
+      total: number;
+      churned: number;
+      churn_pct: number;
+    }> = [];
+    for (const source of sourceNames) {
+      for (const state of verifiedStates) {
+        const bucket = rows.filter(
+          (r) =>
+            r.source === source &&
+            (state === "verified" ? r.verified_revenue : !r.verified_revenue)
+        );
+        source_verified_matrix.push({
+          source,
+          state,
+          ...agg(bucket),
+        });
+      }
+    }
+
     // --- Source × tier matrix (full cross-product including Unknown tier) ---
     const source_tier_matrix: Array<{
       source: string;
@@ -399,6 +450,8 @@ export async function GET(req: NextRequest) {
         verified_revenue_matrix,
         onboarding_matrix,
         source_segment_matrix,
+        source_onboarding_matrix,
+        source_verified_matrix,
         source_tier_matrix,
       },
       { headers: { "Cache-Control": "no-store" } }
