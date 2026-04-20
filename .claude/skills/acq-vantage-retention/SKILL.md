@@ -88,6 +88,12 @@ WHERE approved_at >= '{start}' AND approved_at < ('{end}'::date + INTERVAL '1 da
 - VIP (Yearly) members can be included or excluded depending on analysis purpose — document which in every report header
 - The pipeline continues ingesting for ~48h after month end; run cohort queries on a fixed date and note it in the report
 
+### Source-table dedup (the "mutually exclusive" lie)
+
+`skool_members` and `skool_cancellations` are NOT mutually exclusive in practice — churned members often retain a stale row in `skool_members`. The `all_joiners` CTE handles this by excluding `skool_members` rows where a cancellation record exists for the same email in the same cohort window (`DISTINCT ON email, earliest join_date`). Without this dedup, `total_members` is inflated and churn rate is understated.
+
+For March 2026, the dedup removed 24 phantom rows: cohort dropped from 232 → 208, churn rate corrected from 20.3% → 22.6%. The cancellation count was already correct; only the denominator was wrong. Same pattern is expected on every future monthly cohort — never trust a UNION ALL of these two tables without the dedup.
+
 ### Churn Rate Calculation
 - Churn % = churned members in segment / total members in segment × 100
 - Always show raw counts (churned/total) alongside percentages — this lets readers verify the math instantly and surfaces thin-sample cells
@@ -143,7 +149,7 @@ Every retention report should follow this structure:
 
 ## Reference Files
 
-- `references/march-2026-baseline.md` — March 2026 cohort numbers (n=227, queried April 15 2026). Use as the reference cohort for all future comparisons. Read this when answering questions about specific numbers from the March analysis.
+- `references/march-2026-baseline.md` — March 2026 cohort numbers (n=208 unique members after dedup, 47 churned, 22.6% churn rate). Use as the reference cohort for all future comparisons. Read this when answering questions about specific numbers from the March analysis.
 
 ---
 

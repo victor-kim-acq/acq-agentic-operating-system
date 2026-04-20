@@ -1,9 +1,11 @@
 # March 2026 Baseline Cohort
 
-**Query date:** April 15, 2026  
+> **Corrected April 20, 2026** — prior counts of 224/227/232 reflected pipeline drift and cross-table duplicates. **208** is the true unique March cohort as of the dedup fix in commit `c132de0`. Per-signal breakdown numbers below this header are stale and need to be re-pulled from the corrected API in a new session.
+
+**Query date:** April 20, 2026  
 **Cohort:** Members whose `join_date` (active) or `approved_at` (cancelled) falls in 2026-03-01 to 2026-03-31  
-**n=227 total | 42 churned | 18.5% churn rate**  
-**Exclusions:** 127-row exclude.csv (internal/test accounts), normalized to lowercase
+**n=208 unique | 47 churned | 22.6% churn rate**  
+**Exclusions:** 127-row exclude.csv (internal/test accounts), normalized to lowercase. Plus dedup against `skool_cancellations` and `DISTINCT ON email` within `skool_members` — see SKILL.md "Source-table dedup" section.
 
 ---
 
@@ -11,13 +13,13 @@
 
 | Metric | Value |
 |---|---|
-| New members | 227 |
-| Churned | 42 |
-| Churn rate | 18.5% |
-| ACQ AI adoption (any use) | 80% |
-| AI activated (2+ days week 1) | 65.6% (n=149) |
-| Community engaged (3+ posts/comments 15d) | 12.3% (n=28) |
-| Verified revenue | 17.6% (n=40) |
+| New members | 208 |
+| Churned | 47 |
+| Churn rate | 22.6% |
+| ACQ AI adoption (any use) | 80% (stale — re-pull) |
+| AI activated (2+ days week 1) | 65.6% (n=149) (stale — re-pull) |
+| Community engaged (3+ posts/comments 15d) | 12.3% (n=28) (stale — re-pull) |
+| Verified revenue | 17.6% (n=40) (stale — re-pull) |
 
 ---
 
