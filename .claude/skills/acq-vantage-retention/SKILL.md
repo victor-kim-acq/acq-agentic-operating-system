@@ -11,14 +11,16 @@ This skill captures how ACQ Vantage reasons about member retention, activation, 
 
 ## Core Philosophy
 
-**Three signals predict retention.** In order of measurability and volume:
+**Five signals predict retention.** In order of measurability and volume:
 1. ACQ AI activation (2+ active days in week 1)
 2. Community engagement (3+ posts or comments in first 15 days)
 3. Membership tier (Premium > VIP > Standard)
+4. Onboarding call completion (strongest rescue lever — 11.1% churn for completers vs 32.3% never booked)
+5. Verified revenue (strong for ACE/Recharge, irrelevant for Skool-native)
 
 **Billing source is the most important segmentation lens.** Skool-native members behave fundamentally differently from ACE/Recharge members. Signals 1 and 2 are strong predictors for ACE/Recharge and essentially useless for Skool-native. Never report activation or engagement churn rates in aggregate without breaking them out by billing source — the aggregate number masks a completely different story underneath.
 
-**The rescue signal.** Onboarding call completion is a secondary lever — it can rescue non-activated members from ~40% churn down to ~12.5%. For CS outreach prioritization, the real target list is: not activated AND didn't book the onboarding call.
+**The rescue signals.** Onboarding call completion and verified revenue are secondary levers. Completion drops churn to 11.1% vs 32.3% for never-booked. For CS outreach prioritization, the real target list is: not activated AND never booked the onboarding call — that population churns at the highest rate across all segments. Verified revenue is a strong signal for ACE/Recharge (0% churn when verified) but irrelevant for Skool-native.
 
 ---
 
@@ -58,41 +60,35 @@ This skill captures how ACQ Vantage reasons about member retention, activation, 
 - **Key insight:** Strong predictor for ACE/Recharge (0% churn when verified) but irrelevant for Skool-native (23.5% vs 23.9% — no difference). Same Skool/ACE split as all other signals.
 
 ### Onboarding Call
-- **Definition:** Any `engagement_meeting` with "onboard" in the title linked via `engagement_meeting_contacts`
-- **Key insight:** Booking the call drops non-activated churn from ~40% → ~12.5%. For activated members, the call makes little difference.
+
+Three distinct states (not a single boolean):
+- **onboarding_completed:** at least one `engagement_meeting` with `meeting_outcome = 'COMPLETED'` and `meeting_title ILIKE '%onboard%'`, linked via `engagement_meeting_contacts` → `contact_emails` (bidirectional email↔contact_id match)
+- **onboarding_no_show:** booked (any outcome) but never completed
+- **onboarding_never_booked:** no meeting record at all
+
+**Key insight:** Completion matters more than booking. March 2026 gradient: completed 11.1% → no_show 18.5% → never_booked 32.3%. Skool never-booked is a crisis (50% churn, n=20). ACE/Recharge completion = 0% churn.
 
 ---
 
 ## Cohort Methodology
 
-### Building a Cohort
-```sql
--- Active members who joined in period
-SELECT LOWER(email), join_date AS joined_at, 'active' AS status, user_id
-FROM skool_members
-WHERE join_date >= '{start}' AND join_date < ('{end}'::date + INTERVAL '1 day')
-  AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+### Denominator — fixed by start/end date, lockedDate does NOT gate it
 
-UNION ALL
+The denominator is built from a UNION of two sources:
+- `skool_members` rows where `join_date` is in the cohort window
+- `skool_cancellations` rows where `approved_at` is in the cohort window
 
--- Cancelled members whose Skool approval was in the same period
-SELECT LOWER(email), approved_at, 'cancelled', skool_user_id
-FROM skool_cancellations
-WHERE approved_at >= '{start}' AND approved_at < ('{end}'::date + INTERVAL '1 day')
-  AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-```
+Deduplicated via `DISTINCT ON (LOWER(email)) ORDER BY joined_at ASC` — one row per email, picking the earliest date across both sources. This captures fast-churners who cancelled before the active scraper ran and never landed in `skool_members` at all. Without the union, those members disappear from the denominator entirely and churn is understated.
 
-**Critical details:**
-- Use `approved_at` (not `cancelled_at` or `churned_at`) for `skool_cancellations` date filter — this anchors the cohort to when the member joined, not when they left
-- Exclude list: load from `exclude.csv`, normalize to lowercase and trim whitespace on both JS and SQL sides — a mismatch here causes cohort drift (learned the hard way)
+### Status — lockedDate gates this only
+
+For each cohort member, `status = 'cancelled'` if an `EXISTS` check finds any `skool_cancellations` row for that email with `cancelled_at < lockedDate + 1 day`. No match → `'active'`.
+
+**Key property — reproducibility:** `total_members` is fixed by `start`/`end` date only and never changes when `lockedDate` changes. `lockedDate` moves members between `active` and `cancelled` only. The same `(startDate, endDate, lockedDate)` triple always returns the same numbers regardless of when you query — snapshots are reproducible. Ingestion-pipeline timing no longer affects the result.
+
+### Exclusions and edge cases
+- Exclude list: load from `exclude.csv`, normalize to lowercase and trim whitespace on both JS and SQL sides — mismatches cause cohort drift (learned the hard way)
 - VIP (Yearly) members can be included or excluded depending on analysis purpose — document which in every report header
-- The pipeline continues ingesting for ~48h after month end; run cohort queries on a fixed date and note it in the report
-
-### Source-table dedup (the "mutually exclusive" lie)
-
-`skool_members` and `skool_cancellations` are NOT mutually exclusive in practice — churned members often retain a stale row in `skool_members`. The `all_joiners` CTE handles this by excluding `skool_members` rows where a cancellation record exists for the same email in the same cohort window (`DISTINCT ON email, earliest join_date`). Without this dedup, `total_members` is inflated and churn rate is understated.
-
-For March 2026, the dedup removed 24 phantom rows: cohort dropped from 232 → 208, churn rate corrected from 20.3% → 22.6%. The cancellation count was already correct; only the denominator was wrong. Same pattern is expected on every future monthly cohort — never trust a UNION ALL of these two tables without the dedup.
 
 ### Churn Rate Calculation
 - Churn % = churned members in segment / total members in segment × 100
@@ -119,16 +115,13 @@ Examples of things to surface:
 - Community only = 0 for Skool — the 32 non-activated Skool members also didn't post enough to qualify; we know this because if any had, they'd appear in this bucket
 - Recharge-Standard churning at 33.3% on small n (n=9) — directional only, don't over-index
 - Verified Skool members churning at 23.5% vs 23.9% not verified — zero difference, consistent with broader Skool pattern
+- Skool never-booked onboarding = 50% churn (n=20) — highest-risk identifiable segment
+- ACE/Recharge onboarding completed = 0% churn — strong signal but small n, directional until more cohorts confirm
 
 ### Small Sample Handling
 - n < 5: show the cell but label "directional only" in the footnote
 - n < 3: consider showing "—" rather than a number that will mislead
 - Never suppress a surprising result just because n is small — surface it with appropriate caveats
-
-### Cohort Drift
-- The DB ingestion pipeline settles ~48h after month end — early queries will undercount
-- Always note the query date and cohort count in the report footer
-- If a number has moved since the last report, explain why (pipeline catch-up vs real new data)
 
 ---
 
@@ -149,7 +142,7 @@ Every retention report should follow this structure:
 
 ## Reference Files
 
-- `references/march-2026-baseline.md` — March 2026 cohort numbers (n=208 unique members after dedup, 47 churned, 22.6% churn rate). Use as the reference cohort for all future comparisons. Read this when answering questions about specific numbers from the March analysis.
+- `references/march-2026-baseline.md` — March 2026 cohort (n=208 unique members, union-based denominator, lockedDate 2026-04-16). Churn rate is now `lockedDate`-dependent — at lockedDate 2026-04-16: 43 churned, 20.7%. Prior session references to n=208 / 22.6% / 47 churned used an older query version (pre-union denominator, lockedDate not yet implemented). Use as the reference cohort for all future comparisons. Read this when answering questions about specific numbers from the March analysis.
 
 ---
 
