@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { RefreshCw, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import RetentionArtifact, { CohortResponse } from './RetentionArtifact';
 import ChatPanel from './ChatPanel';
@@ -122,7 +122,6 @@ export default function RetentionAgentPage() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
-  const [definitionsOpen, setDefinitionsOpen] = useState(false);
   // Bump to remount ChatPanel (clearing its history) on refresh / date change
   const [chatResetKey, setChatResetKey] = useState(0);
 
@@ -326,50 +325,51 @@ export default function RetentionAgentPage() {
 
         {/* Metric definitions */}
         <section style={{ marginBottom: 24 }}>
-          <button
-            type="button"
-            onClick={() => setDefinitionsOpen(!definitionsOpen)}
-            className="flex items-center gap-2 mb-3 text-sm font-semibold transition-colors"
-            style={{ color: 'var(--neutral-700)' }}
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: 'var(--neutral-400)',
+              padding: '24px 0 12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+            }}
           >
-            {definitionsOpen ? (
-              <ChevronDown className="w-4 h-4" />
-            ) : (
-              <ChevronRight className="w-4 h-4" />
-            )}
-            Metric definitions
-          </button>
-          {definitionsOpen && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {METRIC_DEFINITIONS.map((m) => (
+            <span>Metric definitions</span>
+            <span style={{ flex: 1, height: 1, background: 'var(--card-border)' }} />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {METRIC_DEFINITIONS.map((m) => (
+              <div
+                key={m.label}
+                className="rounded-2xl border p-5"
+                style={cardStyle}
+              >
                 <div
-                  key={m.label}
-                  className="rounded-2xl border p-5"
-                  style={cardStyle}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'var(--neutral-900)',
+                    marginBottom: 6,
+                  }}
                 >
-                  <div
-                    style={{
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: 'var(--neutral-900)',
-                      marginBottom: 6,
-                    }}
-                  >
-                    {m.label}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      color: 'var(--neutral-500)',
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    {m.description}
-                  </div>
+                  {m.label}
                 </div>
-              ))}
-            </div>
-          )}
+                <div
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--neutral-500)',
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {m.description}
+                </div>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Artifact area */}
