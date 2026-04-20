@@ -123,7 +123,6 @@ export default function RetentionAgentPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [definitionsOpen, setDefinitionsOpen] = useState(false);
-  const [pickerOpen, setPickerOpen] = useState(false);
   // Bump to remount ChatPanel (clearing its history) on refresh / date change
   const [chatResetKey, setChatResetKey] = useState(0);
 
@@ -173,16 +172,8 @@ export default function RetentionAgentPage() {
     setEndDate(draftEnd);
     setLockedDate(draftLocked);
     setChatResetKey((k) => k + 1);
-    setPickerOpen(false);
     fetchCohort(draftStart, draftEnd, draftLocked);
   };
-
-  const snapshotDisplay = data
-    ? formatFullDate(
-        (data.meta.locked_date ?? data.meta.queried_at).slice(0, 10)
-      )
-    : null;
-  const snapshotLabel = data?.meta.locked_date ? 'locked as of' : 'queried';
 
   return (
     <main className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
@@ -242,169 +233,96 @@ export default function RetentionAgentPage() {
               <>
                 <span aria-hidden>·</span>
                 <span>n={data.meta.total_members}</span>
-                <span aria-hidden>·</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDraftStart(startDate);
-                    setDraftEnd(endDate);
-                    setDraftLocked(lockedDate);
-                    setPickerOpen((o) => !o);
-                  }}
-                  className="underline hover:opacity-80 decoration-dotted underline-offset-2"
-                  style={{ color: 'var(--neutral-500)' }}
-                >
-                  {snapshotLabel} {snapshotDisplay ?? 'today'}
-                </button>
               </>
             )}
           </div>
-          {pickerOpen && (
-            <div
-              className="rounded-2xl border mt-3 p-4"
-              style={{ ...cardStyle }}
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <label className="flex flex-col gap-1">
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--neutral-500)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    Start date
-                  </span>
-                  <input
-                    type="date"
-                    value={draftStart}
-                    onChange={(e) => setDraftStart(e.target.value)}
-                    className="border rounded-lg px-3 py-2 text-sm"
-                    style={{ borderColor: 'var(--neutral-200)' }}
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--neutral-500)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    End date
-                  </span>
-                  <input
-                    type="date"
-                    value={draftEnd}
-                    onChange={(e) => setDraftEnd(e.target.value)}
-                    className="border rounded-lg px-3 py-2 text-sm"
-                    style={{ borderColor: 'var(--neutral-200)' }}
-                  />
-                </label>
-                <label className="flex flex-col gap-1">
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      color: 'var(--neutral-500)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                    }}
-                  >
-                    Locked-as-of
-                  </span>
-                  <input
-                    type="date"
-                    value={draftLocked}
-                    onChange={(e) => setDraftLocked(e.target.value)}
-                    className="border rounded-lg px-3 py-2 text-sm"
-                    style={{ borderColor: 'var(--neutral-200)' }}
-                  />
-                </label>
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen(false)}
-                  className="text-xs px-3 py-1.5 rounded-md border font-medium"
+          <div
+            className="rounded-2xl border mt-3 p-4"
+            style={{ ...cardStyle }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <label className="flex flex-col gap-1">
+                <span
                   style={{
-                    borderColor: 'var(--neutral-200)',
-                    color: 'var(--neutral-700)',
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: 'var(--neutral-500)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
                   }}
                 >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApplyDates}
-                  disabled={
-                    !draftStart ||
-                    !draftEnd ||
-                    !draftLocked ||
-                    draftStart > draftEnd
-                  }
-                  className="text-xs px-3 py-1.5 rounded-md text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{ background: 'var(--brand-primary, #7c3aed)' }}
+                  Start date
+                </span>
+                <input
+                  type="date"
+                  value={draftStart}
+                  onChange={(e) => setDraftStart(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm"
+                  style={{ borderColor: 'var(--neutral-200)' }}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: 'var(--neutral-500)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
                 >
-                  Apply
-                </button>
-              </div>
+                  End date
+                </span>
+                <input
+                  type="date"
+                  value={draftEnd}
+                  onChange={(e) => setDraftEnd(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm"
+                  style={{ borderColor: 'var(--neutral-200)' }}
+                />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: 'var(--neutral-500)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.04em',
+                  }}
+                >
+                  Locked-as-of
+                </span>
+                <input
+                  type="date"
+                  value={draftLocked}
+                  onChange={(e) => setDraftLocked(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm"
+                  style={{ borderColor: 'var(--neutral-200)' }}
+                />
+              </label>
             </div>
-          )}
+            <div className="flex justify-end mt-4">
+              <button
+                type="button"
+                onClick={handleApplyDates}
+                disabled={
+                  !draftStart ||
+                  !draftEnd ||
+                  !draftLocked ||
+                  draftStart > draftEnd
+                }
+                className="text-xs px-3 py-1.5 rounded-md text-white font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: 'var(--brand-primary, #7c3aed)' }}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Artifact area */}
-        {error ? (
-          <section
-            className="rounded-2xl border p-6 mb-8"
-            style={{
-              background: 'var(--color-danger-light, #fef2f2)',
-              borderColor: 'var(--color-danger, #ef4444)',
-              color: '#7f1d1d',
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 mt-0.5" style={{ color: '#b91c1c' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
-                  Couldn&rsquo;t load the cohort
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    marginTop: 4,
-                    color: 'var(--neutral-700)',
-                  }}
-                >
-                  {error}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="mt-3 text-xs px-3 py-1.5 rounded-md border font-medium transition-colors hover:bg-[var(--card-bg)]"
-                  style={{
-                    borderColor: 'var(--color-danger, #ef4444)',
-                    color: '#b91c1c',
-                    background: 'var(--card-bg)',
-                  }}
-                  disabled={loading}
-                >
-                  {loading ? 'Retrying…' : 'Retry'}
-                </button>
-              </div>
-            </div>
-          </section>
-        ) : loading && !data ? (
-          <SkeletonArtifact />
-        ) : data ? (
-          <div style={{ marginBottom: 24 }}>
-            <RetentionArtifact data={data} />
-          </div>
-        ) : null}
+        {/* Chat — key forces remount (clears history) on refresh/date change */}
+        <ChatPanel key={chatResetKey} cohort={data} />
 
         {/* Metric definitions */}
         <section style={{ marginBottom: 24 }}>
@@ -454,8 +372,54 @@ export default function RetentionAgentPage() {
           )}
         </section>
 
-        {/* Chat — key forces remount (clears history) on refresh/date change */}
-        <ChatPanel key={chatResetKey} cohort={data} />
+        {/* Artifact area */}
+        {error ? (
+          <section
+            className="rounded-2xl border p-6 mb-8"
+            style={{
+              background: 'var(--color-danger-light, #fef2f2)',
+              borderColor: 'var(--color-danger, #ef4444)',
+              color: '#7f1d1d',
+            }}
+          >
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 mt-0.5" style={{ color: '#b91c1c' }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 14, fontWeight: 600 }}>
+                  Couldn&rsquo;t load the cohort
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    marginTop: 4,
+                    color: 'var(--neutral-700)',
+                  }}
+                >
+                  {error}
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  className="mt-3 text-xs px-3 py-1.5 rounded-md border font-medium transition-colors hover:bg-[var(--card-bg)]"
+                  style={{
+                    borderColor: 'var(--color-danger, #ef4444)',
+                    color: '#b91c1c',
+                    background: 'var(--card-bg)',
+                  }}
+                  disabled={loading}
+                >
+                  {loading ? 'Retrying…' : 'Retry'}
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : loading && !data ? (
+          <SkeletonArtifact />
+        ) : data ? (
+          <div style={{ marginBottom: 24 }}>
+            <RetentionArtifact data={data} />
+          </div>
+        ) : null}
       </div>
     </main>
   );
