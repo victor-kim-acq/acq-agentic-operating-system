@@ -81,50 +81,42 @@ export async function GET(req: NextRequest) {
       WITH exclude_list AS (
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
-      all_joiners AS (
-        -- Active members in skool_members are always active in the cohort.
-        -- Exclude any email that also appears in skool_cancellations for the
-        -- same cohort window — those duplicates are stale skool_members rows
-        -- left behind when a member moved to cancellations. Branches B/C
-        -- below are the canonical source for any cancelled member.
-        -- DISTINCT ON also collapses same-email-different-user_id duplicates
-        -- inside skool_members itself, picking the earliest join_date.
-        SELECT email, joined_at, status, user_id FROM (
-          SELECT DISTINCT ON (LOWER(email))
-            LOWER(email) AS email,
-            join_date AS joined_at,
-            'active' AS status,
-            user_id
+      cohort AS (
+        -- Denominator: UNION of skool_members (joined in window) and
+        -- skool_cancellations (approved in window). DISTINCT ON collapses to
+        -- one row per email, picking the earliest date across both sources
+        -- — so if a member is in both, the real join_date wins over the
+        -- cancellation's approved_at. lockedDate does NOT gate this CTE.
+        SELECT DISTINCT ON (email)
+          email,
+          joined_at,
+          user_id
+        FROM (
+          SELECT LOWER(email) AS email, join_date AS joined_at, user_id
           FROM skool_members
           WHERE join_date >= '${startDate}' AND join_date < ('${endDate}'::date + INTERVAL '1 day')
-            AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-            AND LOWER(email) NOT IN (
-              SELECT LOWER(email) FROM skool_cancellations
-              WHERE approved_at >= '${startDate}'
-                AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
-            )
-            -- created_at gates when the row landed in the DB; ensures lockedDate snapshots are reproducible
-            AND created_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
-          ORDER BY LOWER(email), join_date ASC
-        ) sm_dedup
-        UNION ALL
-        -- Cancelled members whose cancellation happened on/before the locked date → 'cancelled'.
-        SELECT LOWER(email), approved_at, 'cancelled' AS status, skool_user_id
-        FROM skool_cancellations
-        WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
-          AND cancelled_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
-          AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-          -- created_at gates when the row landed in the DB; ensures lockedDate snapshots are reproducible
-          AND created_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
-        UNION ALL
-        -- Cancelled members whose cancellation happened AFTER the locked date → still 'active' as of that date.
-        SELECT LOWER(email), approved_at, 'active' AS status, skool_user_id
-        FROM skool_cancellations
-        WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
-          AND cancelled_at >= ('${effectiveLockedDate}'::date + INTERVAL '1 day')
-          AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-          -- created_at gates when the row landed in the DB; ensures lockedDate snapshots are reproducible
-          AND created_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
+          UNION ALL
+          SELECT LOWER(email) AS email, approved_at AS joined_at, skool_user_id AS user_id
+          FROM skool_cancellations
+          WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
+        ) unioned
+        WHERE email NOT IN (SELECT email FROM exclude_list)
+        ORDER BY email, joined_at ASC
+      ),
+      all_joiners AS (
+        -- Status: 'cancelled' iff any cancellation row exists for this email
+        -- with cancelled_at on/before the locked date. EXISTS avoids row
+        -- multiplication from members with multiple cancellation rows.
+        SELECT
+          c.email,
+          c.joined_at,
+          c.user_id,
+          CASE WHEN EXISTS (
+            SELECT 1 FROM skool_cancellations sc
+            WHERE LOWER(sc.email) = c.email
+              AND sc.cancelled_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
+          ) THEN 'cancelled' ELSE 'active' END AS status
+        FROM cohort c
       ),
       enriched AS (
         SELECT
