@@ -33,6 +33,10 @@ interface MemberRow {
   status: "active" | "cancelled";
   ai_activated: boolean;
   community_engaged: boolean;
+  verified_revenue: boolean;
+  onboarding_booked: boolean;
+  onboarding_completed: boolean;
+  onboarding_no_show: boolean;
 }
 
 interface Aggregate {
@@ -133,7 +137,26 @@ export async function GET(req: NextRequest) {
            JOIN contact_emails ce ON cd.contact_id = ce.contact_id
            WHERE LOWER(ce.email) = aj.email
            ORDER BY d.close_date DESC LIMIT 1
-          ) AS billing_source
+          ) AS billing_source,
+          (SELECT c.revenue_verification_status FROM contacts c
+           JOIN contact_emails ce ON c.contact_id = ce.contact_id
+           WHERE LOWER(ce.email) = aj.email LIMIT 1
+          ) AS revenue_verification_status,
+          EXISTS (
+            SELECT 1 FROM engagement_meetings em
+            JOIN engagement_meeting_contacts emc ON em.engagement_id = emc.engagement_id
+            JOIN contact_emails ce ON emc.contact_id = ce.contact_id
+            WHERE LOWER(ce.email) = aj.email
+              AND em.meeting_title ILIKE '%onboard%'
+          ) AS onboarding_booked,
+          EXISTS (
+            SELECT 1 FROM engagement_meetings em
+            JOIN engagement_meeting_contacts emc ON em.engagement_id = emc.engagement_id
+            JOIN contact_emails ce ON emc.contact_id = ce.contact_id
+            WHERE LOWER(ce.email) = aj.email
+              AND em.meeting_title ILIKE '%onboard%'
+              AND em.meeting_outcome = 'COMPLETED'
+          ) AS onboarding_completed
         FROM all_joiners aj
       ),
       with_ai AS (
@@ -158,7 +181,9 @@ export async function GET(req: NextRequest) {
             (SELECT COUNT(*) FROM skool_comments sc
              WHERE sc.author_id = wa.user_id
                AND sc.created_at BETWEEN wa.joined_at AND wa.joined_at + INTERVAL '15 days')
-          ) >= 3 AS community_engaged
+          ) >= 3 AS community_engaged,
+          (wa.revenue_verification_status = 'Verification Successful') AS verified_revenue,
+          (wa.onboarding_booked AND NOT wa.onboarding_completed) AS onboarding_no_show
         FROM with_ai wa
       )
       SELECT
@@ -166,7 +191,11 @@ export async function GET(req: NextRequest) {
         tier,
         status,
         ai_activated,
-        community_engaged
+        community_engaged,
+        verified_revenue,
+        onboarding_booked,
+        onboarding_completed,
+        onboarding_no_show
       FROM with_all
     `);
 
@@ -177,6 +206,10 @@ export async function GET(req: NextRequest) {
       status: r.status,
       ai_activated: r.ai_activated === true,
       community_engaged: r.community_engaged === true,
+      verified_revenue: r.verified_revenue === true,
+      onboarding_booked: r.onboarding_booked === true,
+      onboarding_completed: r.onboarding_completed === true,
+      onboarding_no_show: r.onboarding_no_show === true,
     }));
 
     // --- Headline ---
@@ -185,6 +218,10 @@ export async function GET(req: NextRequest) {
     const fullyActivatedRows = rows.filter(
       (r) => r.ai_activated && r.community_engaged
     );
+    const verifiedRevenueRows = rows.filter((r) => r.verified_revenue);
+    const onboardingBookedRows = rows.filter((r) => r.onboarding_booked);
+    const onboardingCompletedRows = rows.filter((r) => r.onboarding_completed);
+    const onboardingNoShowRows = rows.filter((r) => r.onboarding_no_show);
 
     const rate = (num: number, denom: number) =>
       denom > 0 ? Math.round((num / denom) * 1000) / 10 : 0;
@@ -201,6 +238,17 @@ export async function GET(req: NextRequest) {
       ),
       fully_activated: fullyActivatedRows.length,
       fully_activated_rate: rate(fullyActivatedRows.length, rows.length),
+      verified_revenue: verifiedRevenueRows.length,
+      verified_revenue_rate: rate(verifiedRevenueRows.length, rows.length),
+      onboarding_booked: onboardingBookedRows.length,
+      onboarding_booked_rate: rate(onboardingBookedRows.length, rows.length),
+      onboarding_completed: onboardingCompletedRows.length,
+      onboarding_completed_rate: rate(
+        onboardingCompletedRows.length,
+        rows.length
+      ),
+      onboarding_no_show: onboardingNoShowRows.length,
+      onboarding_no_show_rate: rate(onboardingNoShowRows.length, rows.length),
     };
 
     // --- By source ---
@@ -210,6 +258,10 @@ export async function GET(req: NextRequest) {
       const base = agg(bucket);
       const aiAct = bucket.filter((r) => r.ai_activated).length;
       const commEng = bucket.filter((r) => r.community_engaged).length;
+      const verRev = bucket.filter((r) => r.verified_revenue).length;
+      const onbBook = bucket.filter((r) => r.onboarding_booked).length;
+      const onbComp = bucket.filter((r) => r.onboarding_completed).length;
+      const onbNoShow = bucket.filter((r) => r.onboarding_no_show).length;
       const countSegment = (segName: string) =>
         bucket.filter((r) => segmentOf(r) === segName).length;
       return {
@@ -223,6 +275,14 @@ export async function GET(req: NextRequest) {
         ai_only: countSegment("ai_only"),
         community_only: countSegment("community_only"),
         neither: countSegment("neither"),
+        verified_revenue: verRev,
+        verified_revenue_rate: rate(verRev, bucket.length),
+        onboarding_booked: onbBook,
+        onboarding_booked_rate: rate(onbBook, bucket.length),
+        onboarding_completed: onbComp,
+        onboarding_completed_rate: rate(onbComp, bucket.length),
+        onboarding_no_show: onbNoShow,
+        onboarding_no_show_rate: rate(onbNoShow, bucket.length),
       };
     });
 
@@ -244,6 +304,37 @@ export async function GET(req: NextRequest) {
       segment,
       ...agg(rows.filter((r) => segmentOf(r) === segment)),
     }));
+
+    // --- Verified revenue matrix ---
+    const verified_revenue_matrix = [
+      { segment: "verified", ...agg(rows.filter((r) => r.verified_revenue)) },
+      {
+        segment: "not_verified",
+        ...agg(rows.filter((r) => !r.verified_revenue)),
+      },
+    ];
+
+    // --- Onboarding matrix ---
+    // completed + no_show + never_booked partition the cohort exactly;
+    // booked_overall = completed + no_show (summary row, overlaps the others).
+    const onboarding_matrix = [
+      {
+        segment: "completed",
+        ...agg(rows.filter((r) => r.onboarding_completed)),
+      },
+      {
+        segment: "no_show",
+        ...agg(rows.filter((r) => r.onboarding_no_show)),
+      },
+      {
+        segment: "never_booked",
+        ...agg(rows.filter((r) => !r.onboarding_booked)),
+      },
+      {
+        segment: "booked_overall",
+        ...agg(rows.filter((r) => r.onboarding_booked)),
+      },
+    ];
 
     // --- Source × segment matrix (up to 4×4 = 16 cells) ---
     const source_segment_matrix: Array<{
@@ -305,6 +396,8 @@ export async function GET(req: NextRequest) {
         by_source,
         by_tier,
         combined_matrix,
+        verified_revenue_matrix,
+        onboarding_matrix,
         source_segment_matrix,
         source_tier_matrix,
       },
