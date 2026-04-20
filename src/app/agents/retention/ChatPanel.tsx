@@ -73,8 +73,10 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
 
 export default function ChatPanel({
   cohort,
+  noCard = false,
 }: {
   cohort: CohortResponse | null;
+  noCard?: boolean;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -147,13 +149,17 @@ export default function ChatPanel({
 
   return (
     <div
-      className="rounded-2xl border"
-      style={{
-        background: 'var(--card-bg)',
-        borderColor: 'var(--card-border)',
-        boxShadow: 'var(--shadow-sm)',
-        padding: 20,
-      }}
+      className={noCard ? '' : 'rounded-2xl border'}
+      style={
+        noCard
+          ? { padding: 20 }
+          : {
+              background: 'var(--card-bg)',
+              borderColor: 'var(--card-border)',
+              boxShadow: 'var(--shadow-sm)',
+              padding: 20,
+            }
+      }
     >
       <div
         style={{
