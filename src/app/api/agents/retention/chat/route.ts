@@ -25,6 +25,8 @@ function buildSystemPrompt(cohortJson: unknown): string {
 
   return `You are the ACQ Vantage Retention Agent. You answer questions about the March 2026 member retention and activation cohort.
 
+When asked how a metric is defined or calculated, use the exact definition from the skill — do not paraphrase. Metric definitions are precise by design and paraphrasing introduces errors.
+
 ## Framework (from .claude/skills/acq-vantage-retention/SKILL.md)
 
 ${skill}
