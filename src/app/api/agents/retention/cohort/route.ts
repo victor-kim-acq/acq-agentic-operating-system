@@ -83,10 +83,28 @@ export async function GET(req: NextRequest) {
       ),
       all_joiners AS (
         -- Active members in skool_members are always active in the cohort.
-        SELECT LOWER(email) AS email, join_date AS joined_at, 'active' AS status, user_id
-        FROM skool_members
-        WHERE join_date >= '${startDate}' AND join_date < ('${endDate}'::date + INTERVAL '1 day')
-          AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+        -- Exclude any email that also appears in skool_cancellations for the
+        -- same cohort window — those duplicates are stale skool_members rows
+        -- left behind when a member moved to cancellations. Branches B/C
+        -- below are the canonical source for any cancelled member.
+        -- DISTINCT ON also collapses same-email-different-user_id duplicates
+        -- inside skool_members itself, picking the earliest join_date.
+        SELECT email, joined_at, status, user_id FROM (
+          SELECT DISTINCT ON (LOWER(email))
+            LOWER(email) AS email,
+            join_date AS joined_at,
+            'active' AS status,
+            user_id
+          FROM skool_members
+          WHERE join_date >= '${startDate}' AND join_date < ('${endDate}'::date + INTERVAL '1 day')
+            AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+            AND LOWER(email) NOT IN (
+              SELECT LOWER(email) FROM skool_cancellations
+              WHERE approved_at >= '${startDate}'
+                AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
+            )
+          ORDER BY LOWER(email), join_date ASC
+        ) sm_dedup
         UNION ALL
         -- Cancelled members whose cancellation happened on/before the locked date → 'cancelled'.
         SELECT LOWER(email), approved_at, 'cancelled' AS status, skool_user_id
