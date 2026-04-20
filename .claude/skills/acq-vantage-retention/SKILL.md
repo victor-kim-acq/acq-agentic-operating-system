@@ -3,6 +3,18 @@ name: acq-vantage-retention
 description: Framework for ACQ Vantage member retention and activation analysis. Use this skill whenever someone asks about churn, retention, activation signals, onboarding effectiveness, billing source performance, community engagement metrics, or member lifecycle. Also trigger when asked to build, update, or explain a retention/activation report or artifact, verify retention math, explain metric definitions, or investigate churn anomalies. This skill defines how Victor and the team reason about retention — always use it before answering any question involving churn rates, activation rates, or cohort analysis, even if the question seems simple.
 ---
 
+## Exact Metric Definitions — Quote These Verbatim
+
+**AI Activation:** Member used ACQ AI on 2 or more distinct days within their first 7 days of joining. Source: acq_ai_usage.active_days_week1 >= 2.
+
+**Community Engagement:** Member made 3 or more posts or comments within their first 15 days of joining. Source: skool_posts + skool_comments, created_at BETWEEN joined_at AND joined_at + 15 days.
+
+**Churn Rate:** Cancelled members in segment ÷ total members in segment × 100. Cancellations after lockedDate do not count.
+
+**Onboarding Completed:** Member has at least one engagement_meeting with outcome = 'COMPLETED' and title ILIKE '%onboard%', linked via engagement_meeting_contacts → contact_emails.
+
+---
+
 # ACQ Vantage Retention Analysis Framework
 
 This skill captures how ACQ Vantage reasons about member retention, activation, and churn. It is the authoritative source for metric definitions, signal logic, cohort methodology, and analytical standards. Read this fully before answering any retention question or building any retention artifact.
