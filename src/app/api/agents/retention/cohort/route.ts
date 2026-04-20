@@ -103,6 +103,8 @@ export async function GET(req: NextRequest) {
               WHERE approved_at >= '${startDate}'
                 AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
             )
+            -- created_at gates when the row landed in the DB; ensures lockedDate snapshots are reproducible
+            AND created_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
           ORDER BY LOWER(email), join_date ASC
         ) sm_dedup
         UNION ALL
@@ -112,6 +114,8 @@ export async function GET(req: NextRequest) {
         WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
           AND cancelled_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
           AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+          -- created_at gates when the row landed in the DB; ensures lockedDate snapshots are reproducible
+          AND created_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
         UNION ALL
         -- Cancelled members whose cancellation happened AFTER the locked date → still 'active' as of that date.
         SELECT LOWER(email), approved_at, 'active' AS status, skool_user_id
@@ -119,6 +123,8 @@ export async function GET(req: NextRequest) {
         WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
           AND cancelled_at >= ('${effectiveLockedDate}'::date + INTERVAL '1 day')
           AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+          -- created_at gates when the row landed in the DB; ensures lockedDate snapshots are reproducible
+          AND created_at < ('${effectiveLockedDate}'::date + INTERVAL '1 day')
       ),
       enriched AS (
         SELECT
