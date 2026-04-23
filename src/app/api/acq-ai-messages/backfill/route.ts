@@ -24,6 +24,7 @@ const clean = (s: string | null) => (s ? s.replace(/\0/g, "") : s);
 const BATCH_SIZE = 500;
 
 export async function POST(request: NextRequest) {
+  try {
   const started = Date.now();
   const metabaseKey = process.env.METABASE_API_KEY;
   if (!metabaseKey) {
@@ -111,4 +112,11 @@ export async function POST(request: NextRequest) {
     upserted,
     timing_ms: { fetch: fetchMs, insert: insertMs, total: totalMs },
   });
+  } catch (err) {
+    console.error("backfill error:", err);
+    return NextResponse.json(
+      { error: String(err), stack: err instanceof Error ? err.stack?.split("\n").slice(0, 5).join(" | ") : undefined },
+      { status: 500 }
+    );
+  }
 }
