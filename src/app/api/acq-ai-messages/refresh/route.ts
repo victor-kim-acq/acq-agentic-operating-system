@@ -50,24 +50,27 @@ export async function POST() {
 
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE);
-    const messageIds = batch.map((r) => r.MESSAGE_ID);
-    const chatIds = batch.map((r) => r.CHAT_ID);
-    const emails = batch.map((r) => r.EMAIL);
-    const contents = batch.map((r) => clean(r.CONTENT_TEXT));
-    const createdAts = batch.map((r) => r.CREATED_AT);
-
-    await sql`
-      INSERT INTO acq_ai_messages (message_id, chat_id, email, content_text, created_at)
-      SELECT * FROM UNNEST(
-        ${messageIds}::text[],
-        ${chatIds}::text[],
-        ${emails}::text[],
-        ${contents}::text[],
-        ${createdAts}::timestamptz[]
-      )
-      ON CONFLICT (message_id) DO UPDATE SET
-        content_text = EXCLUDED.content_text
-    `;
+    const placeholders: string[] = [];
+    const params: (string | null)[] = [];
+    let p = 1;
+    for (const r of batch) {
+      placeholders.push(
+        `($${p++}, $${p++}, $${p++}, $${p++}, $${p++}::timestamptz)`
+      );
+      params.push(
+        r.MESSAGE_ID,
+        r.CHAT_ID,
+        r.EMAIL,
+        clean(r.CONTENT_TEXT),
+        r.CREATED_AT
+      );
+    }
+    await sql.query(
+      `INSERT INTO acq_ai_messages (message_id, chat_id, email, content_text, created_at)
+       VALUES ${placeholders.join(", ")}
+       ON CONFLICT (message_id) DO UPDATE SET content_text = EXCLUDED.content_text`,
+      params
+    );
     upserted += batch.length;
   }
 
