@@ -1,8 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
+import HealthMemberTable, {
+  HealthMember,
+  ColumnKey,
+} from '@/components/ui/HealthMemberTable';
 
 type ActionKey = 'ai' | 'post' | 'onboard' | 'verify' | 'course';
 
@@ -77,8 +82,69 @@ const ACTIONS_NOTES: Note[] = [
   },
 ];
 
+const TABLE_COLUMNS: { key: ColumnKey; label: string; align?: 'left' | 'right' | 'center' }[] = [
+  { key: 'email', label: 'Email', align: 'left' },
+  { key: 'source', label: 'Source', align: 'left' },
+  { key: 'tier', label: 'Tier', align: 'left' },
+  { key: 'score', label: 'Score', align: 'right' },
+  { key: 'days_silent', label: 'Silent', align: 'right' },
+  { key: 'ai_flag', label: 'Needs AI', align: 'center' },
+  { key: 'post_flag', label: 'Needs Post', align: 'center' },
+  { key: 'onboard_flag', label: 'Needs Onboard', align: 'center' },
+  { key: 'verify_flag', label: 'Needs Verify', align: 'center' },
+  { key: 'course_flag', label: 'Needs Course', align: 'center' },
+];
+
+function useAtRiskMembers(
+  filters: Props['filters'],
+  enabled: boolean
+): { rows: HealthMember[]; loading: boolean } {
+  const [rows, setRows] = useState<HealthMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const fetchList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams({
+        status: filters.status,
+        source: filters.source,
+        tier: filters.tier,
+        joinStart: filters.joinStart,
+        joinEnd: filters.joinEnd,
+        band: 'at_risk',
+        sort: 'score_asc',
+        limit: '2000',
+        t: String(Date.now()),
+      }).toString();
+      const res = await fetch(`/api/dashboard/health-members?${qs}`);
+      const json = await res.json();
+      setRows((json.rows ?? []) as HealthMember[]);
+      setLoaded(true);
+    } catch (err) {
+      console.error('health-members fetch failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    if (enabled && !loaded) fetchList();
+  }, [enabled, loaded, fetchList]);
+  useEffect(() => {
+    setLoaded(false);
+  }, [filters]);
+
+  return { rows, loading };
+}
+
 export default function RecommendedActionsCard({ filters }: Props) {
   const [data, setData] = useState<ActionsResponse | null>(null);
+  const [showTable, setShowTable] = useState(false);
+  const { rows: memberRows, loading: membersLoading } = useAtRiskMembers(
+    filters,
+    showTable
+  );
 
   const fetchData = useCallback(async () => {
     try {
@@ -102,14 +168,46 @@ export default function RecommendedActionsCard({ filters }: Props) {
     fetchData();
   }, [fetchData]);
 
+  const actions = (
+    <button
+      onClick={() => setShowTable((v) => !v)}
+      className="flex items-center gap-1 text-xs transition-colors hover:opacity-70"
+      style={{ color: 'var(--neutral-400)' }}
+    >
+      <Table2 className="w-3.5 h-3.5" />
+      {showTable ? 'Matrix' : 'Table'}
+    </button>
+  );
+
   return (
     <ChartCard
       title="Recommended Actions"
       subtitle="Which specific actions would flip at-risk members, by billing source"
       height={320}
-      loading={!data}
+      loading={!data && !showTable}
+      actions={actions}
     >
-      {data && data.rows.length > 0 ? (
+      {showTable ? (
+        membersLoading && memberRows.length === 0 ? (
+          <div
+            style={{
+              padding: 40,
+              textAlign: 'center',
+              color: 'var(--neutral-400)',
+              fontSize: 13,
+            }}
+          >
+            Loading members…
+          </div>
+        ) : (
+          <HealthMemberTable
+            rows={memberRows}
+            columns={TABLE_COLUMNS}
+            filename="at-risk-members-actions.csv"
+            emptyHint="No at-risk members match the current filters."
+          />
+        )
+      ) : data && data.rows.length > 0 ? (
         <ActionMatrix data={data} />
       ) : (
         <div

@@ -1,8 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
+import HealthMemberTable, {
+  HealthMember,
+  ColumnKey,
+} from '@/components/ui/HealthMemberTable';
 
 export interface BandBySourceRow {
   source: string;
@@ -117,8 +122,66 @@ function Cell({
   );
 }
 
+const TABLE_COLUMNS: { key: ColumnKey; label: string; align?: 'left' | 'right' | 'center' }[] = [
+  { key: 'email', label: 'Email', align: 'left' },
+  { key: 'source', label: 'Source', align: 'left' },
+  { key: 'tier', label: 'Tier', align: 'left' },
+  { key: 'band', label: 'Band', align: 'left' },
+  { key: 'score', label: 'Score', align: 'right' },
+  { key: 'joined', label: 'Joined', align: 'left' },
+  { key: 'days_silent', label: 'Days Silent', align: 'right' },
+];
+
+function useMembersList(
+  filters: Props['filters'],
+  enabled: boolean
+): { rows: HealthMember[]; loading: boolean } {
+  const [rows, setRows] = useState<HealthMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const fetchList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams({
+        status: filters.status,
+        source: filters.source,
+        tier: filters.tier,
+        joinStart: filters.joinStart,
+        joinEnd: filters.joinEnd,
+        sort: 'score_desc',
+        limit: '2000',
+        t: String(Date.now()),
+      }).toString();
+      const res = await fetch(`/api/dashboard/health-members?${qs}`);
+      const json = await res.json();
+      setRows((json.rows ?? []) as HealthMember[]);
+      setLoaded(true);
+    } catch (err) {
+      console.error('health-members fetch failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    if (enabled && !loaded) fetchList();
+  }, [enabled, loaded, fetchList]);
+  // reset cache when filters change
+  useEffect(() => {
+    setLoaded(false);
+  }, [filters]);
+
+  return { rows, loading };
+}
+
 export default function BandBySourceCard({ filters, onData }: Props) {
   const [data, setData] = useState<BandBySourceResponse | null>(null);
+  const [showTable, setShowTable] = useState(false);
+  const { rows: memberRows, loading: membersLoading } = useMembersList(
+    filters,
+    showTable
+  );
 
   const fetchData = useCallback(async () => {
     try {
@@ -147,14 +210,45 @@ export default function BandBySourceCard({ filters, onData }: Props) {
     ? `${data.totals.total.toLocaleString()} members · avg score ${data.totals.avg_score}`
     : undefined;
 
+  const actions = (
+    <button
+      onClick={() => setShowTable((v) => !v)}
+      className="flex items-center gap-1 text-xs transition-colors hover:opacity-70"
+      style={{ color: 'var(--neutral-400)' }}
+    >
+      <Table2 className="w-3.5 h-3.5" />
+      {showTable ? 'Chart' : 'Table'}
+    </button>
+  );
+
   return (
     <ChartCard
       title="Band Distribution by Billing Source"
       subtitle={subtitle}
       height={280}
-      loading={!data}
+      loading={!data && !showTable}
+      actions={actions}
     >
-      {data && data.rows.length > 0 ? (
+      {showTable ? (
+        membersLoading && memberRows.length === 0 ? (
+          <div
+            style={{
+              padding: 40,
+              textAlign: 'center',
+              color: 'var(--neutral-400)',
+              fontSize: 13,
+            }}
+          >
+            Loading members…
+          </div>
+        ) : (
+          <HealthMemberTable
+            rows={memberRows}
+            columns={TABLE_COLUMNS}
+            filename="band-distribution-members.csv"
+          />
+        )
+      ) : data && data.rows.length > 0 ? (
         <div
           style={{
             border: '1px solid var(--neutral-100)',

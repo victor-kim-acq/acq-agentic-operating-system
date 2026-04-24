@@ -13,10 +13,15 @@ import {
   ResponsiveContainer,
   LabelList,
 } from 'recharts';
+import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import GradientBar from '@/components/ui/GradientBar';
 import ViewToggle, { ChartView } from '@/components/ui/ViewToggle';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
+import HealthMemberTable, {
+  HealthMember,
+  ColumnKey,
+} from '@/components/ui/HealthMemberTable';
 
 const CHART_HEIGHT = 380;
 
@@ -85,10 +90,67 @@ const COHORT_NOTES: Note[] = [
   },
 ];
 
+const TABLE_COLUMNS: { key: ColumnKey; label: string; align?: 'left' | 'right' | 'center' }[] = [
+  { key: 'email', label: 'Email', align: 'left' },
+  { key: 'joined', label: 'Joined', align: 'left' },
+  { key: 'cohort_month', label: 'Cohort', align: 'left' },
+  { key: 'source', label: 'Source', align: 'left' },
+  { key: 'tier', label: 'Tier', align: 'left' },
+  { key: 'band', label: 'Band', align: 'left' },
+  { key: 'score', label: 'Score', align: 'right' },
+];
+
+function useMembersList(
+  filters: Props['filters'],
+  enabled: boolean
+): { rows: HealthMember[]; loading: boolean } {
+  const [rows, setRows] = useState<HealthMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  const fetchList = useCallback(async () => {
+    setLoading(true);
+    try {
+      const qs = new URLSearchParams({
+        status: filters.status,
+        source: filters.source,
+        tier: filters.tier,
+        joinStart: filters.joinStart,
+        joinEnd: filters.joinEnd,
+        sort: 'joined_desc',
+        limit: '2000',
+        t: String(Date.now()),
+      }).toString();
+      const res = await fetch(`/api/dashboard/health-members?${qs}`);
+      const json = await res.json();
+      setRows((json.rows ?? []) as HealthMember[]);
+      setLoaded(true);
+    } catch (err) {
+      console.error('health-members fetch failed:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [filters]);
+
+  useEffect(() => {
+    if (enabled && !loaded) fetchList();
+  }, [enabled, loaded, fetchList]);
+  useEffect(() => {
+    setLoaded(false);
+  }, [filters]);
+
+  return { rows, loading };
+}
+
 export default function HealthByCohortCard({ filters }: Props) {
   const [view, setView] = useState<ChartView>('mom');
   const [rows, setRows] = useState<CohortRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showTable, setShowTable] = useState(false);
+  const { rows: memberRows, loading: membersLoading } = useMembersList(
+    filters,
+    showTable
+  );
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -121,16 +183,48 @@ export default function HealthByCohortCard({ filters }: Props) {
     label: view === 'wow' ? formatWeekLabel(r.period_key) : r.period,
   }));
 
-  const actions = <ViewToggle view={view} onChange={setView} />;
+  const actions = (
+    <>
+      <button
+        onClick={() => setShowTable((v) => !v)}
+        className="flex items-center gap-1 text-xs transition-colors hover:opacity-70"
+        style={{ color: 'var(--neutral-400)' }}
+      >
+        <Table2 className="w-3.5 h-3.5" />
+        {showTable ? 'Chart' : 'Table'}
+      </button>
+      {!showTable && <ViewToggle view={view} onChange={setView} />}
+    </>
+  );
 
   return (
     <ChartCard
       title="Health by Join-Month Cohort"
       subtitle="Band breakdown per cohort · line is avg composite score"
       height={CHART_HEIGHT}
-      loading={loading && data.length === 0}
+      loading={loading && data.length === 0 && !showTable}
       actions={actions}
     >
+      {showTable ? (
+        membersLoading && memberRows.length === 0 ? (
+          <div
+            style={{
+              padding: 40,
+              textAlign: 'center',
+              color: 'var(--neutral-400)',
+              fontSize: 13,
+            }}
+          >
+            Loading members…
+          </div>
+        ) : (
+          <HealthMemberTable
+            rows={memberRows}
+            columns={TABLE_COLUMNS}
+            filename="health-cohort-members.csv"
+          />
+        )
+      ) : (
       <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
         <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
@@ -206,6 +300,7 @@ export default function HealthByCohortCard({ filters }: Props) {
           </Line>
         </ComposedChart>
       </ResponsiveContainer>
+      )}
       <div style={{ marginTop: 28 }}>
         <CollapsibleNotes
           notes={COHORT_NOTES}
