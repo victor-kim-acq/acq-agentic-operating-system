@@ -54,32 +54,33 @@ export async function GET(req: NextRequest) {
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
       all_joiners AS (
-        SELECT DISTINCT ON (LOWER(email))
-          LOWER(email) AS email,
-          joined_at,
-          user_id
-        FROM (
-          SELECT LOWER(email) AS email, join_date AS joined_at, user_id
-          FROM skool_members
-          WHERE join_date >= '${startDate}' AND join_date < ('${endDate}'::date + INTERVAL '1 day')
-            AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-          UNION ALL
-          SELECT LOWER(email), approved_at, skool_user_id
-          FROM skool_cancellations
-          WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
-            AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-        ) combined
-        ORDER BY LOWER(email), joined_at ASC
+        SELECT
+          skool_user_id AS user_id,
+          email,
+          join_date AS joined_at,
+          member_status AS status
+        FROM unified_skool_cohort
+        WHERE email_source = 'skool_login'
+          AND join_date >= '${startDate}'
+          AND join_date < ('${endDate}'::date + INTERVAL '1 day')
+          AND email NOT IN (SELECT email FROM exclude_list)
+      ),
+      ai_active_days AS (
+        SELECT
+          aj.user_id,
+          COUNT(DISTINCT DATE(aim.created_at)) AS active_days_week1
+        FROM all_joiners aj
+        JOIN unified_skool_cohort u ON u.skool_user_id = aj.user_id
+        JOIN acq_ai_messages aim ON LOWER(TRIM(aim.email)) = u.email
+        WHERE aim.created_at >= aj.joined_at
+          AND aim.created_at < aj.joined_at + INTERVAL '7 days'
+        GROUP BY aj.user_id
       ),
       enriched AS (
         SELECT
           aj.*,
-          CASE WHEN EXISTS (
-            SELECT 1 FROM skool_cancellations sc WHERE LOWER(sc.email) = aj.email
-          ) THEN 'cancelled' ELSE 'active' END AS status,
           ${truncExpr} AS period_key,
           ${periodFormat} AS period_label,
-          (SELECT ce.contact_id FROM contact_emails ce WHERE LOWER(ce.email) = aj.email LIMIT 1) AS contact_id,
           COALESCE(
             (SELECT c.membership_tier FROM contacts c
              JOIN contact_emails ce ON c.contact_id = ce.contact_id
@@ -91,32 +92,22 @@ export async function GET(req: NextRequest) {
            JOIN contact_emails ce ON cd.contact_id = ce.contact_id
            WHERE LOWER(ce.email) = aj.email
            ORDER BY d.close_date DESC LIMIT 1
-          ) AS billing_source
+          ) AS billing_source,
+          COALESCE(aad.active_days_week1, 0) >= 2 AS ai_activated
         FROM all_joiners aj
-      ),
-      with_ai AS (
-        SELECT e.*,
-          CASE WHEN (
-            SELECT aai.active_days_week1 FROM acq_ai_usage aai
-            WHERE LOWER(aai.email) = e.email
-          ) >= 2 OR (e.contact_id IS NOT NULL AND (
-            SELECT aai.active_days_week1 FROM acq_ai_usage aai
-            JOIN contact_emails ce2 ON LOWER(aai.email) = LOWER(ce2.email)
-            WHERE ce2.contact_id = e.contact_id LIMIT 1
-          ) >= 2) THEN true ELSE false END AS ai_activated
-        FROM enriched e
+        LEFT JOIN ai_active_days aad ON aad.user_id = aj.user_id
       ),
       with_all AS (
-        SELECT wa.*,
+        SELECT e.*,
           (SELECT COUNT(*) FROM skool_posts sp
-           WHERE sp.author_id = wa.user_id
-             AND sp.created_at BETWEEN wa.joined_at AND wa.joined_at + INTERVAL '15 days')
+           WHERE sp.author_id = e.user_id
+             AND sp.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days')
           +
           (SELECT COUNT(*) FROM skool_comments sc
-           WHERE sc.author_id = wa.user_id
-             AND sc.created_at BETWEEN wa.joined_at AND wa.joined_at + INTERVAL '15 days')
+           WHERE sc.author_id = e.user_id
+             AND sc.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days')
           AS engagement_15d
-        FROM with_ai wa
+        FROM enriched e
       )
       SELECT
         period_label,
