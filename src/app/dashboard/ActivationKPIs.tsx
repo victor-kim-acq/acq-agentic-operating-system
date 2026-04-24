@@ -15,7 +15,6 @@ export interface ActivationRow {
   period: string;
   period_key: string;
   acquired: number;
-  active_base: number;
   churned: number;
   ai_activated: number;
   ai_not_activated: number;
@@ -81,7 +80,6 @@ function parseAggregateRows(raw: any[]): ActivationRow[] {
     return {
       ...r,
       acquired,
-      active_base: Number(r.active_base) || 0,
       churned: Number(r.churned) || 0,
       ai_activated: Number(r.ai_activated) || 0,
       ai_not_activated: Number(r.ai_not_activated) || 0,
@@ -285,11 +283,11 @@ export function AIActivationRateCard({ startDate, endDate }: ActivationKPIsProps
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
             <Tooltip content={<ActivationTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="active_base" name="Active members" fill="#64748b" shape={<GradientBar />}>
-              <LabelList dataKey="active_base" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
-            </Bar>
             <Bar yAxisId="left" dataKey="acquired" name="Total acquired" fill="var(--chart-2)" shape={<GradientBar />}>
               <LabelList dataKey="acquired" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+            </Bar>
+            <Bar yAxisId="left" dataKey="ai_activated" name="Activated" fill="#64748b" shape={<GradientBar />}>
+              <LabelList dataKey="ai_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey="ai_activation_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
               <LabelList dataKey="ai_activation_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
