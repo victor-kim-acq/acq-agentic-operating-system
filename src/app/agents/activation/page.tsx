@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
-import RetentionArtifact, { CohortResponse } from '../retention/RetentionArtifact';
+import type { CohortResponse } from '../retention/RetentionArtifact';
 import ChatPanel from '../retention/ChatPanel';
 import { AIActivationRateCard } from '@/app/dashboard/ActivationKPIs';
 import AIWeeklyActiveCard from '@/app/dashboard/AIWeeklyActiveCard';
@@ -78,61 +78,6 @@ function formatFullDate(iso: string | null): string | null {
     year: 'numeric',
     timeZone: 'UTC',
   });
-}
-
-function SkeletonArtifact() {
-  return (
-    <section
-      className="rounded-2xl border p-6 sm:p-8 mb-4 relative overflow-hidden"
-      style={{ ...cardStyle, minHeight: 480 }}
-    >
-      <div
-        className="animate-gentle-pulse rounded-lg"
-        style={{
-          height: 16,
-          width: 160,
-          background: 'var(--neutral-100)',
-          marginBottom: 20,
-        }}
-      />
-      <div
-        className="animate-gentle-pulse rounded-lg"
-        style={{
-          height: 32,
-          width: 280,
-          background: 'var(--neutral-100)',
-          marginBottom: 28,
-        }}
-      />
-      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-8">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="animate-gentle-pulse rounded-lg"
-            style={{ height: 96, background: 'var(--neutral-100)' }}
-          />
-        ))}
-      </div>
-      <div
-        className="animate-gentle-pulse rounded-lg"
-        style={{
-          height: 220,
-          background: 'var(--neutral-100)',
-          marginBottom: 16,
-        }}
-      />
-      <p
-        style={{
-          fontSize: 13,
-          color: 'var(--neutral-400)',
-          textAlign: 'center',
-          marginTop: 24,
-        }}
-      >
-        Loading cohort analysis…
-      </p>
-    </section>
-  );
 }
 
 export default function ActivationAgentPage() {
@@ -483,66 +428,13 @@ export default function ActivationAgentPage() {
           <ChatPanel key={chatResetKey} cohort={data} noCard />
         </div>
 
-        {/* Artifact area */}
-        {error ? (
-          <section
-            className="rounded-2xl border p-6 mb-8"
-            style={{
-              background: 'var(--color-danger-light, #fef2f2)',
-              borderColor: 'var(--color-danger, #ef4444)',
-              color: '#7f1d1d',
-            }}
-          >
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 mt-0.5" style={{ color: '#b91c1c' }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600 }}>
-                  Couldn&rsquo;t load the cohort
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    marginTop: 4,
-                    color: 'var(--neutral-700)',
-                  }}
-                >
-                  {error}
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRefresh}
-                  className="mt-3 text-xs px-3 py-1.5 rounded-md border font-medium transition-colors hover:bg-[var(--card-bg)]"
-                  style={{
-                    borderColor: 'var(--color-danger, #ef4444)',
-                    color: '#b91c1c',
-                    background: 'var(--card-bg)',
-                  }}
-                  disabled={loading}
-                >
-                  {loading ? 'Retrying…' : 'Retry'}
-                </button>
-              </div>
-            </div>
-          </section>
-        ) : loading && !data ? (
-          <SkeletonArtifact />
-        ) : data ? (
-          <div style={{ marginBottom: 24 }}>
-            <RetentionArtifact
-              data={data}
-              signal1Override={
-                <div style={{ marginBottom: 24 }}>
-                  <AIActivationRateCard startDate={startDate} endDate={endDate} />
-                </div>
-              }
-              signal2Override={
-                <div style={{ marginBottom: 24 }}>
-                  <AIWeeklyActiveCard startDate={startDate} endDate={endDate} />
-                </div>
-              }
-            />
+        {/* Charts */}
+        <div style={{ marginBottom: 24 }}>
+          <AIActivationRateCard startDate={startDate} endDate={endDate} />
+          <div style={{ marginTop: 24 }}>
+            <AIWeeklyActiveCard startDate={startDate} endDate={endDate} />
           </div>
-        ) : null}
+        </div>
       </div>
     </main>
   );
