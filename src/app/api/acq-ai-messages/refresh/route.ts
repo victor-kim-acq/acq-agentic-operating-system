@@ -75,12 +75,27 @@ export async function POST() {
   }
 
   const insertMs = Date.now() - insertStart;
+
+  const runStartIso = new Date(started).toISOString();
+  const stats = await sql`
+    SELECT
+      COUNT(*)::int AS db_total,
+      COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '2 days')::int AS db_last_2d,
+      COUNT(*) FILTER (WHERE synced_at >= ${runStartIso}::timestamptz)::int AS new_rows,
+      MAX(created_at) AS max_created_at
+    FROM acq_ai_messages
+  `;
+
   const totalMs = Date.now() - started;
 
   return NextResponse.json({
     status: "ok",
-    total_rows: rows.length,
+    window_rows: rows.length,
     upserted,
+    db_total: stats.rows[0].db_total,
+    db_last_2d: stats.rows[0].db_last_2d,
+    new_rows: stats.rows[0].new_rows,
+    max_created_at: stats.rows[0].max_created_at,
     timing_ms: { fetch: fetchMs, insert: insertMs, total: totalMs },
   });
 }
