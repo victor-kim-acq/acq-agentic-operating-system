@@ -17,7 +17,7 @@ import GradientBar from '@/components/ui/GradientBar';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 
 export interface HealthBand {
-  band: 'dormant' | 'lukewarm' | 'engaged' | 'champion';
+  band: 'at_risk' | 'steady' | 'champion';
   count: number;
   pct: number;
   avg_score: number;
@@ -31,23 +31,20 @@ export interface HealthDistribution {
 }
 
 const BAND_LABELS: Record<HealthBand['band'], string> = {
-  dormant: 'Dormant',
-  lukewarm: 'Lukewarm',
-  engaged: 'Engaged',
+  at_risk: 'At Risk',
+  steady: 'Steady',
   champion: 'Champion',
 };
 
 const BAND_COLORS: Record<HealthBand['band'], string> = {
-  dormant: '#64748b',
-  lukewarm: '#f59e0b',
-  engaged: '#0d9488',
-  champion: 'var(--chart-1)',
+  at_risk: '#ef4444',
+  steady: '#f59e0b',
+  champion: '#22c55e',
 };
 
 const BAND_RANGES: Record<HealthBand['band'], string> = {
-  dormant: '0–25',
-  lukewarm: '26–50',
-  engaged: '51–75',
+  at_risk: '0–25',
+  steady: '26–75',
   champion: '76–100',
 };
 
@@ -63,26 +60,26 @@ const HEALTH_NOTES: Note[] = [
   {
     title: 'What this chart shows',
     bullets: [
-      'The filtered member population split into four health bands based on a composite score (0–100). Higher score = more engaged across all signals.',
-      'Dormant (0–25) · Lukewarm (26–50) · Engaged (51–75) · Champion (76–100).',
+      'The filtered member population split into three health bands based on a composite score (0–100). Higher score = more engaged across all signals.',
+      'At Risk (0–25) — prioritize for CS outreach. · Steady (26–75) — light-touch nurture. · Champion (76–100) — celebrate, use as advocates.',
       'The %s above each bar are share of the filtered population — they sum to 100%.',
     ],
   },
   {
-    title: 'How the composite score is computed',
+    title: 'How the composite score is computed (v2 — per billing source)',
     bullets: [
-      'Engagement — min(total_posts + total_comments, 20) × 1.5 → up to 30 points (30% weight).',
-      'AI adoption — ai_activated ? 100 : min(ai_total_chats, 100), × 0.25 → up to 25 points (25% weight).',
-      'Learning — min(courses_started × 10 + courses_completed × 20, 100) × 0.2 → up to 20 points (20%).',
-      'Upvotes received — min(total_upvotes_received, 50) × 0.3 → up to 15 points (15%).',
-      'Recency — max(0, 100 − min(days_since_last_post, 30) × 3.33) × 0.1 → up to 10 points (10%).',
-      'Weights sum to 100. Current v1 weights are gut-feel — will be re-tuned against churn data.',
+      'Weights differ by billing source. Same components, same caps — just different coefficients.',
+      'For ACE / Recharge: Engagement 30% · Learning 25% · AI 20% · Upvotes 15% · Recency 10%.',
+      'For Skool / Unknown: Engagement 35% · Learning 30% · Upvotes 20% · Recency 15% · AI 0%.',
+      'Why AI is zero for Skool: profiling showed AI activation inverts for Skool-native members — cancelled Skool members were more likely to be AI-activated than active ones.',
+      'Component definitions: Engagement = min(posts + comments, 20). Upvotes = min(upvotes_received, 50). Learning = min(courses_started × 10 + courses_completed × 20, 100). AI = ai_activated ? 100 : min(ai_total_chats, 100). Recency = max(0, 100 − min(days_since_last_post, 30) × 3.33).',
+      'v2 weights came from profiling active vs cancelled distributions per billing source — see .claude/skills/member-health/SKILL.md for full rationale.',
     ],
   },
   {
     title: 'Things to keep in mind',
     bullets: [
-      'A dormant-heavy distribution is normal — most community members are lurkers. The useful question is "has the dormant share grown?", answered by the cohort chart below.',
+      'An at-risk-heavy distribution is normal for any community — most members are lurkers, which pulls nearly every engagement component to zero. The useful question is "has the at-risk share grown over time?", which the cohort chart below answers.',
       'The data is a snapshot refreshed daily at 06:00 UTC. A very-recently-joined member may not be scored yet.',
       'Members with no matching cohort row (NULL tier / billing_source) are rare edge cases where the health and cohort rebuilds were a few minutes out of sync.',
     ],

@@ -38,9 +38,9 @@ const AT_RISK_NOTES: Note[] = [
   {
     title: 'What this table shows',
     bullets: [
-      'Every Dormant member (composite score 0–25) that matches the filters above, sorted by days since last post (longest-silent first, then lowest score).',
+      'Every At-Risk member (composite score 0–25) that matches the filters above, sorted by days since last post (longest-silent first, then lowest score).',
       'Start here for CS outreach lists — these are the members most likely to churn next if signals correlate with churn (the retention framework says they do, heavily, for ACE/Recharge).',
-      "Skool-native dormant members should be deprioritized vs. ACE/Recharge dormants — Skool's signal-to-churn relationship is much weaker.",
+      "Skool-native at-risk members should be deprioritized vs. ACE/Recharge at-risk — Skool's signal-to-churn relationship is much weaker.",
     ],
   },
   {

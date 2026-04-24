@@ -11,7 +11,7 @@ function whereClauses(req: NextRequest) {
   const joinStart = req.nextUrl.searchParams.get("joinStart");
   const joinEnd = req.nextUrl.searchParams.get("joinEnd");
 
-  const clauses: string[] = ["band = 'dormant'"];
+  const clauses: string[] = ["band = 'at_risk'"];
   const params: string[] = [];
   let i = 1;
 

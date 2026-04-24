@@ -60,9 +60,8 @@ export async function GET(req: NextRequest) {
         ${labelExpr} AS period_label,
         ${truncExpr} AS period_key,
         COUNT(*)::int AS total,
-        COUNT(*) FILTER (WHERE band = 'dormant')::int  AS dormant,
-        COUNT(*) FILTER (WHERE band = 'lukewarm')::int AS lukewarm,
-        COUNT(*) FILTER (WHERE band = 'engaged')::int  AS engaged,
+        COUNT(*) FILTER (WHERE band = 'at_risk')::int  AS at_risk,
+        COUNT(*) FILTER (WHERE band = 'steady')::int   AS steady,
         COUNT(*) FILTER (WHERE band = 'champion')::int AS champion,
         ROUND(AVG(composite_score))::int AS avg_score
       FROM member_health_scored
@@ -80,9 +79,8 @@ export async function GET(req: NextRequest) {
           ? r.period_key.toISOString().slice(0, 10)
           : String(r.period_key),
       total: Number(r.total),
-      dormant: Number(r.dormant),
-      lukewarm: Number(r.lukewarm),
-      engaged: Number(r.engaged),
+      at_risk: Number(r.at_risk),
+      steady: Number(r.steady),
       champion: Number(r.champion),
       avg_score: Number(r.avg_score) || 0,
     }));

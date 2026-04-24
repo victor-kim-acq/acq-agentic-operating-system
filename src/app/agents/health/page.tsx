@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { RefreshCw } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import ChatPanel from '../retention/ChatPanel';
-import HealthDistributionCard, {
-  HealthDistribution,
-} from '@/app/dashboard/HealthDistributionCard';
+import BandBySourceCard, {
+  BandBySourceResponse,
+} from '@/app/dashboard/BandBySourceCard';
 import HealthByCohortCard from '@/app/dashboard/HealthByCohortCard';
+import RecommendedActionsCard from '@/app/dashboard/RecommendedActionsCard';
 import AtRiskMembersCard from '@/app/dashboard/AtRiskMembersCard';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 
@@ -93,7 +94,7 @@ export default function HealthAgentPage() {
   const [draftJoinStart, setDraftJoinStart] = useState(DEFAULT_JOIN_START);
   const [draftJoinEnd, setDraftJoinEnd] = useState(DEFAULT_JOIN_END);
 
-  const [distribution, setDistribution] = useState<HealthDistribution | null>(
+  const [bandSummary, setBandSummary] = useState<BandBySourceResponse | null>(
     null
   );
   const [refreshKey, setRefreshKey] = useState(0);
@@ -118,17 +119,14 @@ export default function HealthAgentPage() {
     setChatResetKey((k) => k + 1);
   }, []);
 
-  const handleDistributionData = useCallback((d: HealthDistribution) => {
-    setDistribution(d);
+  const handleBandSummary = useCallback((d: BandBySourceResponse) => {
+    setBandSummary(d);
   }, []);
 
-  const atRiskCount = useMemo(
-    () => distribution?.buckets.find((b) => b.band === 'dormant')?.count ?? 0,
-    [distribution]
-  );
-  const totalCount = distribution?.total ?? 0;
-  const avgScore = distribution?.avg_score ?? 0;
-  const refreshedAt = formatRefreshedAt(distribution?.as_of ?? null);
+  const atRiskCount = bandSummary?.totals.at_risk ?? 0;
+  const totalCount = bandSummary?.totals.total ?? 0;
+  const avgScore = bandSummary?.totals.avg_score ?? 0;
+  const refreshedAt = formatRefreshedAt(bandSummary?.as_of ?? null);
 
   return (
     <main className="min-h-screen" style={{ background: 'var(--page-bg)' }}>
@@ -178,7 +176,7 @@ export default function HealthAgentPage() {
               gap: 6,
             }}
           >
-            {distribution ? (
+            {bandSummary ? (
               <>
                 <span>{totalCount.toLocaleString()} members</span>
                 <span aria-hidden>·</span>
@@ -196,7 +194,7 @@ export default function HealthAgentPage() {
         <div className="mb-6">
           <ChatPanel
             key={chatResetKey}
-            cohort={distribution}
+            cohort={bandSummary}
             apiRoute="/api/agents/health/chat"
             description={CHAT_DESCRIPTION}
             placeholder="Ask about the score, bands, or cohort trends…"
@@ -298,13 +296,16 @@ export default function HealthAgentPage() {
 
         {/* Charts */}
         <div style={{ marginBottom: 24 }}>
-          <HealthDistributionCard
-            key={`dist-${refreshKey}`}
+          <BandBySourceCard
+            key={`bands-${refreshKey}`}
             filters={filters}
-            onData={handleDistributionData}
+            onData={handleBandSummary}
           />
           <div style={{ marginTop: 24 }}>
             <HealthByCohortCard key={`cohort-${refreshKey}`} filters={filters} />
+          </div>
+          <div style={{ marginTop: 24 }}>
+            <RecommendedActionsCard key={`actions-${refreshKey}`} filters={filters} />
           </div>
           <div style={{ marginTop: 24 }}>
             <AtRiskMembersCard key={`atrisk-${refreshKey}`} filters={filters} />

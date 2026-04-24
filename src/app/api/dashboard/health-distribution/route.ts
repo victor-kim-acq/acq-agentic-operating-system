@@ -4,7 +4,7 @@ import { sql } from "@/lib/db";
 export const fetchCache = "force-no-store";
 export const dynamic = "force-dynamic";
 
-const BAND_ORDER = ["dormant", "lukewarm", "engaged", "champion"] as const;
+const BAND_ORDER = ["at_risk", "steady", "champion"] as const;
 
 function whereClauses(req: NextRequest): { sqlText: string; params: string[] } {
   const status = req.nextUrl.searchParams.get("status") ?? "active";

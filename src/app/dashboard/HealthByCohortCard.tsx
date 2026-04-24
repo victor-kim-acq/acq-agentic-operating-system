@@ -21,19 +21,17 @@ import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 const CHART_HEIGHT = 380;
 
 const BAND_COLORS: Record<string, string> = {
-  dormant: '#64748b',
-  lukewarm: '#f59e0b',
-  engaged: '#0d9488',
-  champion: '#2563eb',
+  at_risk: '#ef4444',
+  steady: '#f59e0b',
+  champion: '#22c55e',
 };
 
 interface CohortRow {
   period: string;
   period_key: string;
   total: number;
-  dormant: number;
-  lukewarm: number;
-  engaged: number;
+  at_risk: number;
+  steady: number;
   champion: number;
   avg_score: number;
 }
@@ -64,7 +62,7 @@ const COHORT_NOTES: Note[] = [
   {
     title: 'What this chart shows',
     bullets: [
-      'The band breakdown (Dormant / Lukewarm / Engaged / Champion) of each join-month cohort, stacked as a single bar per cohort.',
+      'The band breakdown (At Risk / Steady / Champion) of each join-month cohort, stacked as a single bar per cohort.',
       'The line shows average composite score per cohort on the right axis.',
       'Answers "are newer cohorts weaker or stronger than older ones?" — the single question the retention framework cares about most.',
     ],
@@ -81,7 +79,7 @@ const COHORT_NOTES: Note[] = [
     title: 'Things to keep in mind',
     bullets: [
       'Older cohorts have had longer to develop engagement signals — a March joiner has had 7+ weeks to post, a member who joined this week has had 3 days. Expect a visible upward trend in old-cohort avg score that reflects tenure, not quality.',
-      'If the dormant share is growing monotonically in more recent cohorts, that is a signal that new-member activation is degrading. Cross-check against /agents/activation before concluding.',
+      'If the at-risk share is growing monotonically in more recent cohorts, that is a signal that new-member activation is degrading. Cross-check against /agents/activation before concluding.',
       'The join-date filter above sets the x-axis range. Leave it wide (e.g. last 12 months) for long-term trend reading; narrow it (last 8 weeks + switch to WoW) to see recent cohort drift.',
     ],
   },
@@ -157,26 +155,18 @@ export default function HealthByCohortCard({ filters }: Props) {
           <Legend wrapperStyle={{ fontSize: 11 }} />
           <Bar
             yAxisId="left"
-            dataKey="dormant"
-            name="Dormant"
+            dataKey="at_risk"
+            name="At Risk"
             stackId="band"
-            fill={BAND_COLORS.dormant}
+            fill={BAND_COLORS.at_risk}
             shape={<GradientBar />}
           />
           <Bar
             yAxisId="left"
-            dataKey="lukewarm"
-            name="Lukewarm"
+            dataKey="steady"
+            name="Steady"
             stackId="band"
-            fill={BAND_COLORS.lukewarm}
-            shape={<GradientBar />}
-          />
-          <Bar
-            yAxisId="left"
-            dataKey="engaged"
-            name="Engaged"
-            stackId="band"
-            fill={BAND_COLORS.engaged}
+            fill={BAND_COLORS.steady}
             shape={<GradientBar />}
           />
           <Bar
@@ -250,12 +240,10 @@ function CohortTooltip({ active, label, payload }: TooltipProps) {
         {label} <span style={{ color: 'var(--neutral-400)', fontWeight: 400 }}>· n={p.total}</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'auto auto', gap: '2px 12px', fontSize: 12 }}>
-        <span style={{ color: BAND_COLORS.dormant }}>Dormant</span>
-        <span style={{ textAlign: 'right' }}>{p.dormant.toLocaleString()}</span>
-        <span style={{ color: BAND_COLORS.lukewarm }}>Lukewarm</span>
-        <span style={{ textAlign: 'right' }}>{p.lukewarm.toLocaleString()}</span>
-        <span style={{ color: BAND_COLORS.engaged }}>Engaged</span>
-        <span style={{ textAlign: 'right' }}>{p.engaged.toLocaleString()}</span>
+        <span style={{ color: BAND_COLORS.at_risk }}>At Risk</span>
+        <span style={{ textAlign: 'right' }}>{p.at_risk.toLocaleString()}</span>
+        <span style={{ color: BAND_COLORS.steady }}>Steady</span>
+        <span style={{ textAlign: 'right' }}>{p.steady.toLocaleString()}</span>
         <span style={{ color: BAND_COLORS.champion }}>Champion</span>
         <span style={{ textAlign: 'right' }}>{p.champion.toLocaleString()}</span>
         <span style={{ color: 'var(--chart-3)', borderTop: '1px solid var(--neutral-100)', paddingTop: 4, marginTop: 4 }}>
