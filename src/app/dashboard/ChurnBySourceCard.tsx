@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -50,13 +50,13 @@ const CHART_HEIGHT = 360;
 // Deliberate visual grouping: rescue-signal pairs (verified/not, onboarded/not)
 // use green/red tones; tiers use a distinct palette.
 const SERIES = [
-  { key: 'verified_churn',     nKey: 'verified_n',     name: 'Verified revenue',     color: '#0d9488', dasharray: undefined },
-  { key: 'notverified_churn',  nKey: 'notverified_n',  name: 'Not verified',         color: '#f59e0b', dasharray: '4 4' },
-  { key: 'onboard_churn',      nKey: 'onboard_n',      name: 'Onboarding completed', color: '#2563eb', dasharray: undefined },
-  { key: 'notonboard_churn',   nKey: 'notonboard_n',   name: 'Not onboarded',        color: '#ef4444', dasharray: '4 4' },
-  { key: 'standard_churn',     nKey: 'standard_n',     name: 'Standard',             color: '#64748b', dasharray: undefined },
-  { key: 'vip_churn',          nKey: 'vip_n',          name: 'VIP',                  color: '#7c3aed', dasharray: undefined },
-  { key: 'premium_churn',      nKey: 'premium_n',      name: 'Premium',              color: '#0891b2', dasharray: undefined },
+  { key: 'verified_churn',     nKey: 'verified_n',     name: 'Verified revenue',     color: '#0d9488' },
+  { key: 'notverified_churn',  nKey: 'notverified_n',  name: 'Not verified',         color: '#f59e0b' },
+  { key: 'onboard_churn',      nKey: 'onboard_n',      name: 'Onboarding completed', color: '#2563eb' },
+  { key: 'notonboard_churn',   nKey: 'notonboard_n',   name: 'Not onboarded',        color: '#ef4444' },
+  { key: 'standard_churn',     nKey: 'standard_n',     name: 'Standard',             color: '#64748b' },
+  { key: 'vip_churn',          nKey: 'vip_n',          name: 'VIP',                  color: '#7c3aed' },
+  { key: 'premium_churn',      nKey: 'premium_n',      name: 'Premium',              color: '#0891b2' },
 ] as const;
 
 const NOTES: Note[] = [
@@ -64,24 +64,24 @@ const NOTES: Note[] = [
     title: 'What this chart shows',
     bullets: [
       'Churn rate per billing source, cut by five segments: verified revenue (yes/no), onboarding call (completed/never), and membership tier (Standard / VIP / Premium).',
-      'Churn rate formula: cancelled members ÷ (active + cancelled) within the join-date window. Each line connects the rate across all four sources.',
+      'Churn rate formula: cancelled members ÷ (active + cancelled) within the join-date window. Each group of seven bars is one billing source.',
       "The page's Status filter is intentionally ignored here — a churn-rate chart needs both active and cancelled to compute the denominator. Everything else (joined-from / joined-to / tier / source filters) applies normally.",
     ],
   },
   {
-    title: 'How to read the lines',
+    title: 'How to read the bars',
     bullets: [
-      'Solid green / dashed amber — verified vs not verified revenue. Framework says 0% churn when verified for ACE/Recharge; watch the gap.',
-      'Solid blue / dashed red — onboarding completed vs never. Framework\'s strongest rescue lever — completers 11.1% churn vs never-booked 32.3%.',
+      'Green / amber — verified vs not verified revenue. Framework says 0% churn when verified for ACE/Recharge; watch the gap.',
+      'Blue / red — onboarding completed vs never. Framework\'s strongest rescue lever — completers 11.1% churn vs never-booked 32.3%.',
       'Slate / purple / cyan — tier (Standard / VIP / Premium). Tier discipline matters: higher tier typically means lower churn.',
-      'Missing points: if a source × segment has zero members, the line skips that x-axis position.',
+      'Missing bars: if a source × segment has zero members, that bar is omitted at that x-axis position. Hover the group to see all n values.',
     ],
   },
   {
     title: 'Things to keep in mind',
     bullets: [
-      'Founding Members are pre-Feb 2026 joiners with no billing source — they will often show very high churn on every line because they predate onboarding and verification systems (most never completed either).',
-      'Small denominators are noisy. Hover any point to see n; anything n<5 should be read as directional only.',
+      'Founding Members are pre-Feb 2026 joiners with no billing source — they will often show very high churn on every bar because they predate onboarding and verification systems (most never completed either).',
+      'Small denominators are noisy. Hover any bar group to see n for each segment; anything n<5 should be read as directional only.',
       'Framework reference: acq-vantage-retention skill (signals 1–5 and the segmentation reasoning).',
     ],
   },
@@ -142,7 +142,12 @@ export default function ChurnBySourceCard({ filters }: Props) {
         </div>
       ) : (
         <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-          <LineChart data={rows} margin={{ top: 20, right: 20, left: 0, bottom: 5 }}>
+          <BarChart
+            data={rows}
+            margin={{ top: 20, right: 20, left: 0, bottom: 5 }}
+            barGap={2}
+            barCategoryGap="18%"
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
             <XAxis
               dataKey="source"
@@ -154,22 +159,22 @@ export default function ChurnBySourceCard({ filters }: Props) {
               tickFormatter={(v) => `${v}%`}
               width={45}
             />
-            <Tooltip content={<ChurnTooltip />} />
+            <Tooltip
+              content={<ChurnTooltip />}
+              cursor={{ fill: 'rgba(0,0,0,0.03)' }}
+            />
             <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
             {SERIES.map((s) => (
-              <Line
+              <Bar
                 key={s.key}
-                type="monotone"
                 dataKey={s.key}
                 name={s.name}
-                stroke={s.color}
-                strokeWidth={2}
-                strokeDasharray={s.dasharray}
-                dot={{ fill: s.color, r: 3 }}
-                connectNulls
+                fill={s.color}
+                radius={[2, 2, 0, 0]}
+                isAnimationActive={false}
               />
             ))}
-          </LineChart>
+          </BarChart>
         </ResponsiveContainer>
       )}
       <div style={{ marginTop: 28 }}>
