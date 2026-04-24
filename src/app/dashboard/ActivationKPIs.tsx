@@ -240,29 +240,84 @@ function MemberTable({ members, signalLabel, signalKey }: MemberTableProps) {
   );
 }
 
+const cardActions = (
+  showTable: boolean,
+  toggleTable: () => void,
+  view: ChartView,
+  onViewChange: (v: ChartView) => void
+) => (
+  <>
+    <button
+      onClick={toggleTable}
+      className="flex items-center gap-1 text-xs transition-colors hover:opacity-70"
+      style={{ color: 'var(--neutral-400)' }}
+    >
+      <Table2 className="w-3.5 h-3.5" />{showTable ? 'Chart' : 'Table'}
+    </button>
+    {!showTable && <ViewToggle view={view} onChange={onViewChange} />}
+  </>
+);
+
+export function AIActivationRateCard({ startDate, endDate }: ActivationKPIsProps) {
+  const [view, setView] = useState<ChartView>('wow');
+  const [showTable, setShowTable] = useState(false);
+  const rows = useAggregateData(view, startDate, endDate);
+  const members = useMembersData(startDate, endDate, showTable);
+  const data = prepareData(rows, view);
+  return (
+    <ChartCard
+      title="ACQ AI Activation Rate"
+      subtitle="Members with 2+ active days in first 7 days"
+      height={CHART_HEIGHT}
+      loading={data.length === 0 && !showTable}
+      actions={cardActions(showTable, () => setShowTable(!showTable), view, setView)}
+    >
+      {showTable ? (
+        <MemberTable members={members} signalLabel="AI Activated" signalKey="ai_activated" />
+      ) : (
+        <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
+          <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
+            <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
+            <Tooltip content={<ActivationTooltip />} />
+            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar yAxisId="left" dataKey="ai_activated" name="Activated" fill="var(--chart-2)" shape={<GradientBar />}>
+              <LabelList dataKey="ai_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+            </Bar>
+            <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated" fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
+              <LabelList dataKey="ai_not_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+            </Bar>
+            <Line yAxisId="right" type="monotone" dataKey="ai_activation_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
+              <LabelList dataKey="ai_activation_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
+            </Line>
+          </ComposedChart>
+        </ResponsiveContainer>
+      )}
+    </ChartCard>
+  );
+}
+
 export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsProps) {
-  const [aiView, setAiView] = useState<ChartView>('wow');
   const [commView, setCommView] = useState<ChartView>('wow');
   const [vipView, setVipView] = useState<ChartView>('wow');
   const [aceView, setAceView] = useState<ChartView>('wow');
   const [bothView, setBothView] = useState<ChartView>('wow');
 
-  const [aiTable, setAiTable] = useState(false);
   const [commTable, setCommTable] = useState(false);
   const [vipTable, setVipTable] = useState(false);
   const [aceTable, setAceTable] = useState(false);
   const [bothTable, setBothTable] = useState(false);
 
-  const aiRows = useAggregateData(aiView, startDate, endDate);
   const commRows = useAggregateData(commView, startDate, endDate);
   const vipRows = useAggregateData(vipView, startDate, endDate);
   const aceRows = useAggregateData(aceView, startDate, endDate);
   const bothRows = useAggregateData(bothView, startDate, endDate);
 
-  const anyTableOpen = aiTable || commTable || vipTable || aceTable || bothTable;
+  const anyTableOpen = commTable || vipTable || aceTable || bothTable;
   const members = useMembersData(startDate, endDate, anyTableOpen);
 
-  const aiData = prepareData(aiRows, aiView);
   const commData = prepareData(commRows, commView);
   const vipData = prepareData(vipRows, vipView);
   const aceData = prepareData(aceRows, aceView);
@@ -274,53 +329,12 @@ export default function ActivationKPIs({ startDate, endDate }: ActivationKPIsPro
     (m) => m.billing_source === 'ACE' || m.billing_source === 'Recharge'
   );
 
-  const actions = (showTable: boolean, toggleTable: () => void, view: ChartView, onViewChange: (v: ChartView) => void) => (
-    <>
-      <button
-        onClick={toggleTable}
-        className="flex items-center gap-1 text-xs transition-colors hover:opacity-70"
-        style={{ color: 'var(--neutral-400)' }}
-      >
-        <Table2 className="w-3.5 h-3.5" />{showTable ? 'Chart' : 'Table'}
-      </button>
-      {!showTable && <ViewToggle view={view} onChange={onViewChange} />}
-    </>
-  );
+  const actions = cardActions;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       {/* 1. ACQ AI Activation Rate */}
-      <ChartCard
-        title="ACQ AI Activation Rate"
-        subtitle="Members with 2+ active days in first 7 days"
-        height={CHART_HEIGHT}
-        loading={aiData.length === 0 && !aiTable}
-        actions={actions(aiTable, () => setAiTable(!aiTable), aiView, setAiView)}
-      >
-        {aiTable ? (
-          <MemberTable members={members} signalLabel="AI Activated" signalKey="ai_activated" />
-        ) : (
-          <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
-            <ComposedChart data={aiData} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
-              <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
-              <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
-              <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
-              <Tooltip content={<ActivationTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Bar yAxisId="left" dataKey="ai_activated" name="Activated" fill="var(--chart-2)" shape={<GradientBar />}>
-                <LabelList dataKey="ai_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
-              </Bar>
-              <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated" fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
-                <LabelList dataKey="ai_not_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
-              </Bar>
-              <Line yAxisId="right" type="monotone" dataKey="ai_activation_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
-                <LabelList dataKey="ai_activation_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
-              </Line>
-            </ComposedChart>
-          </ResponsiveContainer>
-        )}
-      </ChartCard>
+      <AIActivationRateCard startDate={startDate} endDate={endDate} />
 
       {/* 2. Community Engagement Rate */}
       <ChartCard

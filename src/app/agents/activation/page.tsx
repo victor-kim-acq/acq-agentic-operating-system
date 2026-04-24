@@ -6,6 +6,7 @@ import { RefreshCw, AlertCircle } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import RetentionArtifact, { CohortResponse } from '../retention/RetentionArtifact';
 import ChatPanel from '../retention/ChatPanel';
+import { AIActivationRateCard } from '@/app/dashboard/ActivationKPIs';
 
 const ANALYSIS_NOTES: {
   title: string;
@@ -526,7 +527,14 @@ export default function ActivationAgentPage() {
           <SkeletonArtifact />
         ) : data ? (
           <div style={{ marginBottom: 24 }}>
-            <RetentionArtifact data={data} />
+            <RetentionArtifact
+              data={data}
+              signal1Override={
+                <div style={{ marginBottom: 24 }}>
+                  <AIActivationRateCard startDate={startDate} endDate={endDate} />
+                </div>
+              }
+            />
           </div>
         ) : null}
       </div>

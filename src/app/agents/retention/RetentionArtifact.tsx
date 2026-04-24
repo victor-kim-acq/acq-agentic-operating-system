@@ -1166,7 +1166,13 @@ function VerifiedRevenueCard({
 
 // ---- Top-level component ----
 
-export default function RetentionArtifact({ data }: { data: CohortResponse }) {
+export default function RetentionArtifact({
+  data,
+  signal1Override,
+}: {
+  data: CohortResponse;
+  signal1Override?: React.ReactNode;
+}) {
   const {
     meta,
     headline,
@@ -1184,12 +1190,16 @@ export default function RetentionArtifact({ data }: { data: CohortResponse }) {
       <HeadlineMetrics meta={meta} headline={headline} />
 
       <PartHead>The signals</PartHead>
-      <Signal1
-        meta={meta}
-        combined_matrix={combined_matrix}
-        source_segment_matrix={source_segment_matrix}
-        by_source={by_source}
-      />
+      {signal1Override !== undefined ? (
+        signal1Override
+      ) : (
+        <Signal1
+          meta={meta}
+          combined_matrix={combined_matrix}
+          source_segment_matrix={source_segment_matrix}
+          by_source={by_source}
+        />
+      )}
       <Signal2
         meta={meta}
         combined_matrix={combined_matrix}
