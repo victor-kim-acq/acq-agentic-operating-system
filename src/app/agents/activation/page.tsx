@@ -8,6 +8,7 @@ import type { CohortResponse } from '../retention/RetentionArtifact';
 import ChatPanel from '../retention/ChatPanel';
 import { AIActivationRateCard } from '@/app/dashboard/ActivationKPIs';
 import AIWeeklyActiveCard from '@/app/dashboard/AIWeeklyActiveCard';
+import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 
 const ANALYSIS_NOTES: {
   title: string;
@@ -55,6 +56,42 @@ const ANALYSIS_NOTES: {
     ],
     footer:
       'Validated against March 2026 cohort \u00b7 lockedDate 2026-04-16 \u00b7 n=208',
+  },
+];
+
+const FILTER_NOTES: Note[] = [
+  {
+    title: 'What these filters do',
+    bullets: [
+      'Start / End date define the cohort window on the x-axis. Change them to show more or fewer weeks/months.',
+      'Locked-as-of freezes the data as of a specific point in time. Useful for reproducing snapshots, comparing cohorts at equivalent ages, or measuring "what did the chart look like last week."',
+      'Apply commits all three values at once — nothing re-fetches until you click it.',
+    ],
+  },
+  {
+    title: 'How each filter affects the charts',
+    bullets: [
+      'Start date — earliest bar shown on the x-axis. On the WAU chart, messages before this date are ignored.',
+      'End date — latest bar shown. On the Activation chart, members who joined after end-date are excluded. On the WAU chart, messages after end-date are ignored.',
+      'Locked-as-of — only kicks in when it\'s earlier than end-date. When active, it takes over as the effective cap on everything: join dates, message dates, and active-base cancellation rollback (cancellations that happened after the locked date get treated as "hadn\'t happened yet").',
+    ],
+  },
+  {
+    title: 'Worked example — start=3/1, end=4/11, locked=4/8',
+    bullets: [
+      'Effective cap = 4/8 (the minimum of end and locked).',
+      'Activation chart, last bar (week of 4/5): counts only members who joined 4/5–4/8, and their activations only count through 4/8. So that bar reflects ~3 days of cohort runway instead of the full 7.',
+      'WAU chart, last bar (week of 4/5): counts messages 4/5 → 4/8 only. Active base reflects community size as of 4/8, and any cancellations between 4/9 and 4/11 are rolled back to "still active."',
+    ],
+  },
+  {
+    title: 'Things to keep in mind',
+    bullets: [
+      'If locked-as-of ≥ end-date, it has no effect. Set them equal (or leave locked later than end) when you just want current numbers.',
+      'If locked-as-of < end-date, the most recent bars will be partial — read them as mid-period snapshots, not as final counts.',
+      'Nothing re-fetches until Apply is clicked — typing into a date picker doesn\'t change anything by itself.',
+      'Start date can go before March 2026, but the WAU chart\'s active base will inflate for those earlier weeks because pre-March cancellations aren\'t in our data. A footnote on that chart already mentions this.',
+    ],
   },
 ];
 
@@ -423,6 +460,13 @@ export default function ActivationAgentPage() {
               >
                 Apply
               </button>
+            </div>
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--neutral-100)' }}>
+              <CollapsibleNotes
+                notes={FILTER_NOTES}
+                header="About these filters"
+                fadeColor="var(--card-bg)"
+              />
             </div>
           </div>
           <ChatPanel key={chatResetKey} cohort={data} noCard />
