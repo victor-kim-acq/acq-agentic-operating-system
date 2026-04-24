@@ -37,6 +37,7 @@ interface Props {
 
 const CHART_HEIGHT = 380;
 const WAU_COLOR = 'var(--chart-1)';
+const ACTIVE_BASE_COLOR = '#cbd5e1';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const countLabel: any = (v: unknown) => {
@@ -208,11 +209,6 @@ const WAUTooltip = ({ active, payload, label }: any) => {
           </div>
         );
       })}
-      {payload[0]?.payload?.active_base !== undefined && (
-        <div style={{ color: 'var(--neutral-400)', fontSize: 11, marginTop: 4 }}>
-          Active base: {Number(payload[0].payload.active_base).toLocaleString()}
-        </div>
-      )}
     </div>
   );
 };
@@ -257,6 +253,9 @@ export default function AIWeeklyActiveCard({ startDate, endDate }: Props) {
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
             <Tooltip content={<WAUTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Bar yAxisId="left" dataKey="active_base" name="Active members" fill={ACTIVE_BASE_COLOR} shape={<GradientBar />}>
+              <LabelList dataKey="active_base" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+            </Bar>
             <Bar yAxisId="left" dataKey="wau" name="WAU" fill={WAU_COLOR} shape={<GradientBar />}>
               <LabelList dataKey="wau" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
             </Bar>
