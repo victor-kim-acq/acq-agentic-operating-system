@@ -336,7 +336,7 @@ export function AIActivationRateCard({ startDate, endDate, lockedDate }: Activat
           </ComposedChart>
         </ResponsiveContainer>
       )}
-      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--neutral-100)' }}>
+      <div style={{ marginTop: 28 }}>
         <CollapsibleNotes
           notes={AI_ACTIVATION_NOTES}
           header="About this chart"

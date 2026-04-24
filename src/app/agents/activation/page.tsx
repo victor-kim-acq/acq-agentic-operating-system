@@ -280,7 +280,7 @@ export default function ActivationAgentPage() {
                 Apply
               </button>
             </div>
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--neutral-100)' }}>
+            <div style={{ marginTop: 28 }}>
               <CollapsibleNotes
                 notes={FILTER_NOTES}
                 header="About these filters"

@@ -307,7 +307,7 @@ export default function AIWeeklyActiveCard({ startDate, endDate, lockedDate }: P
           </ComposedChart>
         </ResponsiveContainer>
       )}
-      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--neutral-100)' }}>
+      <div style={{ marginTop: 28 }}>
         <CollapsibleNotes
           notes={WAU_NOTES}
           header="About this chart"
