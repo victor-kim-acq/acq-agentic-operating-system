@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { RefreshCw } from 'lucide-react';
 import PageHeader from '@/components/ui/PageHeader';
 import ChatPanel from '../retention/ChatPanel';
+import ChurnBySourceCard from '@/app/dashboard/ChurnBySourceCard';
 import BandBySourceCard, {
   BandBySourceResponse,
 } from '@/app/dashboard/BandBySourceCard';
@@ -296,11 +297,17 @@ export default function HealthAgentPage() {
 
         {/* Charts */}
         <div style={{ marginBottom: 24 }}>
-          <BandBySourceCard
-            key={`bands-${refreshKey}`}
+          <ChurnBySourceCard
+            key={`churn-${refreshKey}`}
             filters={filters}
-            onData={handleBandSummary}
           />
+          <div style={{ marginTop: 24 }}>
+            <BandBySourceCard
+              key={`bands-${refreshKey}`}
+              filters={filters}
+              onData={handleBandSummary}
+            />
+          </div>
           <div style={{ marginTop: 24 }}>
             <HealthByCohortCard key={`cohort-${refreshKey}`} filters={filters} />
           </div>
