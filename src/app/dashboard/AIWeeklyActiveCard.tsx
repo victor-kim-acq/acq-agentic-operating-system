@@ -10,7 +10,6 @@ import ChartCard from '@/components/ui/ChartCard';
 import GradientBar from '@/components/ui/GradientBar';
 import ViewToggle, { ChartView } from '@/components/ui/ViewToggle';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
-import { pctLabel } from './helpers';
 
 const WAU_NOTES: Note[] = [
   {
@@ -83,6 +82,12 @@ const ACTIVE_BASE_COLOR = '#64748b';
 const countLabel: any = (v: unknown) => {
   const n = Number(v);
   return n > 0 ? n.toLocaleString() : '';
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const pctIntLabel: any = (v: unknown) => {
+  const n = Number(v);
+  return n > 0 ? `${Math.round(n)}%` : '';
 };
 
 function formatWeekLabel(dateStr: string): string {
@@ -296,13 +301,13 @@ export default function AIWeeklyActiveCard({ startDate, endDate, lockedDate }: P
             <Tooltip content={<WAUTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar yAxisId="left" dataKey="active_base" name="Active members" fill={ACTIVE_BASE_COLOR} shape={<GradientBar />}>
-              <LabelList dataKey="active_base" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+              <LabelList dataKey="active_base" position="top" fontSize={11} fontWeight={600} fill="var(--neutral-800)" formatter={countLabel} />
             </Bar>
             <Bar yAxisId="left" dataKey="wau" name="WAU" fill={WAU_COLOR} shape={<GradientBar />}>
-              <LabelList dataKey="wau" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+              <LabelList dataKey="wau" position="top" fontSize={11} fontWeight={600} fill="var(--neutral-800)" formatter={countLabel} />
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey="wau_rate" name="WAU Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
-              <LabelList dataKey="wau_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />
+              <LabelList dataKey="wau_rate" position="top" offset={16} fontSize={11} fontWeight={600} fill="var(--chart-3)" formatter={pctIntLabel} />
             </Line>
           </ComposedChart>
         </ResponsiveContainer>
