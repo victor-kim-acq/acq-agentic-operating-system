@@ -7,6 +7,7 @@ import PageHeader from '@/components/ui/PageHeader';
 import RetentionArtifact, { CohortResponse } from '../retention/RetentionArtifact';
 import ChatPanel from '../retention/ChatPanel';
 import { AIActivationRateCard } from '@/app/dashboard/ActivationKPIs';
+import AIWeeklyActiveCard from '@/app/dashboard/AIWeeklyActiveCard';
 
 const ANALYSIS_NOTES: {
   title: string;
@@ -532,6 +533,11 @@ export default function ActivationAgentPage() {
               signal1Override={
                 <div style={{ marginBottom: 24 }}>
                   <AIActivationRateCard startDate={startDate} endDate={endDate} />
+                </div>
+              }
+              signal2Override={
+                <div style={{ marginBottom: 24 }}>
+                  <AIWeeklyActiveCard startDate={startDate} endDate={endDate} />
                 </div>
               }
             />
