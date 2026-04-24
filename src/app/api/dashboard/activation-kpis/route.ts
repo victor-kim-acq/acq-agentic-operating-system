@@ -39,14 +39,16 @@ export async function GET(req: NextRequest) {
             .join(",")
         : "('__none__')";
 
+    // Sunday-start weeks (matches the calendar picker): shift +1 day,
+    // truncate to ISO Monday, shift back -1 day -> the Sunday.
     const truncExpr =
       view === "wow"
-        ? "DATE_TRUNC('week', aj.joined_at)"
+        ? "(DATE_TRUNC('week', aj.joined_at + INTERVAL '1 day') - INTERVAL '1 day')"
         : "DATE_TRUNC('month', aj.joined_at)";
 
     const periodFormat =
       view === "wow"
-        ? "TO_CHAR(DATE_TRUNC('week', aj.joined_at), 'YYYY-MM-DD')"
+        ? "TO_CHAR((DATE_TRUNC('week', aj.joined_at + INTERVAL '1 day') - INTERVAL '1 day'), 'YYYY-MM-DD')"
         : "TO_CHAR(DATE_TRUNC('month', aj.joined_at), 'Mon YYYY')";
 
     const result = await sql.query(`

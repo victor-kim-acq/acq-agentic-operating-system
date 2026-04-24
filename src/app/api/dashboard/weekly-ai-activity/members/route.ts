@@ -25,6 +25,11 @@ export async function GET(req: NextRequest) {
     new Date().toISOString().slice(0, 10);
   const view = req.nextUrl.searchParams.get("view") ?? "wow";
   const bucket = view === "mom" ? "month" : "week";
+  // Sunday-start weeks (matches the calendar picker) vs Postgres default Monday-ISO.
+  const truncCol = (col: string) =>
+    bucket === "week"
+      ? `(DATE_TRUNC('week', (${col}) + INTERVAL '1 day') - INTERVAL '1 day')`
+      : `DATE_TRUNC('month', ${col})`;
 
   try {
     const excludeEmails = loadExcludeEmails();
@@ -41,8 +46,8 @@ export async function GET(req: NextRequest) {
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
       target_period AS (
-        SELECT DATE_TRUNC('${bucket}', '${endDate}'::timestamptz) AS period_start,
-               DATE_TRUNC('${bucket}', '${endDate}'::timestamptz) + INTERVAL '1 ${bucket}' AS period_end
+        SELECT ${truncCol(`'${endDate}'::timestamptz`)} AS period_start,
+               ${truncCol(`'${endDate}'::timestamptz`)} + INTERVAL '1 ${bucket}' AS period_end
       ),
       msg_activity AS (
         SELECT

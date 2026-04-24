@@ -28,6 +28,11 @@ export async function GET(req: NextRequest) {
   const view = req.nextUrl.searchParams.get("view") ?? "wow";
   const bucket = view === "mom" ? "month" : "week";
   const periodFormat = bucket === "week" ? "'YYYY-MM-DD'" : "'Mon YYYY'";
+  // Sunday-start weeks (matches the calendar picker) vs Postgres default Monday-ISO.
+  const truncCol = (col: string) =>
+    bucket === "week"
+      ? `(DATE_TRUNC('week', (${col}) + INTERVAL '1 day') - INTERVAL '1 day')`
+      : `DATE_TRUNC('month', ${col})`;
 
   try {
     const excludeEmails = loadExcludeEmails();
@@ -58,8 +63,8 @@ export async function GET(req: NextRequest) {
           period_start,
           (period_start + INTERVAL '1 ${bucket}') AS period_end
         FROM generate_series(
-          DATE_TRUNC('${bucket}', '${startDate}'::timestamptz),
-          DATE_TRUNC('${bucket}', '${endDate}'::timestamptz),
+          ${truncCol(`'${startDate}'::timestamptz`)},
+          ${truncCol(`'${endDate}'::timestamptz`)},
           INTERVAL '1 ${bucket}'
         ) AS period_start
       ),
@@ -75,7 +80,7 @@ export async function GET(req: NextRequest) {
       ),
       msg_activity AS (
         SELECT
-          DATE_TRUNC('${bucket}', aim.created_at) AS period_start,
+          ${truncCol('aim.created_at')} AS period_start,
           u.skool_user_id,
           COUNT(DISTINCT DATE(aim.created_at)) AS days_in_period,
           COUNT(*) AS messages_in_period
@@ -83,7 +88,7 @@ export async function GET(req: NextRequest) {
         JOIN unified_skool_cohort u ON LOWER(TRIM(aim.email)) = u.email
         WHERE aim.created_at >= '${startDate}'::timestamptz
           AND aim.created_at < ('${endDate}'::date + INTERVAL '1 day')::timestamptz
-        GROUP BY DATE_TRUNC('${bucket}', aim.created_at), u.skool_user_id
+        GROUP BY ${truncCol('aim.created_at')}, u.skool_user_id
       ),
       wau AS (
         SELECT period_start, COUNT(DISTINCT skool_user_id) AS wau
