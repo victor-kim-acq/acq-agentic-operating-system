@@ -25,6 +25,13 @@ const agents = [
     description: "Analyze member activation signals, churn drivers, and cohort retention",
     color: "var(--chart-3)",
   },
+  {
+    href: "/agents/activation",
+    icon: "\u26a1",
+    name: "Activation Agent",
+    description: "Deep-dive into week-1 activation signals and at-risk new joiners",
+    color: "var(--chart-4)",
+  },
 ];
 
 export default function AgentsPage() {
