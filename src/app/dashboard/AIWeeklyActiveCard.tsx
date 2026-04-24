@@ -9,7 +9,46 @@ import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import GradientBar from '@/components/ui/GradientBar';
 import ViewToggle, { ChartView } from '@/components/ui/ViewToggle';
+import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 import { pctLabel } from './helpers';
+
+const WAU_NOTES: Note[] = [
+  {
+    title: 'What this chart measures',
+    bullets: [
+      'A time-series view of ACQ AI weekly (or monthly) active users. Each bar represents activity during a given calendar period.',
+      'Slate bar — members active in the community at some point during the period (the denominator).',
+      'Blue bar — of those, how many used AI on 2+ distinct days during that same period.',
+      'Line — blue ÷ slate, expressed as a percentage.',
+    ],
+  },
+  {
+    title: 'Exact calculation',
+    bullets: [
+      'A member counts as WAU (or MAU) for a period if they sent AI messages on 2 or more distinct calendar days within that week (Sun–Sat) or month. Same "2+ distinct days" threshold as the activation chart, but measured against the fixed calendar period — not the member\'s personal first 7 days.',
+      '"Sent a message" = at least one row in the AI messages log. Any content, any length.',
+      'Active base = members whose join date was before the period ended AND (never cancelled OR cancelled after the period started). Read as: "was a member at some point during the period." Someone who joined Tuesday and cancelled Thursday still counts for that week.',
+      'Weeks are Sunday-to-Saturday.',
+    ],
+  },
+  {
+    title: 'Worked example — week of 2026-03-16',
+    bullets: [
+      '722 members were active in the community that week (slate bar).',
+      '316 of them sent AI messages on 2+ distinct days during Sun 3/15 → Sat 3/21 (blue bar).',
+      'Rate: 316 ÷ 722 = 43.8% (line).',
+    ],
+  },
+  {
+    title: 'Things to keep in mind',
+    bullets: [
+      'The current (in-progress) week shows a partial read — fewer days to accumulate the 2+ day threshold, so the blue bar and rate will be lower than usual. Expect them to climb as the week fills out.',
+      "Unlike the activation chart, the measurement window is the calendar week, not each member's personal 7 days. A Saturday joiner has only 1 day of runway to hit WAU that week — they typically show up in the slate bar but not the blue bar until the following week. This structurally depresses the rate slightly during weeks with lots of late joiners.",
+      "Pre-March 2026 cancellations are missing from our data. If the date range extends before March 2026, the slate bar for those weeks will be inflated (we can't deduct cancellations we don't know about).",
+      'The Table toggle shows members active in the most recent period, with a column for days messaged and total messages that period.',
+    ],
+  },
+];
 
 interface WAURow {
   period: string;
@@ -265,6 +304,13 @@ export default function AIWeeklyActiveCard({ startDate, endDate }: Props) {
           </ComposedChart>
         </ResponsiveContainer>
       )}
+      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--neutral-100)' }}>
+        <CollapsibleNotes
+          notes={WAU_NOTES}
+          header="About this chart"
+          fadeColor="var(--card-bg)"
+        />
+      </div>
     </ChartCard>
   );
 }
