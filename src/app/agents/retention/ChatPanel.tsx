@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send, Loader2 } from 'lucide-react';
-import type { CohortResponse } from './RetentionArtifact';
 
 interface ChatMessage {
   id: string;
@@ -12,12 +11,18 @@ interface ChatMessage {
   loading: boolean;
 }
 
-const SUGGESTIONS = [
+const DEFAULT_SUGGESTIONS = [
   'Why do Skool-native members churn so much more than ACE/Recharge?',
   'Which segment has the highest churn risk?',
   'How is AI activation calculated?',
   'What should the CS team prioritize this month?',
 ];
+
+const DEFAULT_DESCRIPTION =
+  'Ask questions about this cohort — signals, anomalies, member segments, or how any metric is calculated.';
+const DEFAULT_PLACEHOLDER = 'Ask about a signal, segment, or metric…';
+const DEFAULT_LOADING_PLACEHOLDER = 'Loading cohort…';
+const DEFAULT_API_ROUTE = '/api/agents/retention/chat';
 
 function ChatBubble({ msg }: { msg: ChatMessage }) {
   return (
@@ -74,9 +79,19 @@ function ChatBubble({ msg }: { msg: ChatMessage }) {
 export default function ChatPanel({
   cohort,
   noCard = false,
+  apiRoute = DEFAULT_API_ROUTE,
+  description = DEFAULT_DESCRIPTION,
+  placeholder = DEFAULT_PLACEHOLDER,
+  loadingPlaceholder = DEFAULT_LOADING_PLACEHOLDER,
+  suggestions = DEFAULT_SUGGESTIONS,
 }: {
-  cohort: CohortResponse | null;
+  cohort: unknown;
   noCard?: boolean;
+  apiRoute?: string;
+  description?: string;
+  placeholder?: string;
+  loadingPlaceholder?: string;
+  suggestions?: string[];
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
@@ -105,7 +120,7 @@ export default function ChatPanel({
       setInput('');
 
       try {
-        const res = await fetch('/api/agents/retention/chat', {
+        const res = await fetch(apiRoute, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ question, history, cohort }),
@@ -142,7 +157,7 @@ export default function ChatPanel({
         );
       }
     },
-    [cohort, messages]
+    [cohort, messages, apiRoute]
   );
 
   const ready = !!cohort;
@@ -168,13 +183,12 @@ export default function ChatPanel({
           marginBottom: 14,
         }}
       >
-        Ask questions about this cohort — signals, anomalies, member
-        segments, or how any metric is calculated.
+        {description}
       </div>
 
       {messages.length === 0 && ready && (
         <div className="flex flex-wrap gap-2 mb-4">
-          {SUGGESTIONS.map((s) => (
+          {suggestions.map((s) => (
             <button
               key={s}
               onClick={() => submitQuestion(s)}
@@ -212,9 +226,7 @@ export default function ChatPanel({
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={
-            ready ? 'Ask about a signal, segment, or metric…' : 'Loading cohort…'
-          }
+          placeholder={ready ? placeholder : loadingPlaceholder}
           disabled={!ready}
           className="flex-1 border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]/20 focus:border-[var(--brand-primary)] disabled:opacity-60"
           style={{ borderColor: 'var(--neutral-200)' }}

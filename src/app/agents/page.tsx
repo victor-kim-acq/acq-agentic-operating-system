@@ -32,6 +32,13 @@ const agents = [
     description: "Deep-dive into week-1 activation signals and at-risk new joiners",
     color: "var(--chart-4)",
   },
+  {
+    href: "/agents/health",
+    icon: "\ud83d\udc9a",
+    name: "Member Health",
+    description: "Composite health score per member, cohort trends, and at-risk outreach list",
+    color: "var(--chart-1)",
+  },
 ];
 
 export default function AgentsPage() {
