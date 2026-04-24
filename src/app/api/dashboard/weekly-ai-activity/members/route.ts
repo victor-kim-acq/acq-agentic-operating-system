@@ -25,6 +25,9 @@ export async function GET(req: NextRequest) {
     new Date().toISOString().slice(0, 10);
   const view = req.nextUrl.searchParams.get("view") ?? "wow";
   const bucket = view === "mom" ? "month" : "week";
+  const lockedDate = req.nextUrl.searchParams.get("lockedDate");
+  const effectiveEnd =
+    lockedDate && lockedDate < endDate ? lockedDate : endDate;
   // Sunday-start weeks (matches the calendar picker) vs Postgres default Monday-ISO.
   const truncCol = (col: string) =>
     bucket === "week"
@@ -46,8 +49,8 @@ export async function GET(req: NextRequest) {
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
       target_period AS (
-        SELECT ${truncCol(`'${endDate}'::timestamptz`)} AS period_start,
-               ${truncCol(`'${endDate}'::timestamptz`)} + INTERVAL '1 ${bucket}' AS period_end
+        SELECT ${truncCol(`'${effectiveEnd}'::timestamptz`)} AS period_start,
+               ${truncCol(`'${effectiveEnd}'::timestamptz`)} + INTERVAL '1 ${bucket}' AS period_end
       ),
       msg_activity AS (
         SELECT
@@ -58,6 +61,7 @@ export async function GET(req: NextRequest) {
         JOIN acq_ai_messages aim
           ON aim.created_at >= tp.period_start
          AND aim.created_at <  tp.period_end
+         AND aim.created_at <  ('${effectiveEnd}'::date + INTERVAL '1 day')
         JOIN unified_skool_cohort u
           ON LOWER(TRIM(aim.email)) = u.email
         GROUP BY u.skool_user_id

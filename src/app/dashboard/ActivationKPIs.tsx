@@ -71,6 +71,7 @@ const tdStyle = { borderColor: 'var(--neutral-100)' };
 interface ActivationKPIsProps {
   startDate: string;
   endDate: string;
+  lockedDate?: string;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -101,30 +102,32 @@ function parseAggregateRows(raw: any[]): ActivationRow[] {
   });
 }
 
-function useAggregateData(view: ChartView, startDate: string, endDate: string) {
+function useAggregateData(view: ChartView, startDate: string, endDate: string, lockedDate?: string) {
   const [rows, setRows] = useState<ActivationRow[]>([]);
   const fetchData = useCallback(async () => {
     try {
+      const lockedParam = lockedDate ? `&lockedDate=${lockedDate}` : '';
       const res = await fetch(
-        `/api/dashboard/activation-kpis?view=${view}&startDate=${startDate}&endDate=${endDate}&t=${Date.now()}`
+        `/api/dashboard/activation-kpis?view=${view}&startDate=${startDate}&endDate=${endDate}${lockedParam}&t=${Date.now()}`
       );
       const data = await res.json();
       setRows(parseAggregateRows(data.rows ?? []));
     } catch (err) {
       console.error('Failed to fetch activation-kpis:', err);
     }
-  }, [view, startDate, endDate]);
+  }, [view, startDate, endDate, lockedDate]);
   useEffect(() => { fetchData(); }, [fetchData]);
   return rows;
 }
 
-function useMembersData(startDate: string, endDate: string, enabled: boolean) {
+function useMembersData(startDate: string, endDate: string, enabled: boolean, lockedDate?: string) {
   const [rows, setRows] = useState<MemberRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const fetchData = useCallback(async () => {
     try {
+      const lockedParam = lockedDate ? `&lockedDate=${lockedDate}` : '';
       const res = await fetch(
-        `/api/dashboard/activation-members?startDate=${startDate}&endDate=${endDate}&t=${Date.now()}`
+        `/api/dashboard/activation-members?startDate=${startDate}&endDate=${endDate}${lockedParam}&t=${Date.now()}`
       );
       const data = await res.json();
       setRows(data.rows ?? []);
@@ -132,12 +135,12 @@ function useMembersData(startDate: string, endDate: string, enabled: boolean) {
     } catch (err) {
       console.error('Failed to fetch activation-members:', err);
     }
-  }, [startDate, endDate]);
+  }, [startDate, endDate, lockedDate]);
   useEffect(() => {
     if (enabled && !loaded) fetchData();
   }, [enabled, loaded, fetchData]);
   // reset when date range changes
-  useEffect(() => { setLoaded(false); }, [startDate, endDate]);
+  useEffect(() => { setLoaded(false); }, [startDate, endDate, lockedDate]);
   return rows;
 }
 
@@ -296,11 +299,11 @@ const AI_ACTIVATION_NOTES: Note[] = [
   },
 ];
 
-export function AIActivationRateCard({ startDate, endDate }: ActivationKPIsProps) {
+export function AIActivationRateCard({ startDate, endDate, lockedDate }: ActivationKPIsProps) {
   const [view, setView] = useState<ChartView>('wow');
   const [showTable, setShowTable] = useState(false);
-  const rows = useAggregateData(view, startDate, endDate);
-  const members = useMembersData(startDate, endDate, showTable);
+  const rows = useAggregateData(view, startDate, endDate, lockedDate);
+  const members = useMembersData(startDate, endDate, showTable, lockedDate);
   const data = prepareData(rows, view);
   return (
     <ChartCard

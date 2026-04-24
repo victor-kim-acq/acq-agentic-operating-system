@@ -28,6 +28,10 @@ export async function GET(req: NextRequest) {
   const endDate =
     req.nextUrl.searchParams.get("endDate") ??
     new Date().toISOString().slice(0, 10);
+  const lockedDate = req.nextUrl.searchParams.get("lockedDate");
+  // Snapshot cap: if lockedDate < endDate, treat it as the new end. Otherwise endDate.
+  const effectiveEnd =
+    lockedDate && lockedDate < endDate ? lockedDate : endDate;
   const view = req.nextUrl.searchParams.get("view") ?? "mom"; // mom | wow
 
   try {
@@ -64,7 +68,7 @@ export async function GET(req: NextRequest) {
         FROM unified_skool_cohort
         WHERE email_source = 'skool_login'
           AND join_date >= '${startDate}'
-          AND join_date < ('${endDate}'::date + INTERVAL '1 day')
+          AND join_date < ('${effectiveEnd}'::date + INTERVAL '1 day')
           AND email NOT IN (SELECT email FROM exclude_list)
       ),
       ai_active_days AS (
@@ -76,6 +80,7 @@ export async function GET(req: NextRequest) {
         JOIN acq_ai_messages aim ON LOWER(TRIM(aim.email)) = u.email
         WHERE aim.created_at >= aj.joined_at
           AND aim.created_at < aj.joined_at + INTERVAL '7 days'
+          AND aim.created_at < ('${effectiveEnd}'::date + INTERVAL '1 day')
         GROUP BY aj.user_id
       ),
       enriched AS (
@@ -103,11 +108,13 @@ export async function GET(req: NextRequest) {
         SELECT e.*,
           (SELECT COUNT(*) FROM skool_posts sp
            WHERE sp.author_id = e.user_id
-             AND sp.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days')
+             AND sp.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days'
+             AND sp.created_at < ('${effectiveEnd}'::date + INTERVAL '1 day'))
           +
           (SELECT COUNT(*) FROM skool_comments sc
            WHERE sc.author_id = e.user_id
-             AND sc.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days')
+             AND sc.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days'
+             AND sc.created_at < ('${effectiveEnd}'::date + INTERVAL '1 day'))
           AS engagement_15d
         FROM enriched e
       )

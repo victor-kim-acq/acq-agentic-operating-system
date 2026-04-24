@@ -28,6 +28,10 @@ export async function GET(req: NextRequest) {
   const view = req.nextUrl.searchParams.get("view") ?? "wow";
   const bucket = view === "mom" ? "month" : "week";
   const periodFormat = bucket === "week" ? "'YYYY-MM-DD'" : "'Mon YYYY'";
+  const lockedDate = req.nextUrl.searchParams.get("lockedDate");
+  // Snapshot cap: if lockedDate < endDate, treat it as the new end.
+  const effectiveEnd =
+    lockedDate && lockedDate < endDate ? lockedDate : endDate;
   // Sunday-start weeks (matches the calendar picker) vs Postgres default Monday-ISO.
   const truncCol = (col: string) =>
     bucket === "week"
@@ -51,11 +55,18 @@ export async function GET(req: NextRequest) {
         SELECT
           u.skool_user_id,
           u.join_date,
-          MAX(sc.cancelled_at) AS cancelled_at
+          -- Roll back cancellations that happened after effectiveEnd so the snapshot
+          -- treats them as "still active as of the locked date".
+          MAX(CASE
+            WHEN sc.cancelled_at <= ('${effectiveEnd}'::date + INTERVAL '1 day')
+              THEN sc.cancelled_at
+            ELSE NULL
+          END) AS cancelled_at
         FROM unified_skool_cohort u
         LEFT JOIN skool_cancellations sc ON sc.skool_user_id = u.skool_user_id
         WHERE u.email_source = 'skool_login'
           AND u.email NOT IN (SELECT email FROM exclude_list)
+          AND u.join_date < ('${effectiveEnd}'::date + INTERVAL '1 day')
         GROUP BY u.skool_user_id, u.join_date
       ),
       periods AS (
@@ -64,7 +75,7 @@ export async function GET(req: NextRequest) {
           (period_start + INTERVAL '1 ${bucket}') AS period_end
         FROM generate_series(
           ${truncCol(`'${startDate}'::timestamptz`)},
-          ${truncCol(`'${endDate}'::timestamptz`)},
+          ${truncCol(`'${effectiveEnd}'::timestamptz`)},
           INTERVAL '1 ${bucket}'
         ) AS period_start
       ),
@@ -87,7 +98,7 @@ export async function GET(req: NextRequest) {
         FROM acq_ai_messages aim
         JOIN unified_skool_cohort u ON LOWER(TRIM(aim.email)) = u.email
         WHERE aim.created_at >= '${startDate}'::timestamptz
-          AND aim.created_at < ('${endDate}'::date + INTERVAL '1 day')::timestamptz
+          AND aim.created_at < ('${effectiveEnd}'::date + INTERVAL '1 day')::timestamptz
         GROUP BY ${truncCol('aim.created_at')}, u.skool_user_id
       ),
       wau AS (

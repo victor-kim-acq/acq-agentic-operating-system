@@ -430,9 +430,17 @@ export default function ActivationAgentPage() {
 
         {/* Charts */}
         <div style={{ marginBottom: 24 }}>
-          <AIActivationRateCard startDate={startDate} endDate={endDate} />
+          <AIActivationRateCard
+            startDate={startDate}
+            endDate={endDate}
+            lockedDate={lockedDate}
+          />
           <div style={{ marginTop: 24 }}>
-            <AIWeeklyActiveCard startDate={startDate} endDate={endDate} />
+            <AIWeeklyActiveCard
+              startDate={startDate}
+              endDate={endDate}
+              lockedDate={lockedDate}
+            />
           </div>
         </div>
       </div>

@@ -72,6 +72,7 @@ interface WAUMemberRow {
 interface Props {
   startDate: string;
   endDate: string;
+  lockedDate?: string;
 }
 
 const CHART_HEIGHT = 380;
@@ -97,12 +98,13 @@ function prepareData(rows: WAURow[], view: ChartView) {
   }));
 }
 
-function useAggregateData(view: ChartView, startDate: string, endDate: string) {
+function useAggregateData(view: ChartView, startDate: string, endDate: string, lockedDate?: string) {
   const [rows, setRows] = useState<WAURow[]>([]);
   const fetchData = useCallback(async () => {
     try {
+      const lockedParam = lockedDate ? `&lockedDate=${lockedDate}` : '';
       const res = await fetch(
-        `/api/dashboard/weekly-ai-activity?view=${view}&startDate=${startDate}&endDate=${endDate}&t=${Date.now()}`
+        `/api/dashboard/weekly-ai-activity?view=${view}&startDate=${startDate}&endDate=${endDate}${lockedParam}&t=${Date.now()}`
       );
       const data = await res.json();
       setRows(
@@ -116,18 +118,19 @@ function useAggregateData(view: ChartView, startDate: string, endDate: string) {
     } catch (err) {
       console.error('Failed to fetch weekly-ai-activity:', err);
     }
-  }, [view, startDate, endDate]);
+  }, [view, startDate, endDate, lockedDate]);
   useEffect(() => { fetchData(); }, [fetchData]);
   return rows;
 }
 
-function useMembersData(view: ChartView, endDate: string, enabled: boolean) {
+function useMembersData(view: ChartView, endDate: string, enabled: boolean, lockedDate?: string) {
   const [rows, setRows] = useState<WAUMemberRow[]>([]);
   const [loaded, setLoaded] = useState(false);
   const fetchData = useCallback(async () => {
     try {
+      const lockedParam = lockedDate ? `&lockedDate=${lockedDate}` : '';
       const res = await fetch(
-        `/api/dashboard/weekly-ai-activity/members?view=${view}&endDate=${endDate}&t=${Date.now()}`
+        `/api/dashboard/weekly-ai-activity/members?view=${view}&endDate=${endDate}${lockedParam}&t=${Date.now()}`
       );
       const data = await res.json();
       setRows(data.rows ?? []);
@@ -135,11 +138,11 @@ function useMembersData(view: ChartView, endDate: string, enabled: boolean) {
     } catch (err) {
       console.error('Failed to fetch weekly-ai-activity members:', err);
     }
-  }, [view, endDate]);
+  }, [view, endDate, lockedDate]);
   useEffect(() => {
     if (enabled && !loaded) fetchData();
   }, [enabled, loaded, fetchData]);
-  useEffect(() => { setLoaded(false); }, [view, endDate]);
+  useEffect(() => { setLoaded(false); }, [view, endDate, lockedDate]);
   return rows;
 }
 
@@ -252,11 +255,11 @@ const WAUTooltip = ({ active, payload, label }: any) => {
   );
 };
 
-export default function AIWeeklyActiveCard({ startDate, endDate }: Props) {
+export default function AIWeeklyActiveCard({ startDate, endDate, lockedDate }: Props) {
   const [view, setView] = useState<ChartView>('wow');
   const [showTable, setShowTable] = useState(false);
-  const rows = useAggregateData(view, startDate, endDate);
-  const members = useMembersData(view, endDate, showTable);
+  const rows = useAggregateData(view, startDate, endDate, lockedDate);
+  const members = useMembersData(view, endDate, showTable, lockedDate);
   const data = prepareData(rows, view);
 
   const actions = (

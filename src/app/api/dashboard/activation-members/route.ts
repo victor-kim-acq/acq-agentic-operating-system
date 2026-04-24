@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
   const endDate =
     req.nextUrl.searchParams.get("endDate") ??
     new Date().toISOString().slice(0, 10);
+  const lockedDate = req.nextUrl.searchParams.get("lockedDate");
+  const effectiveEnd =
+    lockedDate && lockedDate < endDate ? lockedDate : endDate;
 
   try {
     const excludeEmails = loadExcludeEmails();
@@ -40,21 +43,32 @@ export async function GET(req: NextRequest) {
         SELECT email FROM (VALUES ${excludeValues}) AS t(email)
       ),
       all_joiners AS (
-        SELECT LOWER(email) AS email, join_date AS joined_at, 'active' AS status, user_id,
-               COALESCE(full_name, email) AS name
-        FROM skool_members
-        WHERE join_date >= '${startDate}' AND join_date < ('${endDate}'::date + INTERVAL '1 day')
-          AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
-        UNION ALL
-        SELECT LOWER(email), approved_at, 'cancelled', skool_user_id,
-               COALESCE(first_name || ' ' || last_name, email) AS name
-        FROM skool_cancellations
-        WHERE approved_at >= '${startDate}' AND approved_at < ('${endDate}'::date + INTERVAL '1 day')
-          AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+        SELECT DISTINCT ON (LOWER(email))
+          LOWER(email) AS email,
+          joined_at,
+          user_id,
+          name
+        FROM (
+          SELECT LOWER(email) AS email, join_date AS joined_at, user_id,
+                 COALESCE(full_name, email) AS name
+          FROM skool_members
+          WHERE join_date >= '${startDate}' AND join_date < ('${effectiveEnd}'::date + INTERVAL '1 day')
+            AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+          UNION ALL
+          SELECT LOWER(email), approved_at, skool_user_id,
+                 COALESCE(first_name || ' ' || last_name, email) AS name
+          FROM skool_cancellations
+          WHERE approved_at >= '${startDate}' AND approved_at < ('${effectiveEnd}'::date + INTERVAL '1 day')
+            AND LOWER(email) NOT IN (SELECT email FROM exclude_list)
+        ) combined
+        ORDER BY LOWER(email), joined_at ASC
       ),
       enriched AS (
         SELECT
           aj.*,
+          CASE WHEN EXISTS (
+            SELECT 1 FROM skool_cancellations sc WHERE LOWER(sc.email) = aj.email
+          ) THEN 'cancelled' ELSE 'active' END AS status,
           (SELECT ce.contact_id FROM contact_emails ce WHERE LOWER(ce.email) = aj.email LIMIT 1) AS contact_id,
           COALESCE(
             (SELECT c.membership_tier FROM contacts c
