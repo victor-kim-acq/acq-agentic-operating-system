@@ -283,11 +283,8 @@ export function AIActivationRateCard({ startDate, endDate }: ActivationKPIsProps
             <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
             <Tooltip content={<ActivationTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar yAxisId="left" dataKey="ai_activated" name="Activated" fill="var(--chart-2)" shape={<GradientBar />}>
-              <LabelList dataKey="ai_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
-            </Bar>
-            <Bar yAxisId="left" dataKey="ai_not_activated" name="Not Activated" fill={NOT_ACTIVATED_COLOR} shape={<GradientBar />}>
-              <LabelList dataKey="ai_not_activated" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
+            <Bar yAxisId="left" dataKey="acquired" name="Total acquired" fill="var(--chart-2)" shape={<GradientBar />}>
+              <LabelList dataKey="acquired" position="top" fontSize={10} fill="var(--neutral-500)" formatter={countLabel} />
             </Bar>
             <Line yAxisId="right" type="monotone" dataKey="ai_activation_rate" name="Activation Rate %" stroke="var(--chart-3)" strokeWidth={2} dot={{ fill: 'var(--chart-3)', r: 3 }}>
               <LabelList dataKey="ai_activation_rate" position="top" fontSize={10} fill="var(--neutral-500)" formatter={pctLabel} />

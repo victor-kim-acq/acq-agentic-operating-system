@@ -37,7 +37,7 @@ interface Props {
 
 const CHART_HEIGHT = 380;
 const WAU_COLOR = 'var(--chart-1)';
-const ACTIVE_BASE_COLOR = '#cbd5e1';
+const ACTIVE_BASE_COLOR = '#64748b';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const countLabel: any = (v: unknown) => {
