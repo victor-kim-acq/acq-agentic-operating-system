@@ -108,14 +108,28 @@ export async function GET(req: NextRequest) {
              AND sc.created_at BETWEEN e.joined_at AND e.joined_at + INTERVAL '15 days')
           AS engagement_15d
         FROM enriched e
+      ),
+      period_active_base AS (
+        SELECT
+          dp.period_key,
+          COUNT(DISTINCT u2.skool_user_id) AS active_base
+        FROM (SELECT DISTINCT period_key FROM with_all) dp
+        LEFT JOIN unified_skool_cohort u2
+          ON u2.email_source = 'skool_login'
+          AND u2.email NOT IN (SELECT email FROM exclude_list)
+          AND u2.join_date < (dp.period_key + INTERVAL '1 ${view === "wow" ? "week" : "month"}')
+        LEFT JOIN skool_cancellations sc2 ON sc2.skool_user_id = u2.skool_user_id
+        WHERE (sc2.cancelled_at IS NULL OR sc2.cancelled_at > dp.period_key)
+        GROUP BY dp.period_key
       )
       SELECT
-        period_label,
-        period_key,
+        wa.period_label,
+        wa.period_key,
 
         /* Totals */
         COUNT(*) AS acquired,
-        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) AS churned,
+        MIN(pab.active_base) AS active_base,
+        SUM(CASE WHEN wa.status = 'cancelled' THEN 1 ELSE 0 END) AS churned,
 
         /* 1. AI Activation */
         SUM(CASE WHEN ai_activated THEN 1 ELSE 0 END) AS ai_activated,
@@ -147,15 +161,17 @@ export async function GET(req: NextRequest) {
           / NULLIF(SUM(CASE WHEN billing_source IN ('ACE','Recharge') THEN 1 ELSE 0 END), 0) * 100, 1
         ) AS ace_rech_ai_activation_rate
 
-      FROM with_all
-      GROUP BY period_label, period_key
-      ORDER BY period_key
+      FROM with_all wa
+      LEFT JOIN period_active_base pab ON pab.period_key = wa.period_key
+      GROUP BY wa.period_label, wa.period_key
+      ORDER BY wa.period_key
     `);
 
     const rows = result.rows.map((r) => ({
       period: r.period_label,
       period_key: r.period_key,
       acquired: Number(r.acquired),
+      active_base: Number(r.active_base) || 0,
       churned: Number(r.churned),
       ai_activated: Number(r.ai_activated),
       ai_not_activated: Number(r.ai_not_activated),
