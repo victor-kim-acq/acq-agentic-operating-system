@@ -53,9 +53,20 @@ const cardStyle: React.CSSProperties = {
   boxShadow: 'var(--shadow-sm)',
 };
 
-const DEFAULT_START = '2026-03-01';
-const DEFAULT_END = '2026-03-31';
-const DEFAULT_LOCKED = '2026-04-18';
+// Default window: last 49 days ending today. In WoW view this yields
+// 8 bars on the x-axis — the current (partial) week plus the 7 prior weeks.
+function todayISO(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+function daysAgoISO(days: number): string {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+const DEFAULT_START = daysAgoISO(49);
+const DEFAULT_END = todayISO();
+// Match endDate so locked is a no-op by default (effective cap stays at today).
+const DEFAULT_LOCKED = todayISO();
 
 function formatFullDate(iso: string | null): string | null {
   if (!iso) return null;

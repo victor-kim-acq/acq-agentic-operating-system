@@ -295,9 +295,9 @@ export default function AIWeeklyActiveCard({ startDate, endDate, lockedDate }: P
         <ResponsiveContainer width="100%" height={CHART_HEIGHT}>
           <ComposedChart data={data} margin={{ top: 20, right: 10, left: 0, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--neutral-100)" />
-            <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} />
-            <YAxis yAxisId="left" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} width={40} />
-            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fill: 'var(--neutral-400)' }} tickFormatter={(v) => `${v}%`} width={45} domain={[0, 100]} />
+            <XAxis dataKey="label" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--neutral-900)' }} />
+            <YAxis yAxisId="left" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--neutral-900)' }} width={40} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fontWeight: 600, fill: 'var(--neutral-900)' }} tickFormatter={(v) => `${Math.round(v)}%`} width={45} domain={[0, 100]} />
             <Tooltip content={<WAUTooltip />} />
             <Legend wrapperStyle={{ fontSize: 11 }} />
             <Bar yAxisId="left" dataKey="active_base" name="Active members" fill={ACTIVE_BASE_COLOR} shape={<GradientBar />}>

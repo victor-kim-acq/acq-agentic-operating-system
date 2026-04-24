@@ -65,9 +65,9 @@ Three filters live in the card above the charts. Nothing re-fetches until Apply 
 
 | Filter | Default | What it does |
 |---|---|---|
-| Start date | 2026-03-01 | Earliest bar shown on x-axis. WAU chart ignores messages before this date. |
-| End date | 2026-03-31 | Latest bar shown. Activation chart excludes members who joined after end-date. WAU chart ignores messages after end-date. |
-| Locked-as-of | 2026-04-18 | Freezes data as if queried at this point in time. Only takes effect when **earlier than end-date**. |
+| Start date | today − 49 days | Earliest bar shown on x-axis. WAU chart ignores messages before this date. The 49-day default yields 8 bars in WoW view — current (partial) week plus the 7 prior weeks. |
+| End date | today | Latest bar shown. Activation chart excludes members who joined after end-date. WAU chart ignores messages after end-date. |
+| Locked-as-of | today | Freezes data as if queried at this point in time. Only takes effect when **earlier than end-date**. Default equals end-date, so it's a no-op until the user changes it. |
 
 ### Effective cap
 
