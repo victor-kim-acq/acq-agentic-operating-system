@@ -5,7 +5,7 @@ description: Framework for ACQ Vantage member retention and activation analysis.
 
 ## Exact Metric Definitions — Quote These Verbatim
 
-**AI Activation:** Member used ACQ AI on 2 or more distinct days within their first 7 days of joining. Source: acq_ai_usage.active_days_week1 >= 2.
+**AI Activation:** Member used ACQ AI on 2 or more distinct days within their first 7 days of joining. Source: `acq_ai_messages`, grouped per member via `unified_skool_cohort.email` and filtered to `created_at ∈ [join_date, join_date + 7 days)`, then `COUNT(DISTINCT DATE(created_at)) >= 2`. **Do not use `acq_ai_usage.active_days_week1`** — that pre-computed field is anchored to each email's first-ever-message clock (not the Skool join date) and was retired because it over-credited members who used AI before joining.
 
 **Community Engagement:** Member made 3 or more posts or comments within their first 15 days of joining. Source: skool_posts + skool_comments, created_at BETWEEN joined_at AND joined_at + 15 days.
 
@@ -17,7 +17,13 @@ description: Framework for ACQ Vantage member retention and activation analysis.
 
 # ACQ Vantage Retention Analysis Framework
 
-This skill captures how ACQ Vantage reasons about member retention, activation, and churn. It is the authoritative source for metric definitions, signal logic, cohort methodology, and analytical standards. Read this fully before answering any retention question or building any retention artifact.
+This skill captures how ACQ Vantage reasons about member retention, activation, and churn. It is the authoritative source for **metric definitions, signal logic, cohort methodology, and analytical standards**. Read this fully before answering any retention question or building any retention artifact.
+
+**This skill does not cover:**
+- Page-specific UX or chart mechanics — see `activation-dashboard` for `/agents/activation`. A parallel skill may exist for `/agents/retention`.
+- Table schemas, connection strings, or query patterns — see `acq-vantage-db`.
+
+Use this skill for the *what things mean and how to reason about them*. Use the other two for the *how to build / query / display them*.
 
 ---
 
@@ -40,8 +46,9 @@ This skill captures how ACQ Vantage reasons about member retention, activation, 
 
 ### AI Activation
 - **Definition:** Member used ACQ AI on 2 or more distinct days within their first 7 days of joining
-- **Source:** `acq_ai_usage` table, `active_days_week1` column
-- **Matching:** Bidirectional email↔contact_id via `contact_emails` (members often use different emails across systems)
+- **Source:** `acq_ai_messages`. For each member, count `DISTINCT DATE(created_at)` where `created_at ∈ [join_date, join_date + 7 days)`; activated if that count ≥ 2.
+- **Matching:** Bridge `acq_ai_messages.email → unified_skool_cohort.email`. A member matches if the sender email is **any** of their known addresses (Skool login, Skool billing, Skool invite, or HubSpot aliases). Always aggregate with `COUNT(DISTINCT ...)` grouped by `skool_user_id` because `unified_skool_cohort` has multiple rows per member by design.
+- **Retired:** `acq_ai_usage.active_days_week1` was the old source. It was anchored to each email's first-ever-message clock (members who used AI before joining Skool got credited for pre-join activity) and matched via `contact_emails` (missed ~5pp of members). Do not reuse it; compute live from `acq_ai_messages` instead.
 - **Key insight:** Activation rates are roughly equal across Skool (70%), ACE (71%), and Recharge (67%) — the *difference* isn't in who activates, it's in whether activation *predicts churn*. For Skool it doesn't. For ACE/Recharge the gap is 14-19pp.
 
 ### Community Engagement
