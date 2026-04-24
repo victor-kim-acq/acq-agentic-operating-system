@@ -9,6 +9,7 @@ import { Table2 } from 'lucide-react';
 import ChartCard from '@/components/ui/ChartCard';
 import GradientBar from '@/components/ui/GradientBar';
 import ViewToggle, { ChartView } from '@/components/ui/ViewToggle';
+import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 import { pctLabel, fmt } from './helpers';
 
 export interface ActivationRow {
@@ -258,6 +259,43 @@ const cardActions = (
   </>
 );
 
+const AI_ACTIVATION_NOTES: Note[] = [
+  {
+    title: 'What this chart measures',
+    bullets: [
+      'A cohort view of ACQ AI activation. Each bar represents the members who joined in a given week or month.',
+      'Green bar — members acquired in that period (the cohort).',
+      'Slate bar — of those, how many activated AI in their first 7 days.',
+      'Line — slate ÷ green, expressed as a percentage.',
+    ],
+  },
+  {
+    title: 'Exact calculation',
+    bullets: [
+      'Activated = sent AI messages on 2 or more distinct calendar days within the first 7 days of joining. Threshold is distinct days, not message count — 50 messages on a single day counts as 1 day; 1 message Monday + 1 message Thursday counts as 2 days.',
+      '"Sent a message" = at least one row in the AI messages log. Any content, any length.',
+      "The 7-day window starts at each member's exact join timestamp, not the calendar week. A Friday 3 pm joiner has until the following Friday 3 pm.",
+      'Weeks on the x-axis are Sunday-to-Saturday, matching the calendar picker above.',
+    ],
+  },
+  {
+    title: 'Worked example — week of 2026-03-02',
+    bullets: [
+      '87 members joined that week (green bar).',
+      '48 activated AI in their first 7 days (slate bar).',
+      'Activation rate: 48 ÷ 87 = 55.2% (line).',
+    ],
+  },
+  {
+    title: 'Things to keep in mind',
+    bullets: [
+      "A week's bar is final once 7 days have passed since its last day (Saturday). Until then it can still climb as recent joiners close out their first-week windows. Practically, the most recent ~2 bars on the chart are still live; anything older is frozen.",
+      "A member's activation window is their personal 7 days, not the calendar week, so a Saturday joiner may activate in what's technically the following calendar week. They still count in their original join-week bar.",
+      'The Table toggle in the card header shows every member in the current cohort date range with an "activated yes/no" column — useful for drilling into who activated and who didn\'t.',
+    ],
+  },
+];
+
 export function AIActivationRateCard({ startDate, endDate }: ActivationKPIsProps) {
   const [view, setView] = useState<ChartView>('wow');
   const [showTable, setShowTable] = useState(false);
@@ -295,6 +333,13 @@ export function AIActivationRateCard({ startDate, endDate }: ActivationKPIsProps
           </ComposedChart>
         </ResponsiveContainer>
       )}
+      <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid var(--neutral-100)' }}>
+        <CollapsibleNotes
+          notes={AI_ACTIVATION_NOTES}
+          header="About this chart"
+          fadeColor="var(--card-bg)"
+        />
+      </div>
     </ChartCard>
   );
 }
