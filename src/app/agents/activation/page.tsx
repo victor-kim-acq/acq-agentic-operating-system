@@ -10,54 +10,6 @@ import { AIActivationRateCard } from '@/app/dashboard/ActivationKPIs';
 import AIWeeklyActiveCard from '@/app/dashboard/AIWeeklyActiveCard';
 import CollapsibleNotes, { Note } from '@/components/ui/CollapsibleNotes';
 
-const ANALYSIS_NOTES: {
-  title: string;
-  bullets: string[];
-  checkmarks?: boolean;
-  footer?: string;
-}[] = [
-  {
-    title: 'How to use this report',
-    bullets: [
-      'Start / End date define the cohort window.',
-      'Locked-as-of freezes the DB snapshot — it controls which rows are visible, not just cancellations. Rows for March members can land days or weeks after they joined, so earlier locked dates may undercount.',
-      'Last updated / Refresh is when the page last fetched, not when the underlying data changed.',
-    ],
-  },
-  {
-    title: 'How the metrics work',
-    bullets: [
-      'AI Activation — 2+ distinct days using ACQ AI in the first 7 days.',
-      'Community Engagement — 3+ posts or comments in the first 15 days; lurking doesn\u2019t count.',
-      'AI only — activated AI but didn\u2019t hit the posting threshold.',
-      'Community only — 3+ posts but didn\u2019t activate AI.',
-      'Neither — missed both signals.',
-      'Billing Source — Skool-native vs. ACE / Recharge behave fundamentally differently; signals predict churn for ACE / Recharge but not for Skool.',
-      'Churn Rate — cancelled \u00f7 total cohort; cancellations after locked-as-of don\u2019t count.',
-    ],
-  },
-  {
-    title: 'Things that look off but aren\u2019t',
-    bullets: [
-      'Skool community-only = 0 is not a bug — the 32 non-activated Skool members also didn\u2019t post enough to clear the threshold.',
-      'Activation rates are nearly identical across sources (~67\u201371%); the story isn\u2019t who activates, it\u2019s whether activation predicts churn — a 14\u201319pp gap for ACE / Recharge, none for Skool.',
-      'ACE / Recharge community-engaged = 0% churn is real but n=5 and n=9; directional only.',
-      'Recharge-Standard at 33.3% churn has n=9 — same small-sample caveat.',
-    ],
-  },
-  {
-    title: 'What we validated before publishing',
-    checkmarks: true,
-    bullets: [
-      'Billing-source rows sum to the cohort total.',
-      'Verified + not verified per source sums to that source\u2019s total.',
-      'Churn counts match churn_pct within 0.5%.',
-      'Cohort count frozen via lockedDate — same params always return the same total.',
-    ],
-    footer:
-      'Validated against March 2026 cohort \u00b7 lockedDate 2026-04-16 \u00b7 n=208',
-  },
-];
 
 const FILTER_NOTES: Note[] = [
   {
@@ -127,7 +79,6 @@ export default function ActivationAgentPage() {
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [chatResetKey, setChatResetKey] = useState(0);
-  const [isNotesExpanded, setIsNotesExpanded] = useState(false);
 
   const [draftStart, setDraftStart] = useState(DEFAULT_START);
   const [draftEnd, setDraftEnd] = useState(DEFAULT_END);
@@ -240,144 +191,12 @@ export default function ActivationAgentPage() {
           </div>
         </div>
 
-        {/* Analysis notes */}
-        <section style={{ marginBottom: 24 }}>
-          <div
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              color: 'var(--neutral-400)',
-              padding: '24px 0 12px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <span>Analysis notes</span>
-            <span style={{ flex: 1, height: 1, background: 'var(--card-border)' }} />
-          </div>
-          <div style={{ position: 'relative' }}>
-            <div
-              style={{
-                maxHeight: isNotesExpanded ? 2000 : 220,
-                overflow: 'hidden',
-                transition: 'max-height 0.4s ease',
-              }}
-            >
-              {ANALYSIS_NOTES.map((note) => (
-                <div key={note.title} style={{ marginBottom: 20 }}>
-                  <div
-                    style={{
-                      fontSize: 14,
-                      fontWeight: 600,
-                      color: 'var(--neutral-900)',
-                      marginBottom: 8,
-                    }}
-                  >
-                    {note.title}
-                  </div>
-                  <ul
-                    style={{
-                      listStyle: 'none',
-                      margin: 0,
-                      padding: 0,
-                      fontSize: 13,
-                      color: 'var(--neutral-600)',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {note.bullets.map((b, i) => (
-                      <li
-                        key={i}
-                        style={{
-                          display: 'flex',
-                          gap: 10,
-                          marginBottom: 6,
-                        }}
-                      >
-                        <span
-                          aria-hidden
-                          style={{
-                            flexShrink: 0,
-                            width: 14,
-                            color: note.checkmarks
-                              ? 'var(--color-success, #16a34a)'
-                              : 'var(--neutral-400)',
-                          }}
-                        >
-                          {note.checkmarks ? '\u2713' : '\u2022'}
-                        </span>
-                        <span>{b}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  {note.footer && (
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--neutral-400)',
-                        marginTop: 10,
-                        fontStyle: 'italic',
-                      }}
-                    >
-                      {note.footer}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {!isNotesExpanded && (
-              <div
-                aria-hidden
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: 80,
-                  background:
-                    'linear-gradient(to bottom, transparent, var(--page-bg))',
-                  pointerEvents: 'none',
-                }}
-              />
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setIsNotesExpanded((v) => !v)}
-            aria-expanded={isNotesExpanded}
-            className="hover:text-[var(--neutral-900)] transition-colors"
-            style={{
-              width: '100%',
-              textAlign: 'center',
-              padding: '10px 0',
-              marginTop: 8,
-              fontSize: 13,
-              fontWeight: 500,
-              color: 'var(--neutral-600)',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            {isNotesExpanded ? 'Show less' : 'Show more'}
-            <span
-              aria-hidden
-              style={{
-                display: 'inline-block',
-                marginLeft: 6,
-                transition: 'transform 0.2s ease',
-                transform: isNotesExpanded ? 'rotate(180deg)' : 'rotate(0)',
-              }}
-            >
-              {'\u25BE'}
-            </span>
-          </button>
-        </section>
+        {/* Chat card */}
+        <div className="mb-6">
+          <ChatPanel key={chatResetKey} cohort={data} />
+        </div>
 
-        {/* Filter + Chat — single card */}
+        {/* Filter card */}
         <div
           className="rounded-2xl border mb-6"
           style={{ ...cardStyle }}
@@ -469,7 +288,6 @@ export default function ActivationAgentPage() {
               />
             </div>
           </div>
-          <ChatPanel key={chatResetKey} cohort={data} noCard />
         </div>
 
         {/* Charts */}
